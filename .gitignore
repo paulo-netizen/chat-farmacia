@@ -1,0 +1,11 @@
+# Archivos de entorno (nunca subir)
+.env
+.env.local
+.env.*.local
+
+# Dependencias
+node_modules/
+
+# Salidas de compilación
+.next/
+out/
