@@ -26,3 +26,4 @@ npm run dev
 
 - Alumno demo: `alumno001@demo.local` / `Alumno123!`
 - Profesor demo: `profesor@demo.local` / `Profe123!`
+"# chat-farmacia" 
