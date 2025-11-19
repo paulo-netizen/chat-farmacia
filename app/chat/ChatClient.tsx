@@ -60,7 +60,7 @@ export default function ChatClient() {
         setCaseData(data.case);
         setMessages([
           {
-            role: 'patient',
+            role: 'patient' as const,
             content:
               'Hola, soy el paciente. Puedes hacerme las preguntas que consideres para entender mejor mi situación con la medicación.',
           },
@@ -81,8 +81,11 @@ export default function ChatClient() {
     setError(null);
     const text = input.trim();
     setInput('');
-    const newMsgs = [...messages, { role: 'student', content: text }];
-    setMessages(newMsgs);
+    const newMsgs: ChatMessage[] = [
+  ...messages,
+  { role: 'student' as const, content: text },
+];
+setMessages(newMsgs);
     setSending(true);
     try {
       const res = await fetch('/api/chat', {
@@ -100,7 +103,7 @@ export default function ChatClient() {
         return;
       }
       const data = await res.json();
-      setMessages([...newMsgs, { role: 'patient', content: data.reply }]);
+      setMessages([...newMsgs, { role: 'patient' as const, content: data.reply }]);
     } catch (err) {
       console.error(err);
       setError('Error de conexión');
