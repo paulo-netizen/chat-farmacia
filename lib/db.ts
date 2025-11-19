@@ -1,9 +1,8 @@
 import { Pool } from 'pg';
 
-// En desarrollo (tu Windows) relajamos TLS para evitar problemas con certificados
-if (process.env.NODE_ENV !== 'production') {
-  process.env['NODE_TLS_REJECT_UNAUTHORIZED'] = '0';
-}
+// Relajamos la verificación de certificados SIEMPRE para este proyecto
+// (solo afecta a este proceso de Node, no a todo el sistema).
+process.env['NODE_TLS_REJECT_UNAUTHORIZED'] = '0';
 
 // Usamos variables de entorno: primero SUPABASE_DB_URL y, si no, DATABASE_URL
 const connectionString =
