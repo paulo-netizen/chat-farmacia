@@ -37,6 +37,15 @@ export async function getCurrentUser(): Promise<UserToken | null> {
   }
 }
 
+/**
+ * Función usada por las APIs (como /api/sessions) para obtener
+ * el usuario autenticado a partir de la cookie.
+ * De momento simplemente reutiliza getCurrentUser.
+ */
+export async function getUserFromRequest(_req?: Request): Promise<UserToken | null> {
+  return getCurrentUser();
+}
+
 export async function requireUser() {
   const user = await getCurrentUser();
   if (!user) {
