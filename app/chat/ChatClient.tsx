@@ -82,10 +82,10 @@ export default function ChatClient() {
     const text = input.trim();
     setInput('');
     const newMsgs: ChatMessage[] = [
-  ...messages,
-  { role: 'student' as const, content: text },
-];
-setMessages(newMsgs);
+      ...messages,
+      { role: 'student' as const, content: text },
+    ];
+    setMessages(newMsgs);
     setSending(true);
     try {
       const res = await fetch('/api/chat', {
@@ -103,7 +103,10 @@ setMessages(newMsgs);
         return;
       }
       const data = await res.json();
-      setMessages([...newMsgs, { role: 'patient' as const, content: data.reply }]);
+      setMessages([
+        ...newMsgs,
+        { role: 'patient' as const, content: data.reply },
+      ]);
     } catch (err) {
       console.error(err);
       setError('Error de conexión');
@@ -117,7 +120,7 @@ setMessages(newMsgs);
     if (!sessionId) return;
     const intervenciones = evalInterv
       .split(',')
-      .map(s => s.trim())
+      .map((s) => s.trim())
       .filter(Boolean);
     try {
       const res = await fetch('/api/evaluations', {
@@ -180,11 +183,14 @@ setMessages(newMsgs);
 
   return (
     <div style={{ display: 'grid', gap: 16 }}>
-      <div style={{ display: 'flex', justifyContent: 'space-between', gap: 12 }}>
-        <div>
-          <h2 style={{ fontSize: 18, fontWeight: 600, marginBottom: 4 }}>{caseData.title}</h2>
-          <p style={{ fontSize: 13, color: '#64748b' }}>{caseData.description}</p>
-        </div>
+      {/* Cabecera: solo botón de cerrar sesión (no mostramos título/descr. del caso) */}
+      <div
+        style={{
+          display: 'flex',
+          justifyContent: 'flex-end',
+          gap: 12,
+        }}
+      >
         <button
           onClick={handleLogout}
           style={{
@@ -200,20 +206,50 @@ setMessages(newMsgs);
         </button>
       </div>
 
-      <div style={{ borderRadius: 8, padding: 12, backgroundColor: 'white', border: '1px solid #e2e8f0' }}>
-        <h3 style={{ fontWeight: 600, marginBottom: 8 }}>Ficha del paciente (para ti)</h3>
+      <div
+        style={{
+          borderRadius: 8,
+          padding: 12,
+          backgroundColor: 'white',
+          border: '1px solid #e2e8f0',
+        }}
+      >
+        <h3 style={{ fontWeight: 600, marginBottom: 8 }}>
+          Ficha del paciente (para ti)
+        </h3>
         <ul style={{ fontSize: 13, margin: 0, paddingLeft: 18 }}>
-          <li><strong>Nombre:</strong> {spec.nombre}</li>
-          <li><strong>Edad:</strong> {spec.edad}</li>
-          <li><strong>Sexo:</strong> {spec.sexo}</li>
-          <li><strong>Motivo:</strong> {spec.motivo_consulta}</li>
-          <li><strong>Antecedentes:</strong> {spec.antecedentes}</li>
-          <li><strong>Tratamiento:</strong> {spec.tratamiento}</li>
-          <li><strong>Contexto:</strong> {spec.contexto}</li>
+          <li>
+            <strong>Nombre:</strong> {spec.nombre}
+          </li>
+          <li>
+            <strong>Edad:</strong> {spec.edad}
+          </li>
+          <li>
+            <strong>Sexo:</strong> {spec.sexo}
+          </li>
+          <li>
+            <strong>Motivo:</strong> {spec.motivo_consulta}
+          </li>
+          <li>
+            <strong>Antecedentes:</strong> {spec.antecedentes}
+          </li>
+          <li>
+            <strong>Tratamiento:</strong> {spec.tratamiento}
+          </li>
+          <li>
+            <strong>Contexto:</strong> {spec.contexto}
+          </li>
         </ul>
       </div>
 
-      <div style={{ borderRadius: 8, padding: 12, backgroundColor: 'white', border: '1px solid #e2e8f0' }}>
+      <div
+        style={{
+          borderRadius: 8,
+          padding: 12,
+          backgroundColor: 'white',
+          border: '1px solid #e2e8f0',
+        }}
+      >
         <h3 style={{ fontWeight: 600, marginBottom: 8 }}>Chat con el paciente</h3>
         <div
           style={{
@@ -239,9 +275,13 @@ setMessages(newMsgs);
                   display: 'inline-block',
                   padding: '4px 8px',
                   borderRadius: 9999,
-                  backgroundColor: m.role === 'student' ? '#2563eb' : 'white',
+                  backgroundColor:
+                    m.role === 'student' ? '#2563eb' : 'white',
                   color: m.role === 'student' ? 'white' : '#0f172a',
-                  border: m.role === 'student' ? 'none' : '1px solid #cbd5f5',
+                  border:
+                    m.role === 'student'
+                      ? 'none'
+                      : '1px solid #cbd5f5',
                   fontSize: 13,
                 }}
               >
@@ -265,7 +305,7 @@ setMessages(newMsgs);
             }}
             placeholder="Escribe tu pregunta al paciente..."
             value={input}
-            onChange={e => setInput(e.target.value)}
+            onChange={(e) => setInput(e.target.value)}
             disabled={sending || showEval}
           />
           <button
@@ -279,7 +319,10 @@ setMessages(newMsgs);
               color: 'white',
               fontWeight: 500,
               opacity: sending || !input.trim() || showEval ? 0.6 : 1,
-              cursor: sending || !input.trim() || showEval ? 'default' : 'pointer',
+              cursor:
+                sending || !input.trim() || showEval
+                  ? 'default'
+                  : 'pointer',
             }}
           >
             Enviar
@@ -303,16 +346,35 @@ setMessages(newMsgs);
       </div>
 
       {showEval && (
-        <div style={{ borderRadius: 8, padding: 12, backgroundColor: 'white', border: '1px solid #e2e8f0' }}>
-          <h3 style={{ fontWeight: 600, marginBottom: 8 }}>Evaluación del caso</h3>
+        <div
+          style={{
+            borderRadius: 8,
+            padding: 12,
+            backgroundColor: 'white',
+            border: '1px solid #e2e8f0',
+          }}
+        >
+          <h3 style={{ fontWeight: 600, marginBottom: 8 }}>
+            Evaluación del caso
+          </h3>
           <p style={{ fontSize: 13, marginBottom: 10 }}>
-            Responde según tu juicio clínico tras la entrevista. Después verás la
-            corrección y un breve feedback.
+            Responde según tu juicio clínico tras la entrevista. Después verás
+            la corrección y un breve feedback.
           </p>
-          <form onSubmit={handleEvalSubmit} style={{ display: 'grid', gap: 10 }}>
+          <form
+            onSubmit={handleEvalSubmit}
+            style={{ display: 'grid', gap: 10 }}
+          >
             <div>
-              <label style={{ display: 'block', fontSize: 13, marginBottom: 4 }}>
-                Tipo de no adherencia (por ejemplo: "no intencional", "intencional")
+              <label
+                style={{
+                  display: 'block',
+                  fontSize: 13,
+                  marginBottom: 4,
+                }}
+              >
+                Tipo de no adherencia (por ejemplo: "no intencional",
+                "intencional")
               </label>
               <input
                 style={{
@@ -323,12 +385,19 @@ setMessages(newMsgs);
                   fontSize: 13,
                 }}
                 value={evalTipo}
-                onChange={e => setEvalTipo(e.target.value)}
+                onChange={(e) => setEvalTipo(e.target.value)}
               />
             </div>
             <div>
-              <label style={{ display: 'block', fontSize: 13, marginBottom: 4 }}>
-                Barrera principal (por ejemplo: "olvido", "efectos adversos", etc.)
+              <label
+                style={{
+                  display: 'block',
+                  fontSize: 13,
+                  marginBottom: 4,
+                }}
+              >
+                Barrera principal (por ejemplo: "olvido", "efectos adversos",
+                etc.)
               </label>
               <input
                 style={{
@@ -339,11 +408,17 @@ setMessages(newMsgs);
                   fontSize: 13,
                 }}
                 value={evalBarrera}
-                onChange={e => setEvalBarrera(e.target.value)}
+                onChange={(e) => setEvalBarrera(e.target.value)}
               />
             </div>
             <div>
-              <label style={{ display: 'block', fontSize: 13, marginBottom: 4 }}>
+              <label
+                style={{
+                  display: 'block',
+                  fontSize: 13,
+                  marginBottom: 4,
+                }}
+              >
                 Intervenciones propuestas (separadas por coma)
               </label>
               <input
@@ -356,7 +431,7 @@ setMessages(newMsgs);
                 }}
                 placeholder="Ej: Uso de pastillero, Educación sobre la importancia..."
                 value={evalInterv}
-                onChange={e => setEvalInterv(e.target.value)}
+                onChange={(e) => setEvalInterv(e.target.value)}
               />
             </div>
             <button
@@ -376,7 +451,14 @@ setMessages(newMsgs);
           </form>
 
           {evalResult && (
-            <div style={{ marginTop: 12, borderTop: '1px solid #e2e8f0', paddingTop: 8, fontSize: 13 }}>
+            <div
+              style={{
+                marginTop: 12,
+                borderTop: '1px solid #e2e8f0',
+                paddingTop: 8,
+                fontSize: 13,
+              }}
+            >
               <p>
                 <strong>Puntuación:</strong> {evalResult.score} / 3
               </p>
@@ -390,3 +472,4 @@ setMessages(newMsgs);
     </div>
   );
 }
+
