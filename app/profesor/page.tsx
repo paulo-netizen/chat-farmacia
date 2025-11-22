@@ -1,78 +1,79 @@
-import { redirect } from 'next/navigation';
-import { requireUser } from '@/lib/auth';
 import { pool } from '@/lib/db';
+import { getCurrentUser } from '@/lib/auth';
+import { redirect } from 'next/navigation';
 
 type ProfessorRow = {
   session_id: string;
+  student_name: string;
   student_email: string;
-  student_name: string | null;
   case_title: string;
   started_at: string | null;
   finished_at: string | null;
+  prompt_tokens: number | null;
+  completion_tokens: number | null;
+  cost_eur: string | null;
   score: number | null;
   feedback: string | null;
 };
 
-async function getProfessorData(): Promise<ProfessorRow[]> {
+async function getProfessorRows(): Promise<ProfessorRow[]> {
   const result = await pool.query(
     `
     SELECT
       s.id AS session_id,
-      u.email AS student_email,
       u.name AS student_name,
+      u.email AS student_email,
       c.title AS case_title,
       s.started_at,
       s.finished_at,
+      s.prompt_tokens,
+      s.completion_tokens,
+      s.cost_eur,
       e.score,
       e.feedback
     FROM sessions s
-    JOIN users u ON s.user_id = u.id
-    JOIN cases c ON s.case_id = c.id
+    JOIN users u ON u.id = s.user_id
+    JOIN cases c ON c.id = s.case_id
     LEFT JOIN evaluations e ON e.session_id = s.id
     WHERE s.status = 'finished'
     ORDER BY s.finished_at DESC NULLS LAST
-    LIMIT 50;
+    LIMIT 100
     `
   );
 
-  return result.rows;
+  return result.rows as ProfessorRow[];
 }
 
 export default async function ProfessorPage() {
-  // 1) Comprobar que el usuario está logueado
-  const user = await requireUser();
-
-  // 2) Restringir a teacher / admin
+  const user = await getCurrentUser();
+  if (!user) {
+    redirect('/login');
+  }
   if (user.role !== 'teacher' && user.role !== 'admin') {
-    redirect('/'); // o /login si prefieres
+    // Si algún alumno intenta entrar aquí, lo mandamos al chat
+    redirect('/chat');
   }
 
-  // 3) Cargar datos de sesiones + evaluaciones
-  const rows = await getProfessorData();
+  const rows = await getProfessorRows();
 
   return (
-    <main
-      style={{
-        maxWidth: 960,
-        margin: '0 auto',
-        padding: '24px 16px 48px',
-        fontFamily: 'system-ui, -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif',
-      }}
-    >
-      <h1 style={{ fontSize: 24, fontWeight: 600, marginBottom: 8 }}>
-        Panel del profesor
-      </h1>
-      <p style={{ fontSize: 14, color: '#64748b', marginBottom: 24 }}>
-        Resumen de las últimas sesiones realizadas por los alumnos. Se muestran
-        solo las sesiones marcadas como finalizadas.
-      </p>
+    <div style={{ display: 'grid', gap: 16 }}>
+      <div>
+        <h1 style={{ fontSize: 24, fontWeight: 600, marginBottom: 4 }}>
+          Panel del profesor
+        </h1>
+        <p style={{ fontSize: 14, color: '#64748b' }}>
+          Resumen de casos realizados por los alumnos (últimas 100 sesiones finalizadas).
+        </p>
+      </div>
 
       <div
         style={{
           borderRadius: 8,
           border: '1px solid #e2e8f0',
-          overflow: 'hidden',
           backgroundColor: 'white',
+          padding: 12,
+          overflowX: 'auto',
         }}
       >
         <table
@@ -82,74 +83,79 @@ export default async function ProfessorPage() {
             fontSize: 13,
           }}
         >
-          <thead style={{ backgroundColor: '#f8fafc' }}>
-            <tr>
+          <thead>
+            <tr style={{ backgroundColor: '#f8fafc' }}>
               <th style={thStyle}>Alumno</th>
+              <th style={thStyle}>Correo</th>
               <th style={thStyle}>Caso</th>
               <th style={thStyle}>Inicio</th>
               <th style={thStyle}>Fin</th>
-              <th style={thStyle}>Puntuación</th>
+              <th style={thStyle}>Tokens (P/C/T)</th>
+              <th style={thStyle}>Coste (€)</th>
+              <th style={thStyle}>Nota</th>
               <th style={thStyle}>Feedback</th>
             </tr>
           </thead>
           <tbody>
-            {rows.length === 0 && (
+            {rows.length === 0 ? (
               <tr>
-                <td colSpan={6} style={{ padding: 16, textAlign: 'center', color: '#6b7280' }}>
-                  Todavía no hay sesiones finalizadas.
+                <td colSpan={9} style={{ padding: 12, textAlign: 'center', color: '#64748b' }}>
+                  Aún no hay sesiones finalizadas.
                 </td>
               </tr>
-            )}
+            ) : (
+              rows.map((row) => {
+                const started =
+                  row.started_at ? new Date(row.started_at).toLocaleString('es-ES') : '-';
+                const finished =
+                  row.finished_at ? new Date(row.finished_at).toLocaleString('es-ES') : '-';
 
-            {rows.map((row) => (
-              <tr key={row.session_id} style={{ borderTop: '1px solid #e5e7eb' }}>
-                <td style={tdStyle}>
-                  <div style={{ fontWeight: 500 }}>
-                    {row.student_name || '(sin nombre)'}
-                  </div>
-                  <div style={{ color: '#6b7280', fontSize: 12 }}>
-                    {row.student_email}
-                  </div>
-                </td>
-                <td style={tdStyle}>{row.case_title}</td>
-                <td style={tdStyle}>
-                  {row.started_at
-                    ? new Date(row.started_at).toLocaleString('es-ES')
-                    : '-'}
-                </td>
-                <td style={tdStyle}>
-                  {row.finished_at
-                    ? new Date(row.finished_at).toLocaleString('es-ES')
-                    : '-'}
-                </td>
-                <td style={tdStyle}>
-                  {row.score !== null ? `${row.score} / 3` : 'Sin evaluación'}
-                </td>
-                <td style={{ ...tdStyle, maxWidth: 280 }}>
-                  <span style={{ display: 'block', whiteSpace: 'pre-wrap' }}>
-                    {row.feedback || '—'}
-                  </span>
-                </td>
-              </tr>
-            ))}
+                const prompt = row.prompt_tokens ?? 0;
+                const completion = row.completion_tokens ?? 0;
+                const totalTokens = prompt + completion;
+
+                const cost =
+                  row.cost_eur != null
+                    ? Number(row.cost_eur).toFixed(4) // 0.0000 €
+                    : '-';
+
+                return (
+                  <tr key={row.session_id}>
+                    <td style={tdStyle}>{row.student_name}</td>
+                    <td style={tdStyle}>{row.student_email}</td>
+                    <td style={tdStyle}>{row.case_title}</td>
+                    <td style={tdStyle}>{started}</td>
+                    <td style={tdStyle}>{finished}</td>
+                    <td style={tdStyle}>
+                      {prompt}/{completion}/{totalTokens}
+                    </td>
+                    <td style={tdStyle}>{cost}</td>
+                    <td style={tdStyle}>{row.score ?? '-'}</td>
+                    <td style={{ ...tdStyle, maxWidth: 320 }}>
+                      {row.feedback ?? '-'}
+                    </td>
+                  </tr>
+                );
+              })
+            )}
           </tbody>
         </table>
       </div>
-    </main>
+    </div>
   );
 }
 
-// Estilos compartidos para la tabla
 const thStyle: React.CSSProperties = {
   textAlign: 'left',
-  padding: '10px 12px',
-  borderBottom: '1px solid #e5e7eb',
-  fontWeight: 500,
-  color: '#4b5563',
+  padding: '8px 10px',
+  borderBottom: '1px solid #e2e8f0',
+  fontWeight: 600,
   fontSize: 12,
+  whiteSpace: 'nowrap',
 };
 
 const tdStyle: React.CSSProperties = {
-  padding: '10px 12px',
+  padding: '6px 10px',
+  borderBottom: '1px solid #e2e8f0',
   verticalAlign: 'top',
 };
