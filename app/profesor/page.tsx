@@ -1,6 +1,8 @@
+import type React from 'react';
 import { pool } from '@/lib/db';
 import { getCurrentUser } from '@/lib/auth';
 import { redirect } from 'next/navigation';
+import Link from 'next/link';
 
 type ProfessorRow = {
   session_id: string;
@@ -58,15 +60,37 @@ export default async function ProfessorPage() {
 
   return (
     <div style={{ display: 'grid', gap: 16 }}>
+      {/* Cabecera general + navegación del panel del profesor */}
       <div>
-        <h1 style={{ fontSize: 24, fontWeight: 600, marginBottom: 4 }}>
-          Panel del profesor
+        <h1 style={{ fontSize: 24, fontWeight: 600, marginBottom: 2 }}>
+          Chat de Atención Farmacéutica
         </h1>
-        <p style={{ fontSize: 14, color: '#64748b' }}>
+        <p style={{ fontSize: 13, color: '#64748b', marginBottom: 10 }}>
+          Simulación de entrevista con paciente virtual.
+        </p>
+
+        <h2 style={{ fontSize: 18, fontWeight: 600, marginBottom: 4 }}>
+          Panel del profesor
+        </h2>
+        <p style={{ fontSize: 14, color: '#64748b', marginBottom: 8 }}>
           Resumen de casos realizados por los alumnos (últimas 100 sesiones finalizadas).
         </p>
+
+        <nav
+          style={{
+            marginTop: 4,
+            display: 'flex',
+            gap: 12,
+            fontSize: 14,
+          }}
+        >
+          <span style={{ fontWeight: 600 }}>Sesiones</span>
+          <span style={{ color: '#94a3b8' }}>|</span>
+          <Link href="/profesor/casos">Casos</Link>
+        </nav>
       </div>
 
+      {/* Tabla de sesiones */}
       <div
         style={{
           borderRadius: 8,
@@ -99,7 +123,10 @@ export default async function ProfessorPage() {
           <tbody>
             {rows.length === 0 ? (
               <tr>
-                <td colSpan={9} style={{ padding: 12, textAlign: 'center', color: '#64748b' }}>
+                <td
+                  colSpan={9}
+                  style={{ padding: 12, textAlign: 'center', color: '#64748b' }}
+                >
                   Aún no hay sesiones finalizadas.
                 </td>
               </tr>
@@ -115,9 +142,7 @@ export default async function ProfessorPage() {
                 const totalTokens = prompt + completion;
 
                 const cost =
-                  row.cost_eur != null
-                    ? Number(row.cost_eur).toFixed(4) // 0.0000 €
-                    : '-';
+                  row.cost_eur != null ? Number(row.cost_eur).toFixed(4) : '-';
 
                 return (
                   <tr key={row.session_id}>
