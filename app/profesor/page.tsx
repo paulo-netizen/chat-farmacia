@@ -1,8 +1,9 @@
-import type React from 'react';
 import { pool } from '@/lib/db';
 import { getCurrentUser } from '@/lib/auth';
 import { redirect } from 'next/navigation';
+import LogoutButton from './LogoutButton';
 import Link from 'next/link';
+import React from 'react';
 
 type ProfessorRow = {
   session_id: string;
@@ -52,7 +53,6 @@ export default async function ProfessorPage() {
     redirect('/login');
   }
   if (user.role !== 'teacher' && user.role !== 'admin') {
-    // Si algún alumno intenta entrar aquí, lo mandamos al chat
     redirect('/chat');
   }
 
@@ -60,34 +60,38 @@ export default async function ProfessorPage() {
 
   return (
     <div style={{ display: 'grid', gap: 16 }}>
-      {/* Cabecera general + navegación del panel del profesor */}
-      <div>
-        <h1 style={{ fontSize: 24, fontWeight: 600, marginBottom: 2 }}>
-          Chat de Atención Farmacéutica
-        </h1>
-        <p style={{ fontSize: 13, color: '#64748b', marginBottom: 10 }}>
-          Simulación de entrevista con paciente virtual.
-        </p>
+      {/* Cabecera: título + botón logout */}
+      <div
+        style={{
+          display: 'flex',
+          justifyContent: 'space-between',
+          alignItems: 'center',
+          gap: 12,
+        }}
+      >
+        <div>
+          <h1 style={{ fontSize: 24, fontWeight: 600, marginBottom: 4 }}>
+            Panel del profesor
+          </h1>
+          <p style={{ fontSize: 14, color: '#64748b' }}>
+            Resumen de casos realizados por los alumnos (últimas 100 sesiones
+            finalizadas).
+          </p>
 
-        <h2 style={{ fontSize: 18, fontWeight: 600, marginBottom: 4 }}>
-          Panel del profesor
-        </h2>
-        <p style={{ fontSize: 14, color: '#64748b', marginBottom: 8 }}>
-          Resumen de casos realizados por los alumnos (últimas 100 sesiones finalizadas).
-        </p>
+          {/* Pestañas Sesiones / Casos */}
+          <div style={{ marginTop: 12, fontSize: 14 }}>
+            <span style={{ fontWeight: 600 }}>Sesiones</span>
+            <span style={{ margin: '0 8px', color: '#cbd5e1' }}>|</span>
+            <Link
+              href="/profesor/casos"
+              style={{ color: '#2563eb', textDecoration: 'none' }}
+            >
+              Casos
+            </Link>
+          </div>
+        </div>
 
-        <nav
-          style={{
-            marginTop: 4,
-            display: 'flex',
-            gap: 12,
-            fontSize: 14,
-          }}
-        >
-          <span style={{ fontWeight: 600 }}>Sesiones</span>
-          <span style={{ color: '#94a3b8' }}>|</span>
-          <Link href="/profesor/casos">Casos</Link>
-        </nav>
+        <LogoutButton />
       </div>
 
       {/* Tabla de sesiones */}
@@ -125,17 +129,23 @@ export default async function ProfessorPage() {
               <tr>
                 <td
                   colSpan={9}
-                  style={{ padding: 12, textAlign: 'center', color: '#64748b' }}
+                  style={{
+                    padding: 12,
+                    textAlign: 'center',
+                    color: '#64748b',
+                  }}
                 >
                   Aún no hay sesiones finalizadas.
                 </td>
               </tr>
             ) : (
               rows.map((row) => {
-                const started =
-                  row.started_at ? new Date(row.started_at).toLocaleString('es-ES') : '-';
-                const finished =
-                  row.finished_at ? new Date(row.finished_at).toLocaleString('es-ES') : '-';
+                const started = row.started_at
+                  ? new Date(row.started_at).toLocaleString('es-ES')
+                  : '-';
+                const finished = row.finished_at
+                  ? new Date(row.finished_at).toLocaleString('es-ES')
+                  : '-';
 
                 const prompt = row.prompt_tokens ?? 0;
                 const completion = row.completion_tokens ?? 0;
