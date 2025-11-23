@@ -6,11 +6,13 @@ import Link from 'next/link';
 
 export default function NewCasePage() {
   const router = useRouter();
+
   const [title, setTitle] = useState('');
   const [description, setDescription] = useState('');
   const [status, setStatus] = useState<'approved' | 'rejected'>('approved');
   const [serviceType, setServiceType] = useState('SAT');
   const [difficulty, setDifficulty] = useState(1);
+
   const [spec, setSpec] = useState(
     `{
   "nombre": "Paciente nuevo",
@@ -22,26 +24,84 @@ export default function NewCasePage() {
   "contexto": "Vive sola..."
 }`
   );
+
   const [groundTruth, setGroundTruth] = useState(
     `{
+  "diagnostico_principal": "",
+  "problema_farmacoterapeutico": "",
   "tipo_no_adherencia": "no intencional",
   "barrera_principal": "olvido",
+  "otras_barreras": [],
   "intervenciones_recomendadas": [
     "Uso de pastillero",
     "Educación sobre la importancia de la adherencia"
-  ]
+  ],
+  "personalidad_paciente": "",
+  "objetivos_aprendizaje": []
 }`
   );
 
   const [saving, setSaving] = useState(false);
+  const [aiLoading, setAiLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
 
+  // ----- IA: rellenar caso automáticamente -----
+  async function handleGenerateWithAI() {
+    try {
+      setAiLoading(true);
+      setError(null);
+
+      const res = await fetch('/api/cases/ai', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          service_type: serviceType,
+          difficulty,
+          area: 'hipertensión arterial',
+        }),
+      });
+
+      if (!res.ok) {
+        const data = await res.json().catch(() => ({}));
+        setError(data.error || 'Error generando el caso con IA');
+        return;
+      }
+
+      const data = await res.json();
+
+      setTitle(data.title || '');
+      setDescription(data.summary || '');
+      if (data.spec) {
+        setSpec(JSON.stringify(data.spec, null, 2));
+      }
+      if (data.ground_truth) {
+        setGroundTruth(JSON.stringify(data.ground_truth, null, 2));
+      }
+    } catch (err) {
+      console.error(err);
+      setError('Error de conexión al generar el caso con IA');
+    } finally {
+      setAiLoading(false);
+    }
+  }
+
+  // ----- Guardar caso en la BD -----
   async function handleSubmit(e: FormEvent) {
     e.preventDefault();
     setError(null);
     setSaving(true);
 
     try {
+      // Solo validamos que el JSON sea correcto, pero seguimos enviando los strings
+      try {
+        JSON.parse(spec);
+        JSON.parse(groundTruth);
+      } catch {
+        setError('Revisa el JSON de spec o ground_truth: no es válido.');
+        setSaving(false);
+        return;
+      }
+
       const res = await fetch('/api/cases', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
@@ -51,19 +111,18 @@ export default function NewCasePage() {
           status,
           service_type: serviceType,
           difficulty,
-          spec,
-          ground_truth: groundTruth,
+          spec,           // <- enviamos la cadena, como antes
+          ground_truth: groundTruth, // <- idem
         }),
       });
 
-      const data = await res.json();
+      const data = await res.json().catch(() => ({}));
 
       if (!res.ok) {
         setError(data.error || 'Error creando el caso');
         return;
       }
 
-      // Volvemos a la lista de casos
       router.push('/profesor/casos');
     } catch (err) {
       console.error(err);
@@ -88,8 +147,8 @@ export default function NewCasePage() {
             Nuevo caso clínico
           </h1>
           <p style={{ fontSize: 14, color: '#64748b' }}>
-            Crea un caso de forma manual. Más adelante podremos generar y
-            completar esta información con IA.
+            Puedes crear el caso manualmente o pedir a la IA que te proponga un
+            borrador clínicamente realista para España.
           </p>
         </div>
 
@@ -171,16 +230,16 @@ export default function NewCasePage() {
               onChange={(e) =>
                 setStatus(e.target.value as 'approved' | 'rejected')
               }
-  style={{
-    borderRadius: 4,
-    border: '1px solid #cbd5f5',
-    padding: '6px 8px',
-    fontSize: 13,
-  }}
->
-  <option value="approved">approved (activo para alumnos)</option>
-  <option value="rejected">rejected</option>
-</select>
+              style={{
+                borderRadius: 4,
+                border: '1px solid #cbd5f5',
+                padding: '6px 8px',
+                fontSize: 13,
+              }}
+            >
+              <option value="approved">approved (activo para alumnos)</option>
+              <option value="rejected">rejected</option>
+            </select>
           </div>
 
           <div>
@@ -189,7 +248,7 @@ export default function NewCasePage() {
             >
               Servicio
             </label>
-            <input
+            <select
               value={serviceType}
               onChange={(e) => setServiceType(e.target.value)}
               style={{
@@ -198,14 +257,18 @@ export default function NewCasePage() {
                 padding: '6px 8px',
                 fontSize: 13,
               }}
-            />
+            >
+              <option value="SAT">
+                SAT (Servicio de Adherencia Terapéutica)
+              </option>
+            </select>
           </div>
 
           <div>
             <label
               style={{ display: 'block', fontSize: 13, marginBottom: 4 }}
             >
-              Dificultad
+              Dificultad (1–5)
             </label>
             <input
               type="number"
@@ -223,6 +286,26 @@ export default function NewCasePage() {
             />
           </div>
         </div>
+
+        {/* Botón IA */}
+        <button
+          type="button"
+          onClick={handleGenerateWithAI}
+          disabled={aiLoading}
+          style={{
+            alignSelf: 'flex-start',
+            padding: '6px 12px',
+            borderRadius: 4,
+            border: 'none',
+            backgroundColor: '#2563eb',
+            color: 'white',
+            fontSize: 13,
+            cursor: aiLoading ? 'default' : 'pointer',
+            opacity: aiLoading ? 0.7 : 1,
+          }}
+        >
+          {aiLoading ? 'Generando caso con IA…' : 'Rellenar con IA'}
+        </button>
 
         <div style={{ display: 'grid', gap: 12 }}>
           <div>
