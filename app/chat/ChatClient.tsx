@@ -214,32 +214,26 @@ export default function ChatClient() {
           border: '1px solid #e2e8f0',
         }}
       >
-        <h3 style={{ fontWeight: 600, marginBottom: 8 }}>
-          Ficha del paciente (para ti)
-        </h3>
-        <ul style={{ fontSize: 13, margin: 0, paddingLeft: 18 }}>
-          <li>
-            <strong>Nombre:</strong> {spec.nombre}
-          </li>
-          <li>
-            <strong>Edad:</strong> {spec.edad}
-          </li>
-          <li>
-            <strong>Sexo:</strong> {spec.sexo}
-          </li>
-          <li>
-            <strong>Motivo:</strong> {spec.motivo_consulta}
-          </li>
-          <li>
-            <strong>Antecedentes:</strong> {spec.antecedentes}
-          </li>
-          <li>
-            <strong>Tratamiento:</strong> {spec.tratamiento}
-          </li>
-          <li>
-            <strong>Contexto:</strong> {spec.contexto}
-          </li>
-        </ul>
+<ul style={{ fontSize: 13, margin: 0, paddingLeft: 18 }}>
+  <li>
+    <strong>Nombre:</strong> {spec.nombre}
+  </li>
+  <li>
+    <strong>Edad:</strong> {spec.edad}
+  </li>
+  <li>
+    <strong>Sexo:</strong> {spec.sexo}
+  </li>
+
+  {/* Motivo, antecedentes y contexto NO se muestran al alumno,
+      pero siguen existiendo en spec para que el profesor los vea
+      en el editor de casos. */}
+
+  <li>
+    <strong>Tratamiento disponible en Receta Electrónica:</strong>{' '}
+    {spec.tratamiento}
+  </li>
+</ul>
       </div>
 
       <div
