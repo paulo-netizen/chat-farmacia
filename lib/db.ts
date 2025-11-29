@@ -1,3 +1,4 @@
+// lib/db.ts
 import { Pool } from 'pg';
 
 const connectionString =
@@ -11,18 +12,14 @@ if (!connectionString) {
 if (process.env.NODE_ENV !== 'production') {
   const safe = connectionString.replace(/:\/\/[^@]+@/, '://***@');
   console.log('USANDO CADENA DE CONEXIÓN:', safe);
-
-  // ⚠️ Solo en desarrollo: permitimos certificados autofirmados globalmente
-  // para evitar el error SELF_SIGNED_CERT_IN_CHAIN en tu máquina local.
-  process.env.NODE_TLS_REJECT_UNAUTHORIZED = '0';
 }
 
 // 🔰 Pool de PostgreSQL
 export const pool = new Pool({
   connectionString,
-  // Forzamos SSL, pero al tener NODE_TLS_REJECT_UNAUTHORIZED=0 en dev
-  // no fallará por certificados autofirmados.
   ssl: {
+    // Pedimos SSL, pero la verificación global la vamos a controlar
+    // con la variable de entorno NODE_TLS_REJECT_UNAUTHORIZED.
     rejectUnauthorized: false,
   },
 });
