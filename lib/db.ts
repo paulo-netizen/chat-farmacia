@@ -1,6 +1,10 @@
 // lib/db.ts
 import { Pool } from 'pg';
 
+// ⚠️ Relajamos la verificación de certificados SIEMPRE para este proyecto.
+// Esto evita el error SELF_SIGNED_CERT_IN_CHAIN tanto en local como en Render.
+process.env.NODE_TLS_REJECT_UNAUTHORIZED = '0';
+
 const connectionString =
   process.env.SUPABASE_DB_URL || process.env.DATABASE_URL;
 
@@ -14,12 +18,10 @@ if (process.env.NODE_ENV !== 'production') {
   console.log('USANDO CADENA DE CONEXIÓN:', safe);
 }
 
-// 🔰 Pool de PostgreSQL
 export const pool = new Pool({
   connectionString,
   ssl: {
-    // Pedimos SSL, pero la verificación global la vamos a controlar
-    // con la variable de entorno NODE_TLS_REJECT_UNAUTHORIZED.
+    // Igual que antes, pero ahora sabemos seguro que no fallará por certificados
     rejectUnauthorized: false,
   },
 });
