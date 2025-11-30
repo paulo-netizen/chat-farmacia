@@ -367,8 +367,8 @@ export default function ChatClient() {
                   marginBottom: 4,
                 }}
               >
-                Tipo de no adherencia (por ejemplo: "no intencional",
-                "intencional")
+                Tipo de no adherencia (por ejemplo: "no intencionada",
+                "intencionada", "combinada")
               </label>
               <input
                 style={{
@@ -390,8 +390,8 @@ export default function ChatClient() {
                   marginBottom: 4,
                 }}
               >
-                Barrera principal (por ejemplo: "olvido", "efectos adversos",
-                etc.)
+                Barrera principal (por ejemplo: "barrera práctica", "barrera de percepción"
+                )
               </label>
               <input
                 style={{
