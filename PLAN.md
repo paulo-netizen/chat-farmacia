@@ -38,7 +38,7 @@ No se han encontrado contradicciones sustantivas entre `docs/v2/00_MASTER_SPEC.m
 
 # 2. Esquema real y estado de migraciones
 
-## Inventario de `db/schema.sql`
+## Inventario del esquema versionado en `db/schema.sql`
 
 | Tabla | Campos principales | Restricciones relevantes |
 |---|---|---|
@@ -48,25 +48,47 @@ No se han encontrado contradicciones sustantivas entre `docs/v2/00_MASTER_SPEC.m
 | `messages` | `id`, `session_id`, `role`, `content`, `created_at` | roles `student/patient`; cascade al borrar sesión |
 | `evaluations` | respuestas del alumno, tres booleanos, `score`, `feedback` | una evaluación por sesión |
 
-## Estado confirmado
+## Producción confirmada mediante inspección de solo lectura
 
-- No existe directorio ni historial de migraciones: solo un esquema acumulativo ejecutado manualmente.
-- `schema.sql` no define `case_assignments`, pero `/api/sessions` la consulta e inserta.
-- `schema.sql` no define `cases.service_type`, pero creación, edición, sesión, listados y chat lo usan.
-- `schema.sql` no define `cases.updated_at`, pero el PUT de casos lo actualiza.
-- El constraint de `cases.status` permite `proposed/approved/archived`; las APIs y UI usan combinaciones incompatibles de `draft/approved/rejected`, mientras sesiones también consultan `published`.
+- El esquema `public` contiene exactamente seis tablas: `users`, `cases`, `case_assignments`, `sessions`, `messages` y `evaluations`.
+- Producción está por delante de `db/schema.sql`: existen `case_assignments`, `cases.service_type` y `cases.updated_at`.
+- `case_assignments` tiene claves foráneas hacia `users` y `cases` y `UNIQUE(student_id, case_id)`. No representa actividad, grupo, número de intento ni versión del caso.
+- El constraint real de `cases.status` solo permite `approved` y `rejected`.
+- Hay 16 casos: 3 `approved` y 13 `rejected`; todos tienen `service_type = 'SAT'`.
+- En v1, `approved` es asignable/disponible para estudiantes. Se fija por tanto `approved` legado → `PUBLISHED` v2. La distinción `VALIDATED`/`PUBLISHED` no existe en v1 y se introduce solo en v2.
+- Los `rejected` históricos se preservan sin reinterpretación destructiva: algunos pudieron usarse cuando anteriormente estaban aprobados.
+- Existen 138 asignaciones: 108 asociadas a casos actualmente `approved` y 30 a casos actualmente `rejected`.
+- Existen 455 sesiones: 102 `finished` y 353 `active`. Hay 39 estudiantes con al menos una sesión activa y 26 con más de una.
+- Se han confirmado 56 grupos `(student, case)` con múltiples sesiones `active` y 74 grupos `(student, case)` con múltiples sesiones totales.
+- El máximo observado es 104 sesiones activas para un estudiante y 24 sesiones activas para una misma combinación estudiante–caso.
+- `sessions` no tiene constraint que impida múltiples sesiones activas por estudiante. `evaluations` sí tiene `UNIQUE(session_id)`.
+- Producción usa PostgreSQL 17.6. Extensiones instaladas: `pg_graphql 1.5.11`, `pg_stat_statements 1.11`, `pgcrypto 1.3`, `plpgsql 1.0`, `supabase_vault 0.3.1` y `uuid-ossp 1.1`.
+- Las seis tablas suman 47 columnas documentadas con orden, tipo/UDT exacto, nulabilidad, default, identidad y secuencia. No hay columnas PostgreSQL `IDENTITY`.
+- `cases.id`, `evaluations.id`, `messages.id` y `users.id` son `bigint` respaldados por `cases_id_seq`, `evaluations_id_seq`, `messages_id_seq` y `users_id_seq`.
+- `sessions.id` y `case_assignments.id` son `uuid` con default `gen_random_uuid()`.
+- Están documentadas las definiciones completas de PK, FK, CHECK y UNIQUE. Existen 9 índices y no hay índices parciales ni de expresión adicionales.
+- No hay triggers en las seis tablas, funciones propias ni vistas en `public`.
+- RLS está desactivado en las seis tablas y no existen políticas RLS.
+- `anon`, `authenticated` y `service_role` tienen privilegios amplios sobre las seis tablas. Los default privileges de `public` también conceden privilegios amplios sobre nuevas tablas, secuencias y funciones.
+- No existe historial de migraciones propio de ChatUSAL-FarmaBot: solo se encontraron historiales internos de Supabase (`auth`, `realtime`, `storage`) y el Dashboard indica “No migrations”.
+
+## Diferencias y deuda confirmadas
+
+- No existe directorio ni historial de migraciones en el repositorio: solo un esquema acumulativo ejecutado manualmente.
+- `db/schema.sql` omite `case_assignments`, `cases.service_type` y `cases.updated_at`, presentes en producción y usados por el código.
+- El constraint versionado de `cases.status` (`proposed/approved/archived`) no coincide con producción (`approved/rejected`) ni con todos los valores usados por API/UI.
 - El seed usa `intervenciones_validas`; el generador y editor nuevo producen `intervenciones_recomendadas`; la evaluación solo lee `intervenciones_validas`.
 - `created_by` existe, pero el POST de casos no lo guarda.
-- No existen asignaciones en el esquema reproducible, versionado de casos, snapshots, protocolos, rúbricas, cuestionarios, evidencias, alertas, revisiones docentes ni métricas por llamada.
-- No puede inferirse el esquema desplegado real sin acceso explícito a esa base. El código sugiere cambios manuales no capturados en el repositorio.
+- No existen en el modelo actual actividades/grupos/intentos, versionado de casos, snapshots, protocolos, rúbricas, cuestionarios, evidencias, alertas, revisiones docentes ni métricas por llamada.
+- Los metadatos DDL necesarios para representar fielmente el esquema v1 desplegado se consideran completos.
 
 ## Riesgos de compatibilidad de datos
 
 - Aplicar `schema.sql` a una base limpia produce una aplicación que falla en rutas esenciales.
-- Endurecer estados sin mapear valores existentes puede invalidar filas o retirar casos activos.
+- La migración de estados debe convertir `approved` → `PUBLISHED` y preservar los `rejected` históricos como legado sin borrar relaciones, asignaciones ni sesiones.
 - Corregir el nombre de intervenciones requiere aceptar ambos nombres durante transición y normalizar datos existentes sin perderlos.
 - El futuro versionado debe conservar cada caso v1 y enlazar sesiones históricas a un snapshot o versión legado inmutable.
-- Antes de iniciar la parte migratoria de M0 se necesita un inventario de solo lectura del esquema y valores de producción/staging; no debe asumirse que coincide con `schema.sql`.
+- La baseline ya puede construirse desde la evidencia confirmada de producción; no debe completarse por inferencia desde `db/schema.sql` ni incorporar objetos no observados.
 
 ---
 
@@ -113,9 +135,11 @@ No existen endpoints GET para recuperar/reanudar sesión o mensajes, inicio expl
 ## Sesiones y persistencia
 
 - `ChatClient` ejecuta `POST /api/sessions` en `useEffect`; montar, recargar o remontar crea una nueva sesión.
+- La contaminación está cuantificada en producción: 353 sesiones activas, 26 estudiantes con múltiples activas, 56 pares estudiante–caso duplicados activos, hasta 104 activas por estudiante y 24 por un mismo par.
 - El saludo inicial es texto local no persistido y metadocente: “soy el paciente… puedes hacerme las preguntas…”. El primer mensaje real del paciente solo aparece después de que escriba el alumno.
 - No se puede recuperar una sesión activa ni su historial tras recargar.
 - No hay idempotency key, transacción que abarque asignación y creación, ni restricción que evite varias sesiones activas equivalentes.
+- Las 455 sesiones v1, incluidas duplicadas y activas históricas, deben preservarse como legado; M0 no las borrará, fusionará ni reclasificará destructivamente.
 - Mensaje del alumno y respuesta del paciente no se escriben atómicamente; un fallo de OpenAI deja un turno huérfano.
 - Dos envíos concurrentes pueden desordenar historial y respuestas; el orden usa solo `created_at`, sin número de turno.
 - El estudiante abre el formulario final en cliente, pero la sesión sigue activa hasta enviar la evaluación.
@@ -198,18 +222,19 @@ La división es modular dentro del repositorio actual; no se propone microservic
 
 # 7. Estrategia de migración preservando datos
 
-1. Obtener snapshot de solo lectura del esquema desplegado y conteos/valores distintos, sin copiar datos clínicos reales al desarrollo.
-2. Comparar `db/schema.sql` con Supabase/staging/producción. `db/schema.sql` no es evidencia suficiente para construir ni cerrar `0001_v1_baseline.sql`.
-3. Crear la baseline definitiva únicamente después de esa comparación, representando la base v1 desplegada real; no editar producción a mano.
+1. Conservar la evidencia de solo lectura ya obtenida del esquema desplegado y sus conteos, sin copiar datos clínicos reales al desarrollo.
+2. Usar los metadatos DDL completos ya inspeccionados como fuente de verdad y compararlos con `db/schema.sql`; no inventar índices, triggers, políticas RLS, funciones u otros objetos ausentes en producción.
+3. Crear `0001_v1_baseline.sql` como representación fiel y reproducible de la v1 desplegada. La baseline no modifica datos ni se ejecuta directamente sobre producción como si fuera una migración incremental.
 4. Añadir primero columnas/tablas de forma compatible y nullable; rellenar datos en pasos separados e idempotentes.
 5. Adoptar como estados canónicos objetivo `AI_DRAFT`, `TEACHER_DRAFT`, `IN_REVIEW`, `VALIDATED`, `PUBLISHED` y `ARCHIVED`.
-6. Aplicar el mapeo legado fijado: `proposed`, `draft` y `rejected` → `TEACHER_DRAFT`; `published` → `PUBLISHED`; `archived` → `ARCHIVED`.
-7. No migrar automáticamente `approved`. Confirmar primero en el código y posteriormente en esquema/datos desplegados si representa semánticamente `VALIDATED` o `PUBLISHED`; conservarlo sin reinterpretar hasta entonces.
+6. Aplicar el mapeo legado fijado: `proposed`, `draft` y `rejected` → `TEACHER_DRAFT`; `approved` y `published` → `PUBLISHED`; `archived` → `ARCHIVED`.
+7. Preservar las relaciones de casos `rejected`, incluidas sus 30 asignaciones y posibles sesiones históricas. El cambio de estado no autoriza borrar ni desvincular datos legado.
 8. Normalizar intervenciones con lectura dual (`intervenciones_validas` y `intervenciones_recomendadas`) y backfill no destructivo antes de retirar el alias legado.
 9. Crear una versión legado por cada caso existente y enlazar cada sesión histórica a ella; el contenido se copia como snapshot, no se mueve ni borra.
 10. Mantener temporalmente `sessions.case_id` y campos v1 mientras se comprueba `case_version_id`; retirar solo en un hito posterior y con verificación.
 11. Añadir índices/constraints después del backfill y de detectar duplicados/datos inválidos.
 12. Probar migración hacia delante sobre una copia anonimizada y probar creación limpia desde cero; documentar rollback lógico. No usar migraciones destructivas en M0.
+13. Preservar las 455 sesiones v1 tal como existen. La nueva unicidad/idempotencia se aplica al flujo v2 y no mediante limpieza destructiva de duplicados históricos.
 
 ## Decisiones de arquitectura ya fijadas
 
@@ -227,6 +252,7 @@ La división es modular dentro del repositorio actual; no se propone microservic
 | Prioridad | Riesgo | Impacto / mitigación |
 |---|---|---|
 | Crítica | `ground_truth` y datos ocultos llegan al navegador | Bloquea uso estudiantil; DTO público allowlist y tests negativos en M0 |
+| Crítica | RLS desactivado y privilegios amplios para `anon`/`authenticated`/`service_role`, incluidos default privileges | La seguridad no puede depender de la UI; auditar el modelo de conexión y reducir privilegios/RLS explícitamente en v2 sin romper el backend |
 | Crítica | Esquema reproducible incompatible con código | Bloquea despliegue limpio; inventario real y, después de contrastarlo, baseline/migraciones en la parte migratoria de M0 |
 | Crítica | Casos usados son mutables | Resultados históricos no reproducibles; preparar snapshot/versionado sin sobrescribir |
 | Alta | Paciente recibe solución y puede inventar/filtrar | Separar runtime view; la defensa completa y validador pertenecen a M4, pero M0 debe retirar etiquetas docentes innecesarias |
@@ -269,8 +295,8 @@ Estabilizar v1 y colocar barreras verificables para que el trabajo v2 posterior 
 
 ## Incluido
 
-1. Definir el procedimiento de inventario y comparación del esquema desplegado con el repositorio. No crear ni cerrar archivos de baseline o migración hasta disponer de la información real de Supabase.
-2. Introducir el vocabulario canónico v2 y el mapeo legado ya fijado, dejando `approved` explícitamente sin migración automática hasta conocer su semántica desplegada.
+1. Construir y verificar `0001_v1_baseline.sql` exclusivamente desde los metadatos DDL completos de producción, sin aplicarla a producción ni introducir todavía cambios v2.
+2. Introducir el vocabulario canónico v2 y el mapeo legado ya fijado, incluido `approved` → `PUBLISHED`, preservando relaciones y datos históricos.
 3. Añadir validación runtime y DTO allowlist para la creación de sesión: solo `sessionId`, nombre, edad, sexo y tratamiento.
 4. Eliminar cualquier `SELECT c.*` en rutas estudiantiles y añadir tests que fallen ante cualquier clave protegida, incluso anidada.
 5. Restringir creación de sesiones académicas a estudiantes y hacer el inicio explícito e idempotente por estudiante + actividad/asignación; recuperar la única sesión activa en recarga, reconexión o retorno.
@@ -282,6 +308,7 @@ Estabilizar v1 y colocar barreras verificables para que el trabajo v2 posterior 
 11. Añadir arnés de tests, scripts `typecheck`/`test`, fixtures y pruebas de integración de rutas/SQL; CI puede añadirse si el entorno de despliegue se confirma.
 12. Actualizar README y `.env.example` solo para reflejar el procedimiento reproducible y variables realmente usadas.
 13. Incorporar la advertencia y validaciones posibles de privacidad M0: solo casos ficticios, sin datos identificativos reales y minimización de payloads enviados a IA.
+14. Preservar sin limpieza destructiva las 455 sesiones legado; la protección de unicidad se aplicará a nuevas sesiones v2.
 
 ## Fuera de M0
 
@@ -295,8 +322,9 @@ Estabilizar v1 y colocar barreras verificables para que el trabajo v2 posterior 
 - AT-014: recargar `/chat` no crea otra sesión y recupera la activa.
 - Un student no puede acceder ni operar sobre una sesión ajena; teacher/admin no crean sesiones académicas por el flujo estudiante.
 - Existe como máximo una sesión activa por estudiante y actividad/asignación, incluso bajo solicitudes concurrentes; un nuevo intento exige acción explícita y permiso de la actividad.
-- **Criterio bloqueado hasta obtener el esquema de Supabase:** una base limpia puede construirse exclusivamente desde migraciones y soporta todos los SQL de M0.
+- Una base limpia PostgreSQL 17.6 puede construirse desde `0001_v1_baseline.sql` y reproduce las seis tablas, constraints, índices, secuencias, extensiones aplicables y estado RLS observados.
 - Los datos v1 se preservan y los casos con cualquiera de las dos claves de intervención siguen siendo evaluables en modo legado.
+- Las 455 sesiones y 138 asignaciones legado conservan sus relaciones; M0 no elimina ni fusiona duplicados históricos.
 - Un borrador IA no puede pasar directamente a estado asignable.
 - La conexión de producción no desactiva globalmente TLS; la verificación con el proveedor queda validada con su configuración oficial antes de cerrar el cambio.
 - `student_public_view`, `patient_runtime_view` y `evaluator_view` tienen contratos separados y tests de ausencia de etiquetas/soluciones en las dos primeras según corresponda.
@@ -343,14 +371,14 @@ Lista propuesta; los nombres nuevos se validarán al iniciar M0, pero no debe am
 - `tests/integration/case-lifecycle-guard.test.ts`
 - configuración del runner de tests elegida (`vitest.config.ts` o equivalente)
 
-## Migraciones previstas, pero bloqueadas
+## Baseline desbloqueada y migraciones posteriores todavía condicionadas
 
 - `db/schema.sql` (su eventual actualización como bootstrap verificado/derivado depende de la baseline confirmada)
 - `db/seed.sql` (cualquier ajuste ligado al esquema migrado depende de la baseline confirmada)
 - `db/migrations/0001_v1_baseline.sql`
 - `db/migrations/0002_v1_schema_stabilization.sql`
 
-Estos archivos no deben crearse ni considerarse ejecutables hasta contrastar el esquema real de Supabase. `0001_v1_baseline.sql` representará el esquema desplegado confirmado, no una reconstrucción basada únicamente en `db/schema.sql`; `0002_v1_schema_stabilization.sql` dependerá de esa baseline y del análisis de datos legado.
+`0001_v1_baseline.sql` está desbloqueada y representará el esquema desplegado confirmado, no una reconstrucción basada únicamente en `db/schema.sql`. No se ejecutará sobre producción. `0002_v1_schema_stabilization.sql` y los cambios de `db/schema.sql`/`db/seed.sql` quedan fuera del primer cambio y dependerán de verificar la baseline y diseñar el upgrade no destructivo.
 
 No se espera modificar en M0 el editor de caso existente `app/profesor/casos/[id]/EditCaseClient.tsx`, salvo que el guard server-side requiera reflejar el estado borrador para evitar una UI engañosa; cualquier inclusión debe registrarse antes.
 
@@ -375,7 +403,7 @@ No se espera modificar en M0 el editor de caso existente `app/profesor/casos/[id
 - Chat rechaza sesión finalizada y no incorpora etiquetas docentes a la vista runtime.
 - `patient_runtime_view` contiene hechos necesarios, pero no `tipo_no_adherencia`, `barrera_correcta`, rúbrica, claves ni otras soluciones inferibles.
 - Evaluación legado maneja ambos nombres de intervención durante transición y finaliza solo la sesión propia.
-- **Pruebas bloqueadas hasta obtener el esquema de Supabase:** base limpia desde migraciones, upgrade desde fixture v1 representativa y preservación de filas/conteos.
+- Baseline en PostgreSQL 17.6 efímero: creación limpia y comparación de tablas, 47 columnas, constraints, 9 índices, cuatro secuencias, extensiones requeridas y estado RLS. El upgrade con datos queda para `0002`.
 - TLS/configuración: producción no fuerza `NODE_TLS_REJECT_UNAUTHORIZED=0`.
 
 ## Regresión/adversariales mínimos
@@ -391,7 +419,7 @@ No se espera modificar en M0 el editor de caso existente `app/profesor/casos/[id
 - `npm run typecheck`
 - `npm test`
 - build de producción
-- ejecución de migraciones en base efímera y prueba de upgrade, una vez desbloqueada y construida la baseline
+- ejecución de la baseline en base efímera; la prueba de upgrade se añadirá al diseñar `0002`
 
 Estado actual de verificación: no ejecutable todavía porque no hay `node_modules`; `npm run lint` falla al no encontrar `next` y no existe script de test/typecheck. No se instalaron dependencias durante esta auditoría.
 
@@ -405,32 +433,45 @@ Estado actual de verificación: no ejecutable todavía porque no hay `node_modul
 - Diseño del inicio explícito, reanudable e idempotente, con una sesión activa por actividad/asignación.
 - Diseño extensible de `case_assignments` para asignación automática y explícita futura, sin construir grupos en M0.
 - Autorización teacher global para la primera v2, centralizada para restricciones futuras.
-- Mapeo de todos los estados legado salvo `approved` y adopción del vocabulario canónico v2.
+- Mapeo completo de estados legado, incluido `approved` → `PUBLISHED`, y adopción del vocabulario canónico v2.
+- Tratamiento no destructivo de los 13 casos `rejected`, sus 30 asignaciones y cualquier sesión relacionada.
+- Diseño funcional de preservación de las 455 sesiones v1 y aplicación de unicidad/idempotencia solo al nuevo flujo v2.
+- Diagnóstico y criterios de regresión de sesiones basados en evidencia cuantitativa real de producción.
 - Eliminación de etiquetas docentes del runtime del paciente y sustitución por hechos.
 - Requisitos de privacidad M0; la política institucional definitiva queda diferida.
 - Eliminación del bypass TLS global como requisito; pueden prepararse código y tests que prohíban su uso en producción.
 - Validación runtime, normalización dual de intervenciones, arnés de tests y documentación reproducible.
+- Creación y verificación de `0001_v1_baseline.sql`; ya están confirmados todos los metadatos DDL imprescindibles.
 
 ## Partes que siguen bloqueadas
 
-1. **Baseline y migraciones ejecutables:** bloqueadas hasta comparar el esquema real desplegado con `db/schema.sql`.
-2. **Migración de `approved`:** bloqueada hasta conocer sus valores, uso y significado efectivo en datos/rutas desplegadas; no se convertirá automáticamente.
-3. **Constraint/índice definitivo de sesión activa:** el principio está fijado, pero debe conocerse la estructura real de actividades/asignaciones y `case_assignments` para elegir la clave correcta sin perder datos.
-4. **Configuración TLS definitiva:** bloqueada hasta obtener del proveedor la cadena, modo SSL y CA oficialmente soportados. Sí está desbloqueada la retirada del bypass global como objetivo y su protección mediante tests.
+1. **Migración incremental `0002` y constraints físicos v2:** no forman parte del primer cambio. Deben diseñarse después de verificar la baseline; el constraint v2 introducirá actividad/asignación sin chocar con los duplicados legado preservados.
+2. **Configuración TLS definitiva:** bloqueada hasta obtener del proveedor la cadena, modo SSL y CA oficialmente soportados. Sí está desbloqueada la retirada del bypass global como objetivo y su protección mediante tests.
+3. **Modelo final de privilegios/RLS:** requiere decidir cómo se conecta el backend y qué acceso directo necesitan realmente `anon`, `authenticated` y `service_role`. Es un riesgo de seguridad obligatorio de v2, pero no impide representar fielmente la v1 en la baseline.
 
-## Información concreta necesaria de Supabase antes de migrar
+## Información estructural pendiente antes de construir la baseline
 
-- Versión de PostgreSQL, proyecto/entorno afectado y mecanismo de despliegue actual del esquema.
-- Export **solo de esquema** de todos los objetos relevantes: tablas, columnas, tipos, defaults, PK, FK, checks, uniques, índices, secuencias, extensiones, triggers, funciones, vistas y políticas RLS.
-- Definición real de `users`, `cases`, `case_assignments`, `sessions`, `messages` y `evaluations`, además de cualquier tabla no presente en el repositorio.
-- Conteos por tabla y valores distintos/frecuencias de `cases.status`, `sessions.status`, roles y `service_type`, sin contenido clínico identificativo.
-- Para filas `cases.status = 'approved'`: conteos de si han sido asignadas, tienen sesiones y continúan siendo seleccionables por la aplicación; esto permitirá decidir entre `VALIDATED` y `PUBLISHED`.
-- Forma, constraints, índices, duplicados y datos huérfanos de `case_assignments`; confirmar si existe concepto de actividad, grupo, curso, intento o vigencia.
-- Número de sesiones activas duplicadas por estudiante/caso/asignación y distribución histórica necesaria para diseñar el backfill sin borrar intentos.
-- Presencia real y nulabilidad de `cases.service_type`, `cases.updated_at`, `cases.created_by` y cualquier columna agregada manualmente.
-- Forma y frecuencia de las claves JSON `intervenciones_validas` e `intervenciones_recomendadas`, y casos donde coexisten o faltan.
-- Historial disponible de migraciones o SQL manual aplicado, si existe fuera del repositorio.
-- Configuración TLS oficial del proveedor para el tipo de conexión usado: conexión directa o pooler, parámetro SSL requerido y CA/cadena de confianza recomendada. No se necesitan credenciales en `PLAN.md` ni en logs.
+**Ninguna.** Con la inspección adicional se consideran completos los datos estructurales imprescindibles para crear `0001_v1_baseline.sql`:
+
+- PostgreSQL 17.6 y extensiones instaladas;
+- seis tablas y 47 columnas completas;
+- PK, FK, CHECK, UNIQUE, nueve índices y cuatro secuencias;
+- ausencia confirmada de identity columns, triggers, funciones propias, vistas y migraciones propias;
+- RLS desactivado, ausencia de políticas y privilegios/default privileges actuales.
+
+La configuración TLS oficial y la futura decisión de privilegios/RLS siguen siendo necesarias para cerrar la seguridad de M0/v2, pero no forman parte del contenido histórico de `0001_v1_baseline.sql`.
+
+## Alcance exacto del primer cambio propuesto
+
+El primer cambio de implementación será deliberadamente aislado y no modificará comportamiento de producto:
+
+1. Crear únicamente `db/migrations/0001_v1_baseline.sql` con el esquema v1 real confirmado: extensiones requeridas por los defaults/tipos usados, cuatro secuencias, seis tablas en orden de dependencias, 47 columnas, PK/FK/CHECK/UNIQUE y los nueve índices.
+2. Reflejar fielmente la ausencia de triggers, funciones propias, vistas y políticas RLS; no inventar estos objetos ni “endurecer” privilegios dentro de la baseline histórica.
+3. Documentar en comentarios de la baseline que representa producción v1, que no debe ejecutarse directamente sobre esa producción existente y que los cambios v2 pertenecen a migraciones posteriores.
+4. Verificarla únicamente en una base PostgreSQL 17.6 desechable: creación desde cero y comparación estructural con el inventario confirmado.
+5. No incluir datos, seeds, backfills, mapeo de estados, limpieza de sesiones, constraints nuevos, cambios de privilegios/RLS, cambios TLS ni modificaciones de código de aplicación.
+
+Archivos del primer cambio: solo `db/migrations/0001_v1_baseline.sql` y la actualización de `PLAN.md` necesaria para registrar su verificación. `db/schema.sql`, `db/seed.sql`, `0002` y el código de producto quedan fuera.
 
 ## Decisiones clínicas/pedagógicas para hitos posteriores
 
@@ -447,4 +488,21 @@ Estado actual de verificación: no ejecutable todavía porque no hay `node_modul
 
 # 14. Preparación para comenzar M0
 
-El repositorio **no está listo para desplegar v2 ni para considerarse reproducible**, pero las decisiones humanas anteriores desbloquean la mayor parte del diseño y del saneamiento de M0. La implementación no migratoria puede comenzar cuando exista autorización. `0001_v1_baseline.sql`, las migraciones ejecutables, el destino de `approved`, el constraint definitivo de sesión activa y el cierre TLS deben esperar a la información concreta de Supabase enumerada arriba.
+El repositorio **no está listo para desplegar v2**, pero la inspección de producción desbloquea completamente la creación y verificación aislada de `0001_v1_baseline.sql`, además del diseño de estados, preservación legado y sesiones. No queda ningún dato estructural imprescindible pendiente para la baseline. Las migraciones incrementales v2, el modelo físico de unicidad, el endurecimiento de privilegios/RLS y el cierre TLS se abordarán después, sin mezclarlos con el primer cambio de baseline.
+
+## Resultado de `0001_v1_baseline.sql`
+
+Baseline creada a partir exclusivamente de `docs/v2/SUPABASE_V1_SCHEMA_INVENTORY.md` y contrastada estáticamente con el repositorio para comprobar nombres y coherencia.
+
+Verificación estática superada:
+
+- `pgcrypto` es la única extensión declarada;
+- 4 secuencias con parámetros y enlaces `OWNED BY` confirmados;
+- 6 tablas y 47 columnas, incluida la distribución exacta por tabla;
+- 20 constraints con nombres y definiciones/acciones confirmados;
+- 9 índices estructurales resultantes de 6 PK y 3 UNIQUE, sin `CREATE INDEX` redundantes;
+- peculiaridades legado preservadas: FK `integer` de asignaciones hacia PK `bigint`, `text[]`, `numeric` sin precisión y dos defaults UUID;
+- 0 triggers, 0 funciones propias, 0 vistas, 0 policies y ningún cambio RLS;
+- ausencia de datos, seeds, backfills, estados/objetos v2, ACL/GRANT/default privileges/roles de Supabase, extensiones de plataforma y cambios TLS.
+
+No se detectaron discrepancias respecto al inventario consolidado. La ejecución real en PostgreSQL 17.6 desechable queda **pendiente, no fallida**, porque el entorno no dispone de PostgreSQL local y Docker no tiene daemon activo. No se utilizó ninguna conexión remota ni `DATABASE_URL`/`SUPABASE_DB_URL`.
