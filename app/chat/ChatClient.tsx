@@ -2,24 +2,7 @@
 
 import { useEffect, useState, FormEvent } from 'react';
 import { useRouter } from 'next/navigation';
-
-type CaseSpec = {
-  nombre?: string;
-  edad?: number;
-  sexo?: string;
-  motivo_consulta?: string;
-  antecedentes?: string;
-  tratamiento?: string;
-  contexto?: string;
-  descripcion_paciente?: string;
-};
-
-type CaseData = {
-  id: number;
-  title: string;
-  description: string;
-  spec: CaseSpec;
-};
+import type { StudentSessionDto } from '@/lib/cases/student-session-dto';
 
 type ChatMessage = {
   role: 'student' | 'patient';
@@ -28,8 +11,7 @@ type ChatMessage = {
 
 export default function ChatClient() {
   const router = useRouter();
-  const [sessionId, setSessionId] = useState<string | null>(null);
-  const [caseData, setCaseData] = useState<CaseData | null>(null);
+  const [sessionData, setSessionData] = useState<StudentSessionDto | null>(null);
   const [messages, setMessages] = useState<ChatMessage[]>([]);
   const [input, setInput] = useState('');
   const [loadingCase, setLoadingCase] = useState(true);
@@ -55,9 +37,8 @@ export default function ChatClient() {
           setLoadingCase(false);
           return;
         }
-        const data = await res.json();
-        setSessionId(data.sessionId);
-        setCaseData(data.case);
+        const data = (await res.json()) as StudentSessionDto;
+        setSessionData(data);
         setMessages([
           {
             role: 'patient' as const,
@@ -77,6 +58,7 @@ export default function ChatClient() {
 
   async function handleSend(e: FormEvent) {
     e.preventDefault();
+    const sessionId = sessionData?.sessionId;
     if (!sessionId || !input.trim()) return;
     setError(null);
     const text = input.trim();
@@ -117,6 +99,7 @@ export default function ChatClient() {
 
   async function handleEvalSubmit(e: FormEvent) {
     e.preventDefault();
+    const sessionId = sessionData?.sessionId;
     if (!sessionId) return;
     const intervenciones = evalInterv
       .split(',')
@@ -175,11 +158,9 @@ export default function ChatClient() {
     );
   }
 
-  if (!caseData || !sessionId) {
+  if (!sessionData) {
     return <p>No se pudo inicializar la sesión.</p>;
   }
-
-  const spec = caseData.spec;
 
   return (
     <div style={{ display: 'grid', gap: 16 }}>
@@ -216,22 +197,18 @@ export default function ChatClient() {
       >
 <ul style={{ fontSize: 13, margin: 0, paddingLeft: 18 }}>
   <li>
-    <strong>Nombre:</strong> {spec.nombre}
+    <strong>Nombre:</strong> {sessionData.nombre}
   </li>
   <li>
-    <strong>Edad:</strong> {spec.edad}
+    <strong>Edad:</strong> {sessionData.edad}
   </li>
   <li>
-    <strong>Sexo:</strong> {spec.sexo}
+    <strong>Sexo:</strong> {sessionData.sexo}
   </li>
-
-  {/* Motivo, antecedentes y contexto NO se muestran al alumno,
-      pero siguen existiendo en spec para que el profesor los vea
-      en el editor de casos. */}
 
   <li>
     <strong>Tratamiento disponible en Receta Electrónica:</strong>{' '}
-    {spec.tratamiento}
+    {sessionData.tratamiento}
   </li>
 </ul>
       </div>
