@@ -1,0 +1,77 @@
+[
+  {
+    "path": "AGENTS.md",
+    "bytes": 4241,
+    "lines": 99
+  },
+  {
+    "path": "CODEX_START_PROMPT.md",
+    "bytes": 2787,
+    "lines": 92
+  },
+  {
+    "path": "PLAN.md",
+    "bytes": 8679,
+    "lines": 312
+  },
+  {
+    "path": "README_V2_SPEC.md",
+    "bytes": 1128,
+    "lines": 31
+  },
+  {
+    "path": "docs/v2/00_MASTER_SPEC.md",
+    "bytes": 53562,
+    "lines": 2239
+  },
+  {
+    "path": "docs/v2/01_PRODUCT_SPEC.md",
+    "bytes": 16951,
+    "lines": 607
+  },
+  {
+    "path": "docs/v2/02_PATIENT_MODEL.md",
+    "bytes": 10487,
+    "lines": 462
+  },
+  {
+    "path": "docs/v2/03_SPFA_PROTOCOLS.md",
+    "bytes": 5316,
+    "lines": 205
+  },
+  {
+    "path": "docs/v2/04_EVALUATION_MODEL.md",
+    "bytes": 10082,
+    "lines": 428
+  },
+  {
+    "path": "docs/v2/05_CASE_GENERATION.md",
+    "bytes": 4331,
+    "lines": 185
+  },
+  {
+    "path": "docs/v2/06_TEACHER_WORKFLOW.md",
+    "bytes": 3438,
+    "lines": 152
+  },
+  {
+    "path": "docs/v2/07_STUDENT_WORKFLOW.md",
+    "bytes": 11879,
+    "lines": 477
+  },
+  {
+    "path": "docs/v2/08_DATA_MODEL.md",
+    "bytes": 6230,
+    "lines": 307
+  },
+  {
+    "path": "docs/v2/09_SECURITY_PRIVACY.md",
+    "bytes": 14487,
+    "lines": 607
+  },
+  {
+    "path": "docs/v2/10_ACCEPTANCE_TESTS.md",
+    "bytes": 6530,
+    "lines": 312
+  }
+]
