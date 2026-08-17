@@ -540,12 +540,22 @@ describe('EvaluatorViewV2 case binding and opaque IDs', () => {
 });
 
 describe('EvaluatorViewV2 care path', () => {
+  it('acepta la transición dispensing → pharmaceutical_indication', () => {
+    const evaluator = validate();
+    expect(evaluator.carePath.transitions[0].value).toEqual({
+      fromSpfaRef: conclusionIds.initialSpfa,
+      toSpfaRef: conclusionIds.additionalSpfa,
+    });
+  });
+
   it.each([
     ['dispensing', 'initial_treatment'],
     ['pharmaceutical_indication', undefined],
     ['medication_adherence', undefined],
   ])('admite %s como SPFA inicial', (service, subtype) => {
     const source = createEvaluator();
+    source.carePath.additionalSpfas = [];
+    source.carePath.transitions = [];
     source.carePath.initialSpfa.value = {
       service,
       ...(subtype === undefined ? {} : { subtype }),
@@ -569,6 +579,28 @@ describe('EvaluatorViewV2 care path', () => {
       subtype: 'continuation',
     };
     expect(() => validate(source)).toThrow(/only valid for dispensing/);
+  });
+
+  it('rechaza dos conclusiones con el mismo SpfaService', () => {
+    const source = createEvaluator();
+    source.carePath.additionalSpfas[0].value = {
+      service: 'dispensing',
+      subtype: 'continuation',
+    };
+    expect(() => validate(source)).toThrow(/duplicate SPFA service/);
+  });
+
+  it('rechaza ciclos entre transiciones SPFA', () => {
+    const source = createEvaluator();
+    source.carePath.transitions.push({
+      conclusionId: 'conclusion_30000000-0000-4000-8000-000000000001',
+      kind: 'spfa_transition',
+      value: {
+        fromSpfaRef: conclusionIds.additionalSpfa,
+        toSpfaRef: conclusionIds.initialSpfa,
+      },
+    });
+    expect(() => validate(source)).toThrow(/must not contain cycles/);
   });
 });
 

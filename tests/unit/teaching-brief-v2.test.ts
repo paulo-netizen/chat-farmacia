@@ -104,7 +104,6 @@ function requiredReferral() {
     destination: { label: 'Médico de atención primaria' },
     urgency: 'urgent',
     reason: 'Necesita valoración clínica prioritaria.',
-    patientInstruction: 'Acuda hoy a su médico con este informe.',
     report: {
       status: 'required',
       essentialContents: ['Motivo de derivación', 'Tratamiento actual'],
@@ -803,7 +802,7 @@ describe('TeachingCaseGenerationBriefV2 deterministic rejection', () => {
     },
   );
 
-  it.each(['label', 'reason', 'patientInstruction'])(
+  it.each(['label', 'reason'])(
     'rechaza referral required con %s vacío',
     (field) => {
       const source = createBrief();
@@ -814,6 +813,17 @@ describe('TeachingCaseGenerationBriefV2 deterministic rejection', () => {
       expect(() => validate(source)).toThrow(/non-empty string/);
     },
   );
+
+  it('rechaza patientInstruction como propiedad antigua inesperada', () => {
+    const source = createBrief();
+    source.referral = fixed({
+      ...requiredReferral(),
+      patientInstruction: 'Acuda hoy a su médico con este informe.',
+    });
+    expect(() => validate(source)).toThrow(
+      /patientInstruction: unexpected property/,
+    );
+  });
 
   it('rechaza versiones distintas para el mismo taxonomyId', () => {
     const source = createBrief();

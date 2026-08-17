@@ -333,7 +333,6 @@ export type ReferralIntent =
       };
       urgency: ReferralUrgency;
       reason: string;
-      patientInstruction: string;
       report: ReportRequirement;
     };
 

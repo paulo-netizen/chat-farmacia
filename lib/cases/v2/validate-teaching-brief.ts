@@ -1720,7 +1720,7 @@ function parseReferralIntent(
   }
   assertExactKeys(
     source,
-    ['status', 'destination', 'urgency', 'reason', 'patientInstruction', 'report'],
+    ['status', 'destination', 'urgency', 'reason', 'report'],
     path,
   );
   const destination = asRecord(source.destination, `${path}.destination`);
@@ -1742,10 +1742,6 @@ function parseReferralIntent(
       `${path}.urgency`,
     ) as ReferralUrgency,
     reason: nonEmptyString(source.reason, `${path}.reason`),
-    patientInstruction: nonEmptyString(
-      source.patientInstruction,
-      `${path}.patientInstruction`,
-    ),
     report: parseReportRequirement(source.report, `${path}.report`),
   };
 }

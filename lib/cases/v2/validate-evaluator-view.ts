@@ -1278,6 +1278,33 @@ function expressionLeaves(expression: EvidenceExpression): EvidenceLeafRef[] {
     : [expression];
 }
 
+function hasSpfaTransitionCycle(carePath: CarePathV2): boolean {
+  const adjacency = new Map<string, string[]>();
+  carePath.transitions.forEach((transition) => {
+    const destinations = adjacency.get(transition.value.fromSpfaRef) ?? [];
+    destinations.push(transition.value.toSpfaRef);
+    adjacency.set(transition.value.fromSpfaRef, destinations);
+  });
+
+  const visiting = new Set<string>();
+  const visited = new Set<string>();
+  const visit = (spfaRef: string): boolean => {
+    if (visiting.has(spfaRef)) return true;
+    if (visited.has(spfaRef)) return false;
+    visiting.add(spfaRef);
+    for (const destination of adjacency.get(spfaRef) ?? []) {
+      if (visit(destination)) return true;
+    }
+    visiting.delete(spfaRef);
+    visited.add(spfaRef);
+    return false;
+  };
+
+  return [carePath.initialSpfa, ...carePath.additionalSpfas].some((spfa) =>
+    visit(spfa.conclusionId),
+  );
+}
+
 function validateCrossReferences(
   evaluator: EvaluatorViewV2,
   runtime: PatientRuntimeViewV2,
@@ -1313,6 +1340,20 @@ function validateCrossReferences(
     return conclusion;
   };
 
+  const spfaServices = new Set<SpfaService>();
+  [evaluator.carePath.initialSpfa, ...evaluator.carePath.additionalSpfas].forEach(
+    (spfa, index) => {
+      const path =
+        index === 0
+          ? 'carePath.initialSpfa.value.service'
+          : `carePath.additionalSpfas[${index - 1}].value.service`;
+      if (spfaServices.has(spfa.value.service)) {
+        fail(path, `duplicate SPFA service: ${spfa.value.service}`);
+      }
+      spfaServices.add(spfa.value.service);
+    },
+  );
+
   evaluator.carePath.transitions.forEach((transition, index) => {
     const path = `carePath.transitions[${index}].value`;
     requireKind(transition.value.fromSpfaRef, 'spfa', `${path}.fromSpfaRef`);
@@ -1321,6 +1362,9 @@ function validateCrossReferences(
       fail(path, 'transition endpoints must be different conclusions');
     }
   });
+  if (hasSpfaTransitionCycle(evaluator.carePath)) {
+    fail('carePath.transitions', 'SPFA transitions must not contain cycles');
+  }
 
   const { facts, medications } = collectRuntimeIndex(runtime);
   const validateMedicationRefs = (
