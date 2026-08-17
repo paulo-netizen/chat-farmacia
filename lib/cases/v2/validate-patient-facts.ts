@@ -1,16 +1,25 @@
 import type {
+  BiomedicalDatumValue,
   CasePatientFactsDraftV2,
   DisclosureDelay,
   DisclosureDomain,
   DisclosureRule,
+  EncounterPersonRole,
   FactId,
   MedicationId,
+  MedicationLinkedFactDraftV2,
+  MedicationOrigin,
+  MedicationRegimenBasis,
   MedicationUseAction,
   MedicationUseId,
   MedicationUsePatternDraftV2,
+  PatientClinicalContextDraftV2,
   PatientCommunicationProfile,
   PatientDatum,
+  PatientEncounterDraftV2,
   PatientMedicationDraftV2,
+  PatientPharmacotherapyDraftV2,
+  PatientSymptomDraftV2,
   Scale1To5,
   StudentPublicView,
 } from './types';
@@ -25,15 +34,33 @@ const DISCLOSURE_MODES = [
 
 const DISCLOSURE_DOMAINS = [
   'initial_demand',
+  'patient_identity',
+  'caregiver_context',
   'health_problems',
+  'clinical_history',
+  'physiological_status',
+  'pregnancy_lactation',
+  'allergies_intolerances',
   'symptoms',
-  'medication_knowledge',
-  'medication_use',
+  'symptom_timing_and_evolution',
+  'prior_actions',
+  'medication_identity',
+  'medication_purpose',
+  'prescribed_medication_use',
+  'actual_medication_use',
+  'administration_technique',
+  'special_use_conditions',
+  'medication_changes',
+  'perceived_effectiveness',
+  'perceived_safety',
   'practical_difficulties',
   'beliefs_and_concerns',
-  'perceived_experiences',
+  'strategies_already_tried',
+  'lifestyle',
   'daily_context',
-  'social_context',
+  'social_support',
+  'professional_relationship',
+  'biomedical_data',
 ] as const;
 
 const DISCLOSURE_DELAYS = [
@@ -41,6 +68,23 @@ const DISCLOSURE_DELAYS = [
   'accusatory_question',
   'lack_of_empathy',
   'patient_minimization',
+] as const;
+
+const ENCOUNTER_PERSON_ROLES = ['patient', 'caregiver', 'other'] as const;
+
+const MEDICATION_ORIGINS = [
+  'prescribed',
+  'patient_selected',
+  'pharmacist_recommended',
+  'other',
+] as const;
+
+const MEDICATION_REGIMEN_BASES = [
+  'prescription',
+  'label_or_leaflet',
+  'pharmacist_advice',
+  'patient_plan',
+  'other',
 ] as const;
 
 const MEDICATION_USE_ACTIONS = [
@@ -75,16 +119,22 @@ const UUID_BODY_PATTERN =
 
 const FORBIDDEN_COMMUNICATION_KEYS = new Set([
   'ground_truth',
+  'adherenceStatus',
+  'nonAdherenceType',
   'adherent',
   'non_adherent',
   'intentional',
   'unintentional',
-  'mixed',
+  'erratic',
+  'combined',
   'tipo_no_adherencia',
+  'primaryBarrier',
   'barrera_principal',
   'prm',
   'rnm',
+  'risk_of_rnm',
   'intervention',
+  'evaluator',
   'rubric',
 ]);
 
@@ -121,6 +171,13 @@ function nonEmptyString(value: unknown, path: string): string {
     fail(path, 'must be a non-empty string');
   }
   return value;
+}
+
+function optionalNonEmptyString(
+  value: unknown,
+  path: string,
+): string | undefined {
+  return value === undefined ? undefined : nonEmptyString(value, path);
 }
 
 type OpaqueIdFor<Prefix extends 'fact' | 'med' | 'use'> =
@@ -176,7 +233,12 @@ function controlledArray<const T extends readonly string[]>(
 }
 
 function parseScale(value: unknown, path: string): Scale1To5 {
-  if (!Number.isInteger(value) || typeof value !== 'number' || value < 1 || value > 5) {
+  if (
+    typeof value !== 'number' ||
+    !Number.isInteger(value) ||
+    value < 1 ||
+    value > 5
+  ) {
     fail(path, 'must be an integer from 1 to 5');
   }
   return value as Scale1To5;
@@ -224,7 +286,11 @@ function parseDisclosureRule(value: unknown, path: string): DisclosureRule {
   return { mode, domains, ...base };
 }
 
-function parseStringDatum(value: unknown, path: string): PatientDatum<string> {
+function parsePatientDatum<T>(
+  value: unknown,
+  path: string,
+  parseKnownValue: (value: unknown, path: string) => T,
+): PatientDatum<T> {
   const source = asRecord(value, path);
   const state = source.state;
 
@@ -257,7 +323,7 @@ function parseStringDatum(value: unknown, path: string): PatientDatum<string> {
     return {
       state,
       factId,
-      value: nonEmptyString(source.value, `${path}.value`),
+      value: parseKnownValue(source.value, `${path}.value`),
       certainty: controlledValue(
         source.certainty,
         ['exact', 'approximate', 'uncertain'] as const,
@@ -282,6 +348,55 @@ function parseStringDatum(value: unknown, path: string): PatientDatum<string> {
   );
 }
 
+function parseStringDatum(value: unknown, path: string): PatientDatum<string> {
+  return parsePatientDatum(value, path, nonEmptyString);
+}
+
+function parseControlledDatum<const T extends readonly string[]>(
+  value: unknown,
+  allowed: T,
+  path: string,
+): PatientDatum<T[number]> {
+  return parsePatientDatum(value, path, (knownValue, knownPath) =>
+    controlledValue(knownValue, allowed, knownPath),
+  );
+}
+
+function parseBiomedicalValue(value: unknown, path: string): BiomedicalDatumValue {
+  const source = asRecord(value, path);
+  const measurementValue = source.value;
+  if (
+    (typeof measurementValue !== 'string' &&
+      typeof measurementValue !== 'number') ||
+    (typeof measurementValue === 'string' &&
+      measurementValue.trim().length === 0) ||
+    (typeof measurementValue === 'number' &&
+      !Number.isFinite(measurementValue))
+  ) {
+    fail(`${path}.value`, 'must be a non-empty string or finite number');
+  }
+
+  const unit = optionalNonEmptyString(source.unit, `${path}.unit`);
+  const timingOrContext = optionalNonEmptyString(
+    source.timingOrContext,
+    `${path}.timingOrContext`,
+  );
+
+  return {
+    type: nonEmptyString(source.type, `${path}.type`),
+    value: measurementValue,
+    ...(unit === undefined ? {} : { unit }),
+    ...(timingOrContext === undefined ? {} : { timingOrContext }),
+  };
+}
+
+function parseBiomedicalDatum(
+  value: unknown,
+  path: string,
+): PatientDatum<BiomedicalDatumValue> {
+  return parsePatientDatum(value, path, parseBiomedicalValue);
+}
+
 function parsePublicProfile(value: unknown): StudentPublicView {
   const source = asRecord(value, 'publicProfile');
   const edad = source.edad;
@@ -301,6 +416,78 @@ function parsePublicProfile(value: unknown): StudentPublicView {
     tratamiento: nonEmptyString(
       source.tratamiento,
       'publicProfile.tratamiento',
+    ),
+  };
+}
+
+function parseEncounter(value: unknown): PatientEncounterDraftV2 {
+  const source = asRecord(value, 'encounter');
+  return {
+    personPresent: parseControlledDatum(
+      source.personPresent,
+      ENCOUNTER_PERSON_ROLES,
+      'encounter.personPresent',
+    ) as PatientDatum<EncounterPersonRole>,
+    relationshipToPatient: parseStringDatum(
+      source.relationshipToPatient,
+      'encounter.relationshipToPatient',
+    ),
+  };
+}
+
+function parseDatumArray(value: unknown, path: string): PatientDatum<string>[] {
+  return asArray(value, path).map((item, index) =>
+    parseStringDatum(item, `${path}[${index}]`),
+  );
+}
+
+function parseClinicalContext(value: unknown): PatientClinicalContextDraftV2 {
+  const source = asRecord(value, 'clinicalContext');
+  return {
+    healthProblems: parseDatumArray(
+      source.healthProblems,
+      'clinicalContext.healthProblems',
+    ),
+    clinicalHistory: parseDatumArray(
+      source.clinicalHistory,
+      'clinicalContext.clinicalHistory',
+    ),
+    physiologicalSituation: parseDatumArray(
+      source.physiologicalSituation,
+      'clinicalContext.physiologicalSituation',
+    ),
+    pregnancyAndLactation: parseStringDatum(
+      source.pregnancyAndLactation,
+      'clinicalContext.pregnancyAndLactation',
+    ),
+    allergiesAndIntolerances: parseDatumArray(
+      source.allergiesAndIntolerances,
+      'clinicalContext.allergiesAndIntolerances',
+    ),
+    lifestyle: parseDatumArray(
+      source.lifestyle,
+      'clinicalContext.lifestyle',
+    ),
+    biomedicalData: asArray(
+      source.biomedicalData,
+      'clinicalContext.biomedicalData',
+    ).map((item, index) =>
+      parseBiomedicalDatum(item, `clinicalContext.biomedicalData[${index}]`),
+    ),
+  };
+}
+
+function parseSymptom(value: unknown, index: number): PatientSymptomDraftV2 {
+  const path = `symptoms[${index}]`;
+  const source = asRecord(value, path);
+  return {
+    description: parseStringDatum(source.description, `${path}.description`),
+    onset: parseStringDatum(source.onset, `${path}.onset`),
+    duration: parseStringDatum(source.duration, `${path}.duration`),
+    evolution: parseStringDatum(source.evolution, `${path}.evolution`),
+    relevantCircumstances: parseDatumArray(
+      source.relevantCircumstances,
+      `${path}.relevantCircumstances`,
     ),
   };
 }
@@ -381,9 +568,8 @@ function parseCommunicationProfile(value: unknown): PatientCommunicationProfile 
 
 function parseMedication(
   value: unknown,
-  index: number,
+  path: string,
 ): PatientMedicationDraftV2 {
-  const path = `medications[${index}]`;
   const source = asRecord(value, path);
   return {
     medicationId: opaqueId(
@@ -392,13 +578,39 @@ function parseMedication(
       `${path}.medicationId`,
     ),
     displayName: parseStringDatum(source.displayName, `${path}.displayName`),
-    prescribedUse: parseStringDatum(
-      source.prescribedUse,
-      `${path}.prescribedUse`,
-    ),
+    origin: parseControlledDatum(
+      source.origin,
+      MEDICATION_ORIGINS,
+      `${path}.origin`,
+    ) as PatientDatum<MedicationOrigin>,
     purposeAsUnderstood: parseStringDatum(
       source.purposeAsUnderstood,
       `${path}.purposeAsUnderstood`,
+    ),
+    regimenBasis: parseControlledDatum(
+      source.regimenBasis,
+      MEDICATION_REGIMEN_BASES,
+      `${path}.regimenBasis`,
+    ) as PatientDatum<MedicationRegimenBasis>,
+    referenceDose: parseStringDatum(
+      source.referenceDose,
+      `${path}.referenceDose`,
+    ),
+    referenceSchedule: parseStringDatum(
+      source.referenceSchedule,
+      `${path}.referenceSchedule`,
+    ),
+    referenceDuration: parseStringDatum(
+      source.referenceDuration,
+      `${path}.referenceDuration`,
+    ),
+    administrationMethod: parseStringDatum(
+      source.administrationMethod,
+      `${path}.administrationMethod`,
+    ),
+    specialUseConditions: parseDatumArray(
+      source.specialUseConditions,
+      `${path}.specialUseConditions`,
     ),
   };
 }
@@ -407,7 +619,7 @@ function parseMedicationUse(
   value: unknown,
   index: number,
 ): MedicationUsePatternDraftV2 {
-  const path = `medicationUse[${index}]`;
+  const path = `pharmacotherapy.actualMedicationUse[${index}]`;
   const source = asRecord(value, path);
   return {
     useId: opaqueId(source.useId, 'use', `${path}.useId`),
@@ -422,6 +634,13 @@ function parseMedicationUse(
       `${path}.action`,
     ) as MedicationUseAction,
     actualUse: parseStringDatum(source.actualUse, `${path}.actualUse`),
+    actualDose: parseStringDatum(source.actualDose, `${path}.actualDose`),
+    actualSchedule: parseStringDatum(
+      source.actualSchedule,
+      `${path}.actualSchedule`,
+    ),
+    frequency: parseStringDatum(source.frequency, `${path}.frequency`),
+    timePeriod: parseStringDatum(source.timePeriod, `${path}.timePeriod`),
     circumstanceFactRefs: factIdArray(
       source.circumstanceFactRefs,
       `${path}.circumstanceFactRefs`,
@@ -438,16 +657,81 @@ function parseMedicationUse(
       source.practicalDifficultyFactRefs,
       `${path}.practicalDifficultyFactRefs`,
     ),
+    strategyTriedFactRefs: factIdArray(
+      source.strategyTriedFactRefs,
+      `${path}.strategyTriedFactRefs`,
+    ),
   };
 }
 
-function parseDatumArray(value: unknown, path: string): PatientDatum<string>[] {
-  return asArray(value, path).map((item, index) =>
-    parseStringDatum(item, `${path}[${index}]`),
-  );
+function parseMedicationLinkedFact(
+  value: unknown,
+  path: string,
+): MedicationLinkedFactDraftV2 {
+  const source = asRecord(value, path);
+  return {
+    medicationRef: opaqueId(
+      source.medicationRef,
+      'med',
+      `${path}.medicationRef`,
+    ),
+    detail: parseStringDatum(source.detail, `${path}.detail`),
+  };
 }
 
-function definedFactId(datum: PatientDatum<string>): FactId | undefined {
+function parsePharmacotherapy(value: unknown): PatientPharmacotherapyDraftV2 {
+  const source = asRecord(value, 'pharmacotherapy');
+  return {
+    prescribedMedications: asArray(
+      source.prescribedMedications,
+      'pharmacotherapy.prescribedMedications',
+    ).map((item, index) =>
+      parseMedication(item, `pharmacotherapy.prescribedMedications[${index}]`),
+    ),
+    otherMedicinesAndProducts: asArray(
+      source.otherMedicinesAndProducts,
+      'pharmacotherapy.otherMedicinesAndProducts',
+    ).map((item, index) =>
+      parseMedication(
+        item,
+        `pharmacotherapy.otherMedicinesAndProducts[${index}]`,
+      ),
+    ),
+    actualMedicationUse: asArray(
+      source.actualMedicationUse,
+      'pharmacotherapy.actualMedicationUse',
+    ).map(parseMedicationUse),
+    recentChanges: asArray(
+      source.recentChanges,
+      'pharmacotherapy.recentChanges',
+    ).map((item, index) =>
+      parseMedicationLinkedFact(
+        item,
+        `pharmacotherapy.recentChanges[${index}]`,
+      ),
+    ),
+    perceivedEffectiveness: asArray(
+      source.perceivedEffectiveness,
+      'pharmacotherapy.perceivedEffectiveness',
+    ).map((item, index) =>
+      parseMedicationLinkedFact(
+        item,
+        `pharmacotherapy.perceivedEffectiveness[${index}]`,
+      ),
+    ),
+    perceivedSafety: asArray(
+      source.perceivedSafety,
+      'pharmacotherapy.perceivedSafety',
+    ).map((item, index) =>
+      parseMedicationLinkedFact(
+        item,
+        `pharmacotherapy.perceivedSafety[${index}]`,
+      ),
+    ),
+  };
+}
+
+function definedFactId(datum: PatientDatum<unknown>): FactId | undefined {
   return datum.state === 'known' ||
     datum.state === 'explicit_absence' ||
     datum.state === 'patient_unknown'
@@ -456,43 +740,130 @@ function definedFactId(datum: PatientDatum<string>): FactId | undefined {
 }
 
 function validateIdentifiersAndReferences(draft: CasePatientFactsDraftV2): void {
-  const facts: Array<{ datum: PatientDatum<string>; path: string }> = [
-    { datum: draft.initialDemand, path: 'initialDemand' },
-  ];
-
-  const appendDatumArray = (
-    values: PatientDatum<string>[],
-    path: string,
-  ) => {
-    values.forEach((datum, index) =>
-      facts.push({ datum, path: `${path}[${index}]` }),
-    );
+  const facts: Array<{ datum: PatientDatum<unknown>; path: string }> = [];
+  const addDatum = <T>(datum: PatientDatum<T>, path: string) => {
+    facts.push({ datum: datum as PatientDatum<unknown>, path });
+  };
+  const addDatumArray = <T>(values: PatientDatum<T>[], path: string) => {
+    values.forEach((datum, index) => addDatum(datum, `${path}[${index}]`));
   };
 
-  appendDatumArray(draft.knownHealthProblems, 'knownHealthProblems');
-  appendDatumArray(draft.symptoms, 'symptoms');
-  appendDatumArray(draft.practicalDifficulties, 'practicalDifficulties');
-  appendDatumArray(draft.beliefsAndConcerns, 'beliefsAndConcerns');
-  appendDatumArray(draft.perceivedExperiences, 'perceivedExperiences');
-  appendDatumArray(draft.dailyAndSocialContext, 'dailyAndSocialContext');
+  addDatum(draft.initialDemand, 'initialDemand');
+  addDatum(draft.encounter.personPresent, 'encounter.personPresent');
+  addDatum(
+    draft.encounter.relationshipToPatient,
+    'encounter.relationshipToPatient',
+  );
 
-  draft.medications.forEach((medication, index) => {
-    facts.push(
-      { datum: medication.displayName, path: `medications[${index}].displayName` },
-      {
-        datum: medication.prescribedUse,
-        path: `medications[${index}].prescribedUse`,
-      },
-      {
-        datum: medication.purposeAsUnderstood,
-        path: `medications[${index}].purposeAsUnderstood`,
-      },
+  addDatumArray(
+    draft.clinicalContext.healthProblems,
+    'clinicalContext.healthProblems',
+  );
+  addDatumArray(
+    draft.clinicalContext.clinicalHistory,
+    'clinicalContext.clinicalHistory',
+  );
+  addDatumArray(
+    draft.clinicalContext.physiologicalSituation,
+    'clinicalContext.physiologicalSituation',
+  );
+  addDatum(
+    draft.clinicalContext.pregnancyAndLactation,
+    'clinicalContext.pregnancyAndLactation',
+  );
+  addDatumArray(
+    draft.clinicalContext.allergiesAndIntolerances,
+    'clinicalContext.allergiesAndIntolerances',
+  );
+  addDatumArray(
+    draft.clinicalContext.lifestyle,
+    'clinicalContext.lifestyle',
+  );
+  addDatumArray(
+    draft.clinicalContext.biomedicalData,
+    'clinicalContext.biomedicalData',
+  );
+
+  draft.symptoms.forEach((symptom, index) => {
+    const path = `symptoms[${index}]`;
+    addDatum(symptom.description, `${path}.description`);
+    addDatum(symptom.onset, `${path}.onset`);
+    addDatum(symptom.duration, `${path}.duration`);
+    addDatum(symptom.evolution, `${path}.evolution`);
+    addDatumArray(
+      symptom.relevantCircumstances,
+      `${path}.relevantCircumstances`,
     );
   });
 
-  draft.medicationUse.forEach((use, index) => {
-    facts.push({ datum: use.actualUse, path: `medicationUse[${index}].actualUse` });
+  const medications = [
+    ...draft.pharmacotherapy.prescribedMedications.map((medication, index) => ({
+      medication,
+      path: `pharmacotherapy.prescribedMedications[${index}]`,
+    })),
+    ...draft.pharmacotherapy.otherMedicinesAndProducts.map(
+      (medication, index) => ({
+        medication,
+        path: `pharmacotherapy.otherMedicinesAndProducts[${index}]`,
+      }),
+    ),
+  ];
+
+  medications.forEach(({ medication, path }) => {
+    addDatum(medication.displayName, `${path}.displayName`);
+    addDatum(medication.origin, `${path}.origin`);
+    addDatum(medication.purposeAsUnderstood, `${path}.purposeAsUnderstood`);
+    addDatum(medication.regimenBasis, `${path}.regimenBasis`);
+    addDatum(medication.referenceDose, `${path}.referenceDose`);
+    addDatum(medication.referenceSchedule, `${path}.referenceSchedule`);
+    addDatum(medication.referenceDuration, `${path}.referenceDuration`);
+    addDatum(medication.administrationMethod, `${path}.administrationMethod`);
+    addDatumArray(
+      medication.specialUseConditions,
+      `${path}.specialUseConditions`,
+    );
   });
+
+  draft.pharmacotherapy.actualMedicationUse.forEach((use, index) => {
+    const path = `pharmacotherapy.actualMedicationUse[${index}]`;
+    addDatum(use.actualUse, `${path}.actualUse`);
+    addDatum(use.actualDose, `${path}.actualDose`);
+    addDatum(use.actualSchedule, `${path}.actualSchedule`);
+    addDatum(use.frequency, `${path}.frequency`);
+    addDatum(use.timePeriod, `${path}.timePeriod`);
+  });
+
+  const addMedicationLinkedFacts = (
+    values: MedicationLinkedFactDraftV2[],
+    path: string,
+  ) => {
+    values.forEach((value, index) =>
+      addDatum(value.detail, `${path}[${index}].detail`),
+    );
+  };
+  addMedicationLinkedFacts(
+    draft.pharmacotherapy.recentChanges,
+    'pharmacotherapy.recentChanges',
+  );
+  addMedicationLinkedFacts(
+    draft.pharmacotherapy.perceivedEffectiveness,
+    'pharmacotherapy.perceivedEffectiveness',
+  );
+  addMedicationLinkedFacts(
+    draft.pharmacotherapy.perceivedSafety,
+    'pharmacotherapy.perceivedSafety',
+  );
+
+  addDatumArray(draft.actionsAlreadyTaken, 'actionsAlreadyTaken');
+  addDatumArray(draft.practicalDifficulties, 'practicalDifficulties');
+  addDatumArray(draft.beliefsAndConcerns, 'beliefsAndConcerns');
+  addDatumArray(draft.strategiesAlreadyTried, 'strategiesAlreadyTried');
+  addDatumArray(draft.dailyAndSocialContext, 'dailyAndSocialContext');
+  addDatumArray(draft.familyAndSocialSupport, 'familyAndSocialSupport');
+  addDatumArray(
+    draft.relationshipWithProfessionals,
+    'relationshipWithProfessionals',
+  );
 
   const factIds = new Set<FactId>();
   for (const fact of facts) {
@@ -505,48 +876,71 @@ function validateIdentifiersAndReferences(draft: CasePatientFactsDraftV2): void 
   }
 
   const medicationIds = new Set<MedicationId>();
-  draft.medications.forEach((medication, index) => {
+  medications.forEach(({ medication, path }) => {
     if (medicationIds.has(medication.medicationId)) {
       fail(
-        `medications[${index}].medicationId`,
+        `${path}.medicationId`,
         `duplicate medication ID: ${medication.medicationId}`,
       );
     }
     medicationIds.add(medication.medicationId);
   });
 
+  const assertMedicationRef = (reference: MedicationId, path: string) => {
+    if (!medicationIds.has(reference)) {
+      fail(path, `unknown medication reference: ${reference}`);
+    }
+  };
+
+  const assertFactRefs = (references: FactId[], path: string) => {
+    references.forEach((reference, index) => {
+      if (!factIds.has(reference)) {
+        fail(`${path}[${index}]`, `unknown fact reference: ${reference}`);
+      }
+    });
+  };
+
   const useIds = new Set<MedicationUseId>();
-  draft.medicationUse.forEach((use, index) => {
+  draft.pharmacotherapy.actualMedicationUse.forEach((use, index) => {
+    const path = `pharmacotherapy.actualMedicationUse[${index}]`;
     if (useIds.has(use.useId)) {
-      fail(`medicationUse[${index}].useId`, `duplicate use ID: ${use.useId}`);
+      fail(`${path}.useId`, `duplicate use ID: ${use.useId}`);
     }
     useIds.add(use.useId);
-
-    if (!medicationIds.has(use.medicationRef)) {
-      fail(
-        `medicationUse[${index}].medicationRef`,
-        `unknown medication reference: ${use.medicationRef}`,
-      );
-    }
+    assertMedicationRef(use.medicationRef, `${path}.medicationRef`);
 
     const referenceGroups = [
       ['circumstanceFactRefs', use.circumstanceFactRefs],
       ['statedReasonFactRefs', use.statedReasonFactRefs],
       ['perceivedEffectFactRefs', use.perceivedEffectFactRefs],
       ['practicalDifficultyFactRefs', use.practicalDifficultyFactRefs],
+      ['strategyTriedFactRefs', use.strategyTriedFactRefs],
     ] as const;
-
-    for (const [field, references] of referenceGroups) {
-      references.forEach((reference, referenceIndex) => {
-        if (!factIds.has(reference)) {
-          fail(
-            `medicationUse[${index}].${field}[${referenceIndex}]`,
-            `unknown fact reference: ${reference}`,
-          );
-        }
-      });
-    }
+    referenceGroups.forEach(([field, references]) =>
+      assertFactRefs(references, `${path}.${field}`),
+    );
   });
+
+  const validateMedicationLinkedRefs = (
+    values: MedicationLinkedFactDraftV2[],
+    path: string,
+  ) => {
+    values.forEach((value, index) =>
+      assertMedicationRef(value.medicationRef, `${path}[${index}].medicationRef`),
+    );
+  };
+  validateMedicationLinkedRefs(
+    draft.pharmacotherapy.recentChanges,
+    'pharmacotherapy.recentChanges',
+  );
+  validateMedicationLinkedRefs(
+    draft.pharmacotherapy.perceivedEffectiveness,
+    'pharmacotherapy.perceivedEffectiveness',
+  );
+  validateMedicationLinkedRefs(
+    draft.pharmacotherapy.perceivedSafety,
+    'pharmacotherapy.perceivedSafety',
+  );
 }
 
 export function validateCasePatientFactsDraftV2(
@@ -561,14 +955,13 @@ export function validateCasePatientFactsDraftV2(
     schemaVersion: '2.0',
     publicProfile: parsePublicProfile(source.publicProfile),
     initialDemand: parseStringDatum(source.initialDemand, 'initialDemand'),
-    knownHealthProblems: parseDatumArray(
-      source.knownHealthProblems,
-      'knownHealthProblems',
-    ),
-    symptoms: parseDatumArray(source.symptoms, 'symptoms'),
-    medications: asArray(source.medications, 'medications').map(parseMedication),
-    medicationUse: asArray(source.medicationUse, 'medicationUse').map(
-      parseMedicationUse,
+    encounter: parseEncounter(source.encounter),
+    clinicalContext: parseClinicalContext(source.clinicalContext),
+    symptoms: asArray(source.symptoms, 'symptoms').map(parseSymptom),
+    pharmacotherapy: parsePharmacotherapy(source.pharmacotherapy),
+    actionsAlreadyTaken: parseDatumArray(
+      source.actionsAlreadyTaken,
+      'actionsAlreadyTaken',
     ),
     practicalDifficulties: parseDatumArray(
       source.practicalDifficulties,
@@ -578,13 +971,21 @@ export function validateCasePatientFactsDraftV2(
       source.beliefsAndConcerns,
       'beliefsAndConcerns',
     ),
-    perceivedExperiences: parseDatumArray(
-      source.perceivedExperiences,
-      'perceivedExperiences',
+    strategiesAlreadyTried: parseDatumArray(
+      source.strategiesAlreadyTried,
+      'strategiesAlreadyTried',
     ),
     dailyAndSocialContext: parseDatumArray(
       source.dailyAndSocialContext,
       'dailyAndSocialContext',
+    ),
+    familyAndSocialSupport: parseDatumArray(
+      source.familyAndSocialSupport,
+      'familyAndSocialSupport',
+    ),
+    relationshipWithProfessionals: parseDatumArray(
+      source.relationshipWithProfessionals,
+      'relationshipWithProfessionals',
     ),
     communicationProfile: parseCommunicationProfile(
       source.communicationProfile,
