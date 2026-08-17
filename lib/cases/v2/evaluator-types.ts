@@ -122,6 +122,174 @@ export type PrmRnmRelation = EvaluatorConclusion<
   }
 >;
 
+export type AdherenceStatus =
+  | 'adherent'
+  | 'non_adherent'
+  | 'not_determinable';
+
+export type AdherenceAssessment = EvaluatorConclusion<
+  'adherence_assessment',
+  {
+    medicationRefs: NonEmptyArray<MedicationId>;
+    status: AdherenceStatus;
+  }
+>;
+
+export type NonAdherenceType =
+  | 'intentional'
+  | 'unintentional'
+  | 'erratic'
+  | 'combined';
+
+export type NonAdherenceTypeConclusion = EvaluatorConclusion<
+  'non_adherence_type',
+  | {
+      adherenceAssessmentRef: ConclusionId;
+      status: 'determined';
+      type: NonAdherenceType;
+    }
+  | {
+      adherenceAssessmentRef: ConclusionId;
+      status: 'not_determinable';
+    }
+>;
+
+export type AdherencePatientProfile =
+  | 'distrustful'
+  | 'trivializing'
+  | 'confused';
+
+export type AdherencePatientProfileConclusion = EvaluatorConclusion<
+  'adherence_patient_profile',
+  | {
+      adherenceAssessmentRef: ConclusionId;
+      status: 'determined';
+      profile: AdherencePatientProfile;
+    }
+  | {
+      adherenceAssessmentRef: ConclusionId;
+      status: 'not_determinable';
+    }
+>;
+
+export type AdherenceBarrierCategory = 'practical' | 'perception';
+
+export type AdherenceBarrierAssessment = EvaluatorConclusion<
+  'adherence_barrier_assessment',
+  {
+    adherenceAssessmentRef: ConclusionId;
+    status: 'identified' | 'not_determinable';
+  }
+>;
+
+export type AdherenceBarrier = EvaluatorConclusion<
+  'adherence_barrier',
+  {
+    barrierAssessmentRef: ConclusionId;
+    role: 'primary' | 'secondary';
+    category: AdherenceBarrierCategory;
+    classification?: TaxonomyTermRef;
+  }
+>;
+
+export type AdherenceStrategyCategory =
+  | 'technical'
+  | 'behavioral'
+  | 'educational'
+  | 'social_family_support'
+  | 'combined';
+
+export type BaseAdherenceStrategyCategory = Exclude<
+  AdherenceStrategyCategory,
+  'combined'
+>;
+
+export type AdherenceStrategy = EvaluatorConclusion<
+  'adherence_strategy',
+  {
+    adherenceAssessmentRef: ConclusionId;
+    addressedBarrierRefs: ConclusionId[];
+  } & (
+    | {
+        category: BaseAdherenceStrategyCategory;
+      }
+    | {
+        category: 'combined';
+        componentCategories: NonEmptyArray<BaseAdherenceStrategyCategory>;
+      }
+  )
+>;
+
+export type ProfessionalActionCategory =
+  | 'dispense'
+  | 'do_not_dispense'
+  | 'pharmacological_treatment'
+  | 'non_pharmacological_treatment'
+  | 'hygienic_dietary_measures'
+  | 'referral'
+  | 'other_spfa';
+
+export type ProfessionalAction = EvaluatorConclusion<
+  'professional_action',
+  {
+    spfaRef: ConclusionId;
+    category: ProfessionalActionCategory;
+    classification?: TaxonomyTermRef;
+    targetSpfaRef?: ConclusionId;
+    referralRef?: ConclusionId;
+  }
+>;
+
+export type PharmaceuticalInterventionTarget =
+  | 'treatment'
+  | 'patient_state_or_situation'
+  | 'conditions_of_use';
+
+export type PharmaceuticalIntervention = EvaluatorConclusion<
+  'pharmaceutical_intervention',
+  {
+    spfaRef: ConclusionId;
+    professionalActionRef?: ConclusionId;
+    target: PharmaceuticalInterventionTarget;
+    classification?: TaxonomyTermRef;
+    addressedConclusionRefs: NonEmptyArray<ConclusionId>;
+    referralRef?: ConclusionId;
+  }
+>;
+
+export type ReferralStatus = 'not_required' | 'required';
+
+export type ReferralUrgency = 'non_urgent' | 'urgent';
+
+export type ReferralDestination = {
+  label: string;
+  classification?: TaxonomyTermRef;
+};
+
+export type ReportRequirement =
+  | {
+      status: 'not_required';
+      essentialContents: readonly [];
+    }
+  | {
+      status: 'appropriate' | 'required';
+      essentialContents: NonEmptyArray<string>;
+    };
+
+export type ReferralConclusion = EvaluatorConclusion<
+  'referral',
+  | {
+      status: 'not_required';
+    }
+  | {
+      status: 'required';
+      urgency: ReferralUrgency;
+      destination: ReferralDestination;
+      reason: string;
+      report: ReportRequirement;
+    }
+>;
+
 export type NonEmptyArray<T> = readonly [T, ...T[]];
 
 export type EvidenceLeafRef =
@@ -158,6 +326,11 @@ export type EvaluatorVersionsV2 = {
   protocol: VersionRef;
   prmTaxonomy: VersionRef;
   rnmTaxonomy: VersionRef;
+  adherenceFramework: VersionRef;
+  barrierTaxonomy?: VersionRef;
+  professionalActionTaxonomy?: VersionRef;
+  pharmaceuticalInterventionTaxonomy?: VersionRef;
+  referralDestinationTaxonomy?: VersionRef;
 };
 
 export type EvaluatorViewV2 = {
@@ -176,5 +349,16 @@ export type EvaluatorViewV2 = {
   };
   rnmAssessments: RnmAssessment[];
   prmRnmRelations: PrmRnmRelation[];
+  adherence: {
+    assessments: AdherenceAssessment[];
+    typeConclusions: NonAdherenceTypeConclusion[];
+    patientProfiles: AdherencePatientProfileConclusion[];
+    barrierAssessments: AdherenceBarrierAssessment[];
+    barriers: AdherenceBarrier[];
+    strategies: AdherenceStrategy[];
+  };
+  professionalActions: ProfessionalAction[];
+  pharmaceuticalInterventions: PharmaceuticalIntervention[];
+  referral: ReferralConclusion;
   evidenceRules: EvidenceRule[];
 };

@@ -1,5 +1,11 @@
 import type {
+  AdherenceAssessment,
+  AdherenceBarrier,
+  AdherenceBarrierAssessment,
+  AdherencePatientProfileConclusion,
+  AdherenceStrategy,
   AssessmentStatus,
+  BaseAdherenceStrategyCategory,
   CarePathV2,
   ConclusionId,
   EvidenceExpression,
@@ -12,10 +18,15 @@ import type {
   IncidenceAssessment,
   IncidenceFinding,
   NonEmptyArray,
+  NonAdherenceTypeConclusion,
+  PharmaceuticalIntervention,
+  ProfessionalAction,
   PrmAssessment,
   PrmFinding,
   PrmRnmRelation,
   RnmAssessment,
+  ReferralConclusion,
+  ReportRequirement,
   SpfaConclusion,
   SpfaService,
   SpfaTransition,
@@ -50,7 +61,39 @@ const EVIDENCE_RULE_KINDS = new Set([
   'prm_assessment',
   'prm',
   'rnm_assessment',
+  'adherence_assessment',
+  'non_adherence_type',
+  'adherence_patient_profile',
+  'adherence_barrier_assessment',
+  'adherence_barrier',
+  'adherence_strategy',
+  'professional_action',
+  'pharmaceutical_intervention',
+  'referral',
 ]);
+
+const ADHERENCE_STATUSES = [
+  'adherent',
+  'non_adherent',
+  'not_determinable',
+] as const;
+
+const BASE_ADHERENCE_STRATEGIES = [
+  'technical',
+  'behavioral',
+  'educational',
+  'social_family_support',
+] as const;
+
+const PROFESSIONAL_ACTION_CATEGORIES = [
+  'dispense',
+  'do_not_dispense',
+  'pharmacological_treatment',
+  'non_pharmacological_treatment',
+  'hygienic_dietary_measures',
+  'referral',
+  'other_spfa',
+] as const;
 
 type AnyConclusion = EvaluatorConclusion<string, unknown>;
 
@@ -166,6 +209,35 @@ function parseTaxonomyTermRef(
 
 function parseVersions(value: unknown): EvaluatorVersionsV2 {
   const source = asRecord(value, 'versions');
+  assertExactKeys(
+    source,
+    [
+      'evaluatorSchema',
+      'protocol',
+      'prmTaxonomy',
+      'rnmTaxonomy',
+      'adherenceFramework',
+      'barrierTaxonomy',
+      'professionalActionTaxonomy',
+      'pharmaceuticalInterventionTaxonomy',
+      'referralDestinationTaxonomy',
+    ],
+    'versions',
+  );
+  const optionalVersion = (field: keyof EvaluatorVersionsV2) =>
+    source[field] === undefined
+      ? undefined
+      : parseVersionRef(source[field], `versions.${field}`);
+  const barrierTaxonomy = optionalVersion('barrierTaxonomy');
+  const professionalActionTaxonomy = optionalVersion(
+    'professionalActionTaxonomy',
+  );
+  const pharmaceuticalInterventionTaxonomy = optionalVersion(
+    'pharmaceuticalInterventionTaxonomy',
+  );
+  const referralDestinationTaxonomy = optionalVersion(
+    'referralDestinationTaxonomy',
+  );
   return {
     evaluatorSchema: parseVersionRef(
       source.evaluatorSchema,
@@ -180,6 +252,22 @@ function parseVersions(value: unknown): EvaluatorVersionsV2 {
       source.rnmTaxonomy,
       'versions.rnmTaxonomy',
     ),
+    adherenceFramework: parseVersionRef(
+      source.adherenceFramework,
+      'versions.adherenceFramework',
+    ),
+    ...(barrierTaxonomy === undefined
+      ? {}
+      : { barrierTaxonomy }),
+    ...(professionalActionTaxonomy === undefined
+      ? {}
+      : { professionalActionTaxonomy }),
+    ...(pharmaceuticalInterventionTaxonomy === undefined
+      ? {}
+      : { pharmaceuticalInterventionTaxonomy }),
+    ...(referralDestinationTaxonomy === undefined
+      ? {}
+      : { referralDestinationTaxonomy }),
   };
 }
 
@@ -492,6 +580,544 @@ function parsePrmRnmRelation(value: unknown, path: string): PrmRnmRelation {
   };
 }
 
+function parseOptionalTaxonomyTermRef(
+  value: unknown,
+  path: string,
+): TaxonomyTermRef | undefined {
+  return value === undefined ? undefined : parseTaxonomyTermRef(value, path);
+}
+
+function parseConclusionRefs(value: unknown, path: string): ConclusionId[] {
+  return asArray(value, path).map((item, index) =>
+    parseConclusionId(item, `${path}[${index}]`),
+  );
+}
+
+function parseAdherenceAssessment(
+  value: unknown,
+  path: string,
+): AdherenceAssessment {
+  const source = asRecord(value, path);
+  assertExactKeys(source, ['conclusionId', 'kind', 'value'], path);
+  if (source.kind !== 'adherence_assessment') {
+    fail(`${path}.kind`, 'must be adherence_assessment');
+  }
+  const conclusionValue = asRecord(source.value, `${path}.value`);
+  assertExactKeys(conclusionValue, ['medicationRefs', 'status'], `${path}.value`);
+  const medicationRefs = parseMedicationRefs(
+    conclusionValue.medicationRefs,
+    `${path}.value.medicationRefs`,
+  ).sort((left, right) => (left < right ? -1 : left > right ? 1 : 0));
+  if (medicationRefs.length === 0) {
+    fail(`${path}.value.medicationRefs`, 'must contain at least one medication');
+  }
+  return {
+    conclusionId: parseConclusionId(source.conclusionId, `${path}.conclusionId`),
+    kind: 'adherence_assessment',
+    value: {
+      medicationRefs: medicationRefs as unknown as NonEmptyArray<MedicationId>,
+      status: controlledValue(
+        conclusionValue.status,
+        ADHERENCE_STATUSES,
+        `${path}.value.status`,
+      ),
+    },
+  };
+}
+
+function parseNonAdherenceTypeConclusion(
+  value: unknown,
+  path: string,
+): NonAdherenceTypeConclusion {
+  const source = asRecord(value, path);
+  assertExactKeys(source, ['conclusionId', 'kind', 'value'], path);
+  if (source.kind !== 'non_adherence_type') {
+    fail(`${path}.kind`, 'must be non_adherence_type');
+  }
+  const conclusionValue = asRecord(source.value, `${path}.value`);
+  const status = controlledValue(
+    conclusionValue.status,
+    ['determined', 'not_determinable'] as const,
+    `${path}.value.status`,
+  );
+  const adherenceAssessmentRef = parseConclusionId(
+    conclusionValue.adherenceAssessmentRef,
+    `${path}.value.adherenceAssessmentRef`,
+  );
+  const conclusionId = parseConclusionId(
+    source.conclusionId,
+    `${path}.conclusionId`,
+  );
+  if (status === 'not_determinable') {
+    assertExactKeys(
+      conclusionValue,
+      ['adherenceAssessmentRef', 'status'],
+      `${path}.value`,
+    );
+    return {
+      conclusionId,
+      kind: 'non_adherence_type',
+      value: { adherenceAssessmentRef, status },
+    };
+  }
+  assertExactKeys(
+    conclusionValue,
+    ['adherenceAssessmentRef', 'status', 'type'],
+    `${path}.value`,
+  );
+  return {
+    conclusionId,
+    kind: 'non_adherence_type',
+    value: {
+      adherenceAssessmentRef,
+      status,
+      type: controlledValue(
+        conclusionValue.type,
+        ['intentional', 'unintentional', 'erratic', 'combined'] as const,
+        `${path}.value.type`,
+      ),
+    },
+  };
+}
+
+function parseAdherencePatientProfile(
+  value: unknown,
+  path: string,
+): AdherencePatientProfileConclusion {
+  const source = asRecord(value, path);
+  assertExactKeys(source, ['conclusionId', 'kind', 'value'], path);
+  if (source.kind !== 'adherence_patient_profile') {
+    fail(`${path}.kind`, 'must be adherence_patient_profile');
+  }
+  const conclusionValue = asRecord(source.value, `${path}.value`);
+  const status = controlledValue(
+    conclusionValue.status,
+    ['determined', 'not_determinable'] as const,
+    `${path}.value.status`,
+  );
+  const adherenceAssessmentRef = parseConclusionId(
+    conclusionValue.adherenceAssessmentRef,
+    `${path}.value.adherenceAssessmentRef`,
+  );
+  const conclusionId = parseConclusionId(
+    source.conclusionId,
+    `${path}.conclusionId`,
+  );
+  if (status === 'not_determinable') {
+    assertExactKeys(
+      conclusionValue,
+      ['adherenceAssessmentRef', 'status'],
+      `${path}.value`,
+    );
+    return {
+      conclusionId,
+      kind: 'adherence_patient_profile',
+      value: { adherenceAssessmentRef, status },
+    };
+  }
+  assertExactKeys(
+    conclusionValue,
+    ['adherenceAssessmentRef', 'status', 'profile'],
+    `${path}.value`,
+  );
+  return {
+    conclusionId,
+    kind: 'adherence_patient_profile',
+    value: {
+      adherenceAssessmentRef,
+      status,
+      profile: controlledValue(
+        conclusionValue.profile,
+        ['distrustful', 'trivializing', 'confused'] as const,
+        `${path}.value.profile`,
+      ),
+    },
+  };
+}
+
+function parseAdherenceBarrierAssessment(
+  value: unknown,
+  path: string,
+): AdherenceBarrierAssessment {
+  const source = asRecord(value, path);
+  assertExactKeys(source, ['conclusionId', 'kind', 'value'], path);
+  if (source.kind !== 'adherence_barrier_assessment') {
+    fail(`${path}.kind`, 'must be adherence_barrier_assessment');
+  }
+  const conclusionValue = asRecord(source.value, `${path}.value`);
+  assertExactKeys(
+    conclusionValue,
+    ['adherenceAssessmentRef', 'status'],
+    `${path}.value`,
+  );
+  return {
+    conclusionId: parseConclusionId(source.conclusionId, `${path}.conclusionId`),
+    kind: 'adherence_barrier_assessment',
+    value: {
+      adherenceAssessmentRef: parseConclusionId(
+        conclusionValue.adherenceAssessmentRef,
+        `${path}.value.adherenceAssessmentRef`,
+      ),
+      status: controlledValue(
+        conclusionValue.status,
+        ['identified', 'not_determinable'] as const,
+        `${path}.value.status`,
+      ),
+    },
+  };
+}
+
+function parseAdherenceBarrier(
+  value: unknown,
+  path: string,
+): AdherenceBarrier {
+  const source = asRecord(value, path);
+  assertExactKeys(source, ['conclusionId', 'kind', 'value'], path);
+  if (source.kind !== 'adherence_barrier') {
+    fail(`${path}.kind`, 'must be adherence_barrier');
+  }
+  const conclusionValue = asRecord(source.value, `${path}.value`);
+  assertExactKeys(
+    conclusionValue,
+    ['barrierAssessmentRef', 'role', 'category', 'classification'],
+    `${path}.value`,
+  );
+  const classification = parseOptionalTaxonomyTermRef(
+    conclusionValue.classification,
+    `${path}.value.classification`,
+  );
+  return {
+    conclusionId: parseConclusionId(source.conclusionId, `${path}.conclusionId`),
+    kind: 'adherence_barrier',
+    value: {
+      barrierAssessmentRef: parseConclusionId(
+        conclusionValue.barrierAssessmentRef,
+        `${path}.value.barrierAssessmentRef`,
+      ),
+      role: controlledValue(
+        conclusionValue.role,
+        ['primary', 'secondary'] as const,
+        `${path}.value.role`,
+      ),
+      category: controlledValue(
+        conclusionValue.category,
+        ['practical', 'perception'] as const,
+        `${path}.value.category`,
+      ),
+      ...(classification === undefined ? {} : { classification }),
+    },
+  };
+}
+
+function parseAdherenceStrategy(
+  value: unknown,
+  path: string,
+): AdherenceStrategy {
+  const source = asRecord(value, path);
+  assertExactKeys(source, ['conclusionId', 'kind', 'value'], path);
+  if (source.kind !== 'adherence_strategy') {
+    fail(`${path}.kind`, 'must be adherence_strategy');
+  }
+  const conclusionValue = asRecord(source.value, `${path}.value`);
+  const category = controlledValue(
+    conclusionValue.category,
+    [...BASE_ADHERENCE_STRATEGIES, 'combined'] as const,
+    `${path}.value.category`,
+  );
+  const base = {
+    adherenceAssessmentRef: parseConclusionId(
+      conclusionValue.adherenceAssessmentRef,
+      `${path}.value.adherenceAssessmentRef`,
+    ),
+    addressedBarrierRefs: parseConclusionRefs(
+      conclusionValue.addressedBarrierRefs,
+      `${path}.value.addressedBarrierRefs`,
+    ),
+  };
+  const conclusionId = parseConclusionId(
+    source.conclusionId,
+    `${path}.conclusionId`,
+  );
+  if (category !== 'combined') {
+    assertExactKeys(
+      conclusionValue,
+      ['adherenceAssessmentRef', 'addressedBarrierRefs', 'category'],
+      `${path}.value`,
+    );
+    return {
+      conclusionId,
+      kind: 'adherence_strategy',
+      value: { ...base, category },
+    };
+  }
+  assertExactKeys(
+    conclusionValue,
+    [
+      'adherenceAssessmentRef',
+      'addressedBarrierRefs',
+      'category',
+      'componentCategories',
+    ],
+    `${path}.value`,
+  );
+  const componentCategories = asArray(
+    conclusionValue.componentCategories,
+    `${path}.value.componentCategories`,
+  ).map((item, index) =>
+    controlledValue(
+      item,
+      BASE_ADHERENCE_STRATEGIES,
+      `${path}.value.componentCategories[${index}]`,
+    ),
+  ) as BaseAdherenceStrategyCategory[];
+  if (componentCategories.length < 2) {
+    fail(`${path}.value.componentCategories`, 'must contain at least two categories');
+  }
+  if (new Set(componentCategories).size !== componentCategories.length) {
+    fail(`${path}.value.componentCategories`, 'must contain distinct categories');
+  }
+  return {
+    conclusionId,
+    kind: 'adherence_strategy',
+    value: {
+      ...base,
+      category,
+      componentCategories:
+        componentCategories as unknown as NonEmptyArray<BaseAdherenceStrategyCategory>,
+    },
+  };
+}
+
+function parseProfessionalAction(
+  value: unknown,
+  path: string,
+): ProfessionalAction {
+  const source = asRecord(value, path);
+  assertExactKeys(source, ['conclusionId', 'kind', 'value'], path);
+  if (source.kind !== 'professional_action') {
+    fail(`${path}.kind`, 'must be professional_action');
+  }
+  const conclusionValue = asRecord(source.value, `${path}.value`);
+  const category = controlledValue(
+    conclusionValue.category,
+    PROFESSIONAL_ACTION_CATEGORIES,
+    `${path}.value.category`,
+  );
+  const commonKeys = ['spfaRef', 'category', 'classification'] as const;
+  const classification = parseOptionalTaxonomyTermRef(
+    conclusionValue.classification,
+    `${path}.value.classification`,
+  );
+  const base = {
+    spfaRef: parseConclusionId(
+      conclusionValue.spfaRef,
+      `${path}.value.spfaRef`,
+    ),
+    category,
+    ...(classification === undefined ? {} : { classification }),
+  };
+  const conclusionId = parseConclusionId(
+    source.conclusionId,
+    `${path}.conclusionId`,
+  );
+  if (category === 'referral') {
+    assertExactKeys(
+      conclusionValue,
+      [...commonKeys, 'referralRef'],
+      `${path}.value`,
+    );
+    return {
+      conclusionId,
+      kind: 'professional_action',
+      value: {
+        ...base,
+        referralRef: parseConclusionId(
+          conclusionValue.referralRef,
+          `${path}.value.referralRef`,
+        ),
+      },
+    };
+  }
+  if (category === 'other_spfa') {
+    assertExactKeys(
+      conclusionValue,
+      [...commonKeys, 'targetSpfaRef'],
+      `${path}.value`,
+    );
+    return {
+      conclusionId,
+      kind: 'professional_action',
+      value: {
+        ...base,
+        targetSpfaRef: parseConclusionId(
+          conclusionValue.targetSpfaRef,
+          `${path}.value.targetSpfaRef`,
+        ),
+      },
+    };
+  }
+  assertExactKeys(conclusionValue, commonKeys, `${path}.value`);
+  return {
+    conclusionId,
+    kind: 'professional_action',
+    value: base,
+  };
+}
+
+function parsePharmaceuticalIntervention(
+  value: unknown,
+  path: string,
+): PharmaceuticalIntervention {
+  const source = asRecord(value, path);
+  assertExactKeys(source, ['conclusionId', 'kind', 'value'], path);
+  if (source.kind !== 'pharmaceutical_intervention') {
+    fail(`${path}.kind`, 'must be pharmaceutical_intervention');
+  }
+  const conclusionValue = asRecord(source.value, `${path}.value`);
+  assertExactKeys(
+    conclusionValue,
+    [
+      'spfaRef',
+      'professionalActionRef',
+      'target',
+      'classification',
+      'addressedConclusionRefs',
+      'referralRef',
+    ],
+    `${path}.value`,
+  );
+  const professionalActionRef = optionalConclusionId(
+    conclusionValue.professionalActionRef,
+    `${path}.value.professionalActionRef`,
+  );
+  const classification = parseOptionalTaxonomyTermRef(
+    conclusionValue.classification,
+    `${path}.value.classification`,
+  );
+  const referralRef = optionalConclusionId(
+    conclusionValue.referralRef,
+    `${path}.value.referralRef`,
+  );
+  const addressedConclusionRefs = parseConclusionRefs(
+    conclusionValue.addressedConclusionRefs,
+    `${path}.value.addressedConclusionRefs`,
+  );
+  if (addressedConclusionRefs.length === 0) {
+    fail(`${path}.value.addressedConclusionRefs`, 'must not be empty');
+  }
+  return {
+    conclusionId: parseConclusionId(source.conclusionId, `${path}.conclusionId`),
+    kind: 'pharmaceutical_intervention',
+    value: {
+      spfaRef: parseConclusionId(
+        conclusionValue.spfaRef,
+        `${path}.value.spfaRef`,
+      ),
+      ...(professionalActionRef === undefined ? {} : { professionalActionRef }),
+      target: controlledValue(
+        conclusionValue.target,
+        ['treatment', 'patient_state_or_situation', 'conditions_of_use'] as const,
+        `${path}.value.target`,
+      ),
+      ...(classification === undefined ? {} : { classification }),
+      addressedConclusionRefs:
+        addressedConclusionRefs as unknown as NonEmptyArray<ConclusionId>,
+      ...(referralRef === undefined ? {} : { referralRef }),
+    },
+  };
+}
+
+function parseReportRequirement(
+  value: unknown,
+  path: string,
+): ReportRequirement {
+  const source = asRecord(value, path);
+  assertExactKeys(source, ['status', 'essentialContents'], path);
+  const status = controlledValue(
+    source.status,
+    ['not_required', 'appropriate', 'required'] as const,
+    `${path}.status`,
+  );
+  const essentialContents = asArray(
+    source.essentialContents,
+    `${path}.essentialContents`,
+  ).map((item, index) =>
+    nonEmptyString(item, `${path}.essentialContents[${index}]`),
+  );
+  if (status === 'not_required') {
+    if (essentialContents.length !== 0) {
+      fail(`${path}.essentialContents`, 'must be empty when report is not required');
+    }
+    return { status, essentialContents: [] };
+  }
+  if (essentialContents.length === 0) {
+    fail(`${path}.essentialContents`, 'must not be empty for this report status');
+  }
+  return {
+    status,
+    essentialContents:
+      essentialContents as unknown as NonEmptyArray<string>,
+  };
+}
+
+function parseReferral(value: unknown, path: string): ReferralConclusion {
+  const source = asRecord(value, path);
+  assertExactKeys(source, ['conclusionId', 'kind', 'value'], path);
+  if (source.kind !== 'referral') fail(`${path}.kind`, 'must be referral');
+  const conclusionValue = asRecord(source.value, `${path}.value`);
+  const status = controlledValue(
+    conclusionValue.status,
+    ['not_required', 'required'] as const,
+    `${path}.value.status`,
+  );
+  const conclusionId = parseConclusionId(
+    source.conclusionId,
+    `${path}.conclusionId`,
+  );
+  if (status === 'not_required') {
+    assertExactKeys(conclusionValue, ['status'], `${path}.value`);
+    return { conclusionId, kind: 'referral', value: { status } };
+  }
+  assertExactKeys(
+    conclusionValue,
+    ['status', 'urgency', 'destination', 'reason', 'report'],
+    `${path}.value`,
+  );
+  const destination = asRecord(
+    conclusionValue.destination,
+    `${path}.value.destination`,
+  );
+  assertExactKeys(destination, ['label', 'classification'], `${path}.value.destination`);
+  const classification = parseOptionalTaxonomyTermRef(
+    destination.classification,
+    `${path}.value.destination.classification`,
+  );
+  return {
+    conclusionId,
+    kind: 'referral',
+    value: {
+      status,
+      urgency: controlledValue(
+        conclusionValue.urgency,
+        ['non_urgent', 'urgent'] as const,
+        `${path}.value.urgency`,
+      ),
+      destination: {
+        label: nonEmptyString(
+          destination.label,
+          `${path}.value.destination.label`,
+        ),
+        ...(classification === undefined ? {} : { classification }),
+      },
+      reason: nonEmptyString(conclusionValue.reason, `${path}.value.reason`),
+      report: parseReportRequirement(
+        conclusionValue.report,
+        `${path}.value.report`,
+      ),
+    },
+  };
+}
+
 function parseEvidenceLeaf(value: unknown, path: string): EvidenceLeafRef {
   const source = asRecord(value, path);
   if (source.operator === 'fact') {
@@ -602,6 +1228,15 @@ function conclusionEntries(evaluator: EvaluatorViewV2): AnyConclusion[] {
     ...evaluator.prm.findings,
     ...evaluator.rnmAssessments,
     ...evaluator.prmRnmRelations,
+    ...evaluator.adherence.assessments,
+    ...evaluator.adherence.typeConclusions,
+    ...evaluator.adherence.patientProfiles,
+    ...evaluator.adherence.barrierAssessments,
+    ...evaluator.adherence.barriers,
+    ...evaluator.adherence.strategies,
+    ...evaluator.professionalActions,
+    ...evaluator.pharmaceuticalInterventions,
+    evaluator.referral,
   ];
 }
 
@@ -688,7 +1323,10 @@ function validateCrossReferences(
   });
 
   const { facts, medications } = collectRuntimeIndex(runtime);
-  const validateMedicationRefs = (references: MedicationId[], path: string) => {
+  const validateMedicationRefs = (
+    references: readonly MedicationId[],
+    path: string,
+  ) => {
     references.forEach((reference, index) => {
       if (!medications.has(reference)) {
         fail(`${path}[${index}]`, `unknown medication reference: ${reference}`);
@@ -840,6 +1478,339 @@ function validateCrossReferences(
     }
   });
 
+  const validateOptionalClassification = (
+    classification: TaxonomyTermRef | undefined,
+    configuredVersion: VersionRef | undefined,
+    path: string,
+  ) => {
+    if (classification === undefined) return;
+    if (configuredVersion === undefined) {
+      fail(path, 'classification requires its configured VersionRef');
+    }
+    if (
+      classification.taxonomyId !== configuredVersion.id ||
+      classification.taxonomyVersion !== configuredVersion.version
+    ) {
+      fail(path, 'classification must match its configured taxonomy version');
+    }
+  };
+
+  const adherenceScopes: Array<{
+    key: string;
+    medications: Set<string>;
+    path: string;
+  }> = [];
+  evaluator.adherence.assessments.forEach((assessment, index) => {
+    const path = `adherence.assessments[${index}].value.medicationRefs`;
+    validateMedicationRefs(assessment.value.medicationRefs, path);
+    const medicationSet = new Set(assessment.value.medicationRefs);
+    if (medicationSet.size !== assessment.value.medicationRefs.length) {
+      fail(path, 'must not contain duplicate medication references');
+    }
+    const key = [...medicationSet].sort().join('|');
+    for (const previous of adherenceScopes) {
+      if (previous.key === key) {
+        fail(path, 'duplicate adherence medication scope');
+      }
+      if ([...medicationSet].some((medication) => previous.medications.has(medication))) {
+        fail(path, `adherence medication scope overlaps ${previous.path}`);
+      }
+    }
+    adherenceScopes.push({ key, medications: medicationSet, path });
+  });
+
+  const requireAdherenceAssessment = (
+    reference: ConclusionId,
+    path: string,
+  ): AdherenceAssessment =>
+    requireKind(reference, 'adherence_assessment', path) as AdherenceAssessment;
+
+  const typeCount = new Map<string, number>();
+  evaluator.adherence.typeConclusions.forEach((conclusion, index) => {
+    const path = `adherence.typeConclusions[${index}].value.adherenceAssessmentRef`;
+    const assessment = requireAdherenceAssessment(
+      conclusion.value.adherenceAssessmentRef,
+      path,
+    );
+    if (assessment.value.status !== 'non_adherent') {
+      fail(path, 'non-adherence type is only valid for non_adherent assessment');
+    }
+    typeCount.set(
+      assessment.conclusionId,
+      (typeCount.get(assessment.conclusionId) ?? 0) + 1,
+    );
+  });
+
+  const profileCount = new Map<string, number>();
+  evaluator.adherence.patientProfiles.forEach((profile, index) => {
+    const path = `adherence.patientProfiles[${index}].value.adherenceAssessmentRef`;
+    const assessment = requireAdherenceAssessment(
+      profile.value.adherenceAssessmentRef,
+      path,
+    );
+    if (assessment.value.status !== 'non_adherent') {
+      fail(path, 'adherence profile is only valid for non_adherent assessment');
+    }
+    const count = (profileCount.get(assessment.conclusionId) ?? 0) + 1;
+    if (count > 1) fail(path, 'only one adherence profile is allowed per assessment');
+    profileCount.set(assessment.conclusionId, count);
+  });
+
+  const barrierAssessmentCount = new Map<string, number>();
+  const barrierAssessmentById = new Map<string, AdherenceBarrierAssessment>();
+  evaluator.adherence.barrierAssessments.forEach((barrierAssessment, index) => {
+    const path =
+      `adherence.barrierAssessments[${index}].value.adherenceAssessmentRef`;
+    const assessment = requireAdherenceAssessment(
+      barrierAssessment.value.adherenceAssessmentRef,
+      path,
+    );
+    if (assessment.value.status !== 'non_adherent') {
+      fail(path, 'barrier assessment is only valid for non_adherent assessment');
+    }
+    const count =
+      (barrierAssessmentCount.get(assessment.conclusionId) ?? 0) + 1;
+    if (count > 1) fail(path, 'only one barrier assessment is allowed');
+    barrierAssessmentCount.set(assessment.conclusionId, count);
+    barrierAssessmentById.set(barrierAssessment.conclusionId, barrierAssessment);
+  });
+
+  evaluator.adherence.assessments.forEach((assessment, index) => {
+    const types = typeCount.get(assessment.conclusionId) ?? 0;
+    const barrierAssessments =
+      barrierAssessmentCount.get(assessment.conclusionId) ?? 0;
+    if (assessment.value.status === 'non_adherent') {
+      if (types !== 1) {
+        fail(
+          `adherence.assessments[${index}]`,
+          'non_adherent assessment requires exactly one type conclusion',
+        );
+      }
+      if (barrierAssessments !== 1) {
+        fail(
+          `adherence.assessments[${index}]`,
+          'non_adherent assessment requires exactly one barrier assessment',
+        );
+      }
+    } else if (types !== 0 || barrierAssessments !== 0) {
+      fail(
+        `adherence.assessments[${index}]`,
+        `${assessment.value.status} forbids type and barrier assessments`,
+      );
+    }
+  });
+
+  const barriersByAssessment = new Map<string, AdherenceBarrier[]>();
+  evaluator.adherence.barriers.forEach((barrier, index) => {
+    const path = `adherence.barriers[${index}].value`;
+    const barrierAssessment = requireKind(
+      barrier.value.barrierAssessmentRef,
+      'adherence_barrier_assessment',
+      `${path}.barrierAssessmentRef`,
+    ) as AdherenceBarrierAssessment;
+    const values = barriersByAssessment.get(barrierAssessment.conclusionId) ?? [];
+    values.push(barrier);
+    barriersByAssessment.set(barrierAssessment.conclusionId, values);
+    validateOptionalClassification(
+      barrier.value.classification,
+      evaluator.versions.barrierTaxonomy,
+      `${path}.classification`,
+    );
+  });
+  evaluator.adherence.barrierAssessments.forEach((assessment, index) => {
+    const barriers = barriersByAssessment.get(assessment.conclusionId) ?? [];
+    if (assessment.value.status === 'not_determinable' && barriers.length > 0) {
+      fail(
+        `adherence.barrierAssessments[${index}]`,
+        'not_determinable barrier assessment forbids barriers',
+      );
+    }
+    if (assessment.value.status === 'identified') {
+      if (barriers.length === 0) {
+        fail(
+          `adherence.barrierAssessments[${index}]`,
+          'identified barrier assessment requires barriers',
+        );
+      }
+      const primaryCount = barriers.filter(
+        (barrier) => barrier.value.role === 'primary',
+      ).length;
+      if (primaryCount !== 1) {
+        fail(
+          `adherence.barrierAssessments[${index}]`,
+          'identified barriers require exactly one primary barrier',
+        );
+      }
+    }
+  });
+
+  evaluator.adherence.strategies.forEach((strategy, index) => {
+    const path = `adherence.strategies[${index}].value`;
+    const assessment = requireAdherenceAssessment(
+      strategy.value.adherenceAssessmentRef,
+      `${path}.adherenceAssessmentRef`,
+    );
+    const seenBarrierRefs = new Set<string>();
+    strategy.value.addressedBarrierRefs.forEach((reference, referenceIndex) => {
+      if (seenBarrierRefs.has(reference)) {
+        fail(`${path}.addressedBarrierRefs[${referenceIndex}]`, 'duplicate barrier reference');
+      }
+      seenBarrierRefs.add(reference);
+      const barrier = requireKind(
+        reference,
+        'adherence_barrier',
+        `${path}.addressedBarrierRefs[${referenceIndex}]`,
+      ) as AdherenceBarrier;
+      const barrierAssessment = barrierAssessmentById.get(
+        barrier.value.barrierAssessmentRef,
+      );
+      if (
+        barrierAssessment === undefined ||
+        barrierAssessment.value.adherenceAssessmentRef !== assessment.conclusionId
+      ) {
+        fail(
+          `${path}.addressedBarrierRefs[${referenceIndex}]`,
+          'barrier belongs to a different adherence assessment',
+        );
+      }
+    });
+    const barrierAssessment = evaluator.adherence.barrierAssessments.find(
+      (candidate) =>
+        candidate.value.adherenceAssessmentRef === assessment.conclusionId,
+    );
+    if (
+      barrierAssessment?.value.status === 'not_determinable' &&
+      strategy.value.addressedBarrierRefs.length > 0
+    ) {
+      fail(path, 'strategy cannot address barriers when they are not determinable');
+    }
+  });
+
+  const requireRequiredReferral = (reference: ConclusionId, path: string) => {
+    const referral = requireKind(reference, 'referral', path) as ReferralConclusion;
+    if (
+      referral.conclusionId !== evaluator.referral.conclusionId ||
+      referral.value.status !== 'required'
+    ) {
+      fail(path, 'must reference the required evaluator referral');
+    }
+  };
+
+  evaluator.professionalActions.forEach((action, index) => {
+    const path = `professionalActions[${index}].value`;
+    requireKind(action.value.spfaRef, 'spfa', `${path}.spfaRef`);
+    validateOptionalClassification(
+      action.value.classification,
+      evaluator.versions.professionalActionTaxonomy,
+      `${path}.classification`,
+    );
+    if (action.value.category === 'referral') {
+      requireRequiredReferral(action.value.referralRef!, `${path}.referralRef`);
+    }
+    if (action.value.category === 'other_spfa') {
+      requireKind(action.value.targetSpfaRef!, 'spfa', `${path}.targetSpfaRef`);
+      if (action.value.spfaRef === action.value.targetSpfaRef) {
+        fail(path, 'other_spfa origin and destination must differ');
+      }
+      const matchingTransition = evaluator.carePath.transitions.some(
+        (transition) =>
+          transition.value.fromSpfaRef === action.value.spfaRef &&
+          transition.value.toSpfaRef === action.value.targetSpfaRef,
+      );
+      if (!matchingTransition) {
+        fail(path, 'other_spfa requires a matching SPFA transition');
+      }
+    }
+  });
+
+  const allowedInterventionTargets = new Set([
+    'incidence',
+    'prm',
+    'rnm_assessment',
+    'adherence_assessment',
+    'non_adherence_type',
+    'adherence_barrier',
+  ]);
+  evaluator.pharmaceuticalInterventions.forEach((intervention, index) => {
+    const path = `pharmaceuticalInterventions[${index}].value`;
+    requireKind(intervention.value.spfaRef, 'spfa', `${path}.spfaRef`);
+    if (intervention.value.professionalActionRef !== undefined) {
+      const action = requireKind(
+        intervention.value.professionalActionRef,
+        'professional_action',
+        `${path}.professionalActionRef`,
+      ) as ProfessionalAction;
+      if (action.value.spfaRef !== intervention.value.spfaRef) {
+        fail(`${path}.professionalActionRef`, 'action belongs to a different SPFA');
+      }
+    }
+    validateOptionalClassification(
+      intervention.value.classification,
+      evaluator.versions.pharmaceuticalInterventionTaxonomy,
+      `${path}.classification`,
+    );
+    const seenAddressedRefs = new Set<string>();
+    const adherenceScopeRefs = new Set<string>();
+    intervention.value.addressedConclusionRefs.forEach((reference, refIndex) => {
+      const referencePath = `${path}.addressedConclusionRefs[${refIndex}]`;
+      if (seenAddressedRefs.has(reference)) {
+        fail(referencePath, 'duplicate addressed conclusion reference');
+      }
+      seenAddressedRefs.add(reference);
+      const conclusion = conclusionById.get(reference);
+      if (conclusion === undefined) {
+        fail(referencePath, `unknown conclusion reference: ${reference}`);
+      }
+      if (!allowedInterventionTargets.has(conclusion.kind)) {
+        fail(referencePath, `conclusion kind ${conclusion.kind} cannot be addressed`);
+      }
+      if (
+        conclusion.kind === 'rnm_assessment' &&
+        (conclusion as RnmAssessment).value.status === 'no_rnm'
+      ) {
+        fail(referencePath, 'no_rnm cannot be addressed by an intervention');
+      }
+      if (conclusion.kind === 'adherence_assessment') {
+        adherenceScopeRefs.add(conclusion.conclusionId);
+      }
+      if (conclusion.kind === 'non_adherence_type') {
+        adherenceScopeRefs.add(
+          (conclusion as NonAdherenceTypeConclusion).value
+            .adherenceAssessmentRef,
+        );
+      }
+      if (conclusion.kind === 'adherence_barrier') {
+        const barrier = conclusion as AdherenceBarrier;
+        const barrierAssessment = barrierAssessmentById.get(
+          barrier.value.barrierAssessmentRef,
+        );
+        if (barrierAssessment === undefined) {
+          fail(referencePath, 'barrier assessment reference is invalid');
+        }
+        adherenceScopeRefs.add(
+          barrierAssessment.value.adherenceAssessmentRef,
+        );
+      }
+    });
+    if (adherenceScopeRefs.size > 1) {
+      fail(path, 'intervention mixes different adherence medication scopes');
+    }
+    if (intervention.value.referralRef !== undefined) {
+      requireRequiredReferral(
+        intervention.value.referralRef,
+        `${path}.referralRef`,
+      );
+    }
+  });
+
+  if (evaluator.referral.value.status === 'required') {
+    validateOptionalClassification(
+      evaluator.referral.value.destination.classification,
+      evaluator.versions.referralDestinationTaxonomy,
+      'referral.value.destination.classification',
+    );
+  }
+
   const validateEvidenceLeaf = (leaf: EvidenceLeafRef, path: string) => {
     if (leaf.operator === 'fact' && !facts.has(leaf.factRef)) {
       fail(path, `unknown fact reference: ${leaf.factRef}`);
@@ -950,6 +1921,19 @@ export function validateEvaluatorViewV2(
   }
   const incidenceSource = asRecord(source.incidence, 'incidence');
   const prmSource = asRecord(source.prm, 'prm');
+  const adherenceSource = asRecord(source.adherence, 'adherence');
+  assertExactKeys(
+    adherenceSource,
+    [
+      'assessments',
+      'typeConclusions',
+      'patientProfiles',
+      'barrierAssessments',
+      'barriers',
+      'strategies',
+    ],
+    'adherence',
+  );
 
   const evaluator: EvaluatorViewV2 = {
     schemaVersion: '2.0',
@@ -992,6 +1976,69 @@ export function validateEvaluatorViewV2(
     ).map((item, index) =>
       parsePrmRnmRelation(item, `prmRnmRelations[${index}]`),
     ),
+    adherence: {
+      assessments: asArray(
+        adherenceSource.assessments,
+        'adherence.assessments',
+      ).map((item, index) =>
+        parseAdherenceAssessment(item, `adherence.assessments[${index}]`),
+      ),
+      typeConclusions: asArray(
+        adherenceSource.typeConclusions,
+        'adherence.typeConclusions',
+      ).map((item, index) =>
+        parseNonAdherenceTypeConclusion(
+          item,
+          `adherence.typeConclusions[${index}]`,
+        ),
+      ),
+      patientProfiles: asArray(
+        adherenceSource.patientProfiles,
+        'adherence.patientProfiles',
+      ).map((item, index) =>
+        parseAdherencePatientProfile(
+          item,
+          `adherence.patientProfiles[${index}]`,
+        ),
+      ),
+      barrierAssessments: asArray(
+        adherenceSource.barrierAssessments,
+        'adherence.barrierAssessments',
+      ).map((item, index) =>
+        parseAdherenceBarrierAssessment(
+          item,
+          `adherence.barrierAssessments[${index}]`,
+        ),
+      ),
+      barriers: asArray(
+        adherenceSource.barriers,
+        'adherence.barriers',
+      ).map((item, index) =>
+        parseAdherenceBarrier(item, `adherence.barriers[${index}]`),
+      ),
+      strategies: asArray(
+        adherenceSource.strategies,
+        'adherence.strategies',
+      ).map((item, index) =>
+        parseAdherenceStrategy(item, `adherence.strategies[${index}]`),
+      ),
+    },
+    professionalActions: asArray(
+      source.professionalActions,
+      'professionalActions',
+    ).map((item, index) =>
+      parseProfessionalAction(item, `professionalActions[${index}]`),
+    ),
+    pharmaceuticalInterventions: asArray(
+      source.pharmaceuticalInterventions,
+      'pharmaceuticalInterventions',
+    ).map((item, index) =>
+      parsePharmaceuticalIntervention(
+        item,
+        `pharmaceuticalInterventions[${index}]`,
+      ),
+    ),
+    referral: parseReferral(source.referral, 'referral'),
     evidenceRules: asArray(source.evidenceRules, 'evidenceRules').map(
       parseEvidenceRule,
     ),

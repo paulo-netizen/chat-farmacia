@@ -9,6 +9,7 @@ import { validateCaseVersionId } from '@/lib/cases/v2/validate-patient-facts';
 const caseVersionId = 'casever_90000000-0000-4000-8000-000000000001';
 const otherCaseVersionId = 'casever_90000000-0000-4000-8000-000000000002';
 const medicationId = 'med_10000000-0000-4000-8000-000000000001';
+const medicationIdB = 'med_10000000-0000-4000-8000-000000000002';
 
 const factIds = {
   a: 'fact_00000000-0000-4000-8000-000000000001',
@@ -36,6 +37,20 @@ const conclusionIds = {
   relationC: 'conclusion_10000000-0000-4000-8000-00000000000e',
   relationD: 'conclusion_10000000-0000-4000-8000-00000000000f',
   noRnm: 'conclusion_10000000-0000-4000-8000-000000000010',
+  adherenceA: 'conclusion_20000000-0000-4000-8000-000000000001',
+  adherenceB: 'conclusion_20000000-0000-4000-8000-000000000002',
+  adherenceTypeA: 'conclusion_20000000-0000-4000-8000-000000000003',
+  adherenceTypeB: 'conclusion_20000000-0000-4000-8000-000000000004',
+  adherenceProfile: 'conclusion_20000000-0000-4000-8000-000000000005',
+  barrierAssessmentA: 'conclusion_20000000-0000-4000-8000-000000000006',
+  barrierAssessmentB: 'conclusion_20000000-0000-4000-8000-000000000007',
+  primaryBarrier: 'conclusion_20000000-0000-4000-8000-000000000008',
+  secondaryBarrier: 'conclusion_20000000-0000-4000-8000-000000000009',
+  otherBarrier: 'conclusion_20000000-0000-4000-8000-00000000000a',
+  strategy: 'conclusion_20000000-0000-4000-8000-00000000000b',
+  action: 'conclusion_20000000-0000-4000-8000-00000000000c',
+  intervention: 'conclusion_20000000-0000-4000-8000-00000000000d',
+  referral: 'conclusion_20000000-0000-4000-8000-00000000000e',
   missing: 'conclusion_10000000-0000-4000-8000-000000000099',
 } as const;
 
@@ -88,6 +103,18 @@ function createRuntime(): PatientRuntimeViewV2 {
           ),
           specialUseConditions: [],
         },
+        {
+          medicationId: medicationIdB,
+          displayName: knownFact(
+            'fact_00000000-0000-4000-8000-000000000007',
+            'Amlodipino 5 mg',
+          ),
+          origin: knownFact(
+            'fact_00000000-0000-4000-8000-000000000008',
+            'prescribed',
+          ),
+          specialUseConditions: [],
+        },
       ],
       otherMedicinesAndProducts: [],
       actualMedicationUse: [],
@@ -135,6 +162,15 @@ function collectConclusions(source: Record<string, any>): Record<string, any>[] 
     ...source.prm.findings,
     ...source.rnmAssessments,
     ...source.prmRnmRelations,
+    ...source.adherence.assessments,
+    ...source.adherence.typeConclusions,
+    ...source.adherence.patientProfiles,
+    ...source.adherence.barrierAssessments,
+    ...source.adherence.barriers,
+    ...source.adherence.strategies,
+    ...source.professionalActions,
+    ...source.pharmaceuticalInterventions,
+    source.referral,
   ];
 }
 
@@ -145,6 +181,15 @@ function synchronizeEvidenceRules(source: Record<string, any>): void {
     'prm_assessment',
     'prm',
     'rnm_assessment',
+    'adherence_assessment',
+    'non_adherence_type',
+    'adherence_patient_profile',
+    'adherence_barrier_assessment',
+    'adherence_barrier',
+    'adherence_strategy',
+    'professional_action',
+    'pharmaceutical_intervention',
+    'referral',
   ]);
   source.evidenceRules = collectConclusions(source)
     .filter((conclusion) => evidenceKinds.has(conclusion.kind))
@@ -166,6 +211,7 @@ function createEvaluator(): Record<string, any> {
       protocol: { id: 'foro-af-fc', version: '2024' },
       prmTaxonomy: { id: 'foro-prm', version: '2024' },
       rnmTaxonomy: { id: 'foro-rnm', version: '2024' },
+      adherenceFramework: { id: 'foro-adherence', version: '2024' },
     },
     carePath: {
       initialSpfa: {
@@ -314,6 +360,21 @@ function createEvaluator(): Record<string, any> {
         },
       },
     ],
+    adherence: {
+      assessments: [],
+      typeConclusions: [],
+      patientProfiles: [],
+      barrierAssessments: [],
+      barriers: [],
+      strategies: [],
+    },
+    professionalActions: [],
+    pharmaceuticalInterventions: [],
+    referral: {
+      conclusionId: conclusionIds.referral,
+      kind: 'referral',
+      value: { status: 'not_required' },
+    },
     evidenceRules: [],
   };
   synchronizeEvidenceRules(source);
@@ -322,6 +383,119 @@ function createEvaluator(): Record<string, any> {
 
 function validate(source = createEvaluator()) {
   return validateEvaluatorViewV2(source, createRuntime());
+}
+
+function setNoPrmOrRnm(source: Record<string, any>): void {
+  source.prm.assessment.value.status = 'none';
+  source.prm.findings = [];
+  source.rnmAssessments = [
+    {
+      conclusionId: conclusionIds.noRnm,
+      kind: 'rnm_assessment',
+      value: { status: 'no_rnm' },
+    },
+  ];
+  source.prmRnmRelations = [];
+}
+
+function addAdherentAssessment(
+  source: Record<string, any>,
+  conclusionId: string = conclusionIds.adherenceA,
+  medicationRefs: string[] = [medicationId],
+): void {
+  source.adherence.assessments.push({
+    conclusionId,
+    kind: 'adherence_assessment',
+    value: { medicationRefs, status: 'adherent' },
+  });
+}
+
+function addNonAdherentAssessment(
+  source: Record<string, any>,
+  options: {
+    assessmentId?: string;
+    typeId?: string;
+    barrierAssessmentId?: string;
+    medicationRefs?: string[];
+    type?: 'intentional' | 'unintentional' | 'erratic' | 'combined';
+    typeNotDeterminable?: boolean;
+    barrierStatus?: 'identified' | 'not_determinable';
+    barriers?: Array<{
+      conclusionId: string;
+      role: 'primary' | 'secondary';
+      category: 'practical' | 'perception';
+    }>;
+  } = {},
+): void {
+  const assessmentId = options.assessmentId ?? conclusionIds.adherenceA;
+  const typeId = options.typeId ?? conclusionIds.adherenceTypeA;
+  const barrierAssessmentId =
+    options.barrierAssessmentId ?? conclusionIds.barrierAssessmentA;
+  const barrierStatus = options.barrierStatus ?? 'identified';
+  const barriers =
+    options.barriers ??
+    (barrierStatus === 'identified'
+      ? [
+          {
+            conclusionId: conclusionIds.primaryBarrier,
+            role: 'primary' as const,
+            category: 'practical' as const,
+          },
+        ]
+      : []);
+
+  source.adherence.assessments.push({
+    conclusionId: assessmentId,
+    kind: 'adherence_assessment',
+    value: {
+      medicationRefs: options.medicationRefs ?? [medicationId],
+      status: 'non_adherent',
+    },
+  });
+  source.adherence.typeConclusions.push({
+    conclusionId: typeId,
+    kind: 'non_adherence_type',
+    value: options.typeNotDeterminable
+      ? { adherenceAssessmentRef: assessmentId, status: 'not_determinable' }
+      : {
+          adherenceAssessmentRef: assessmentId,
+          status: 'determined',
+          type: options.type ?? 'unintentional',
+        },
+  });
+  source.adherence.barrierAssessments.push({
+    conclusionId: barrierAssessmentId,
+    kind: 'adherence_barrier_assessment',
+    value: { adherenceAssessmentRef: assessmentId, status: barrierStatus },
+  });
+  barriers.forEach((barrier) => {
+    source.adherence.barriers.push({
+      conclusionId: barrier.conclusionId,
+      kind: 'adherence_barrier',
+      value: {
+        barrierAssessmentRef: barrierAssessmentId,
+        role: barrier.role,
+        category: barrier.category,
+      },
+    });
+  });
+}
+
+function requireReferral(source: Record<string, any>): void {
+  source.referral = {
+    conclusionId: conclusionIds.referral,
+    kind: 'referral',
+    value: {
+      status: 'required',
+      urgency: 'non_urgent',
+      destination: { label: 'Médico de atención primaria' },
+      reason: 'Requiere valoración clínica adicional.',
+      report: {
+        status: 'appropriate',
+        essentialContents: ['Hallazgos relevantes y medicación implicada.'],
+      },
+    },
+  };
 }
 
 describe('EvaluatorViewV2 case binding and opaque IDs', () => {
@@ -778,5 +952,549 @@ describe('EvaluatorViewV2 assessment consistency', () => {
     const source = createEvaluator();
     source.prm.assessment.value.status = 'none';
     expect(() => validate(source)).toThrow(/none assessment forbids findings/);
+  });
+});
+
+describe('EvaluatorViewV2 Incremento 2B scenarios', () => {
+  it('A. representa paciente adherente sin PRM ni RNM', () => {
+    const source = createEvaluator();
+    setNoPrmOrRnm(source);
+    addAdherentAssessment(source);
+    synchronizeEvidenceRules(source);
+
+    const evaluator = validate(source);
+    expect(evaluator.adherence.assessments[0].value.status).toBe('adherent');
+    expect(evaluator.prm.assessment.value.status).toBe('none');
+    expect(evaluator.rnmAssessments[0].value.status).toBe('no_rnm');
+  });
+
+  it('B. representa no adherencia no intencional con barrera práctica', () => {
+    const source = createEvaluator();
+    addNonAdherentAssessment(source);
+    synchronizeEvidenceRules(source);
+
+    const evaluator = validate(source);
+    expect(evaluator.adherence.typeConclusions[0].value).toMatchObject({
+      status: 'determined',
+      type: 'unintentional',
+    });
+    expect(evaluator.adherence.barriers[0].value.category).toBe('practical');
+  });
+
+  it('C. representa no adherencia intencional con barrera de percepción', () => {
+    const source = createEvaluator();
+    addNonAdherentAssessment(source, {
+      type: 'intentional',
+      barriers: [
+        {
+          conclusionId: conclusionIds.primaryBarrier,
+          role: 'primary',
+          category: 'perception',
+        },
+      ],
+    });
+    source.adherence.patientProfiles.push({
+      conclusionId: conclusionIds.adherenceProfile,
+      kind: 'adherence_patient_profile',
+      value: {
+        adherenceAssessmentRef: conclusionIds.adherenceA,
+        status: 'determined',
+        profile: 'trivializing',
+      },
+    });
+    synchronizeEvidenceRules(source);
+
+    const evaluator = validate(source);
+    expect(evaluator.adherence.typeConclusions[0].value).toMatchObject({
+      type: 'intentional',
+    });
+    expect(evaluator.adherence.barriers[0].value.category).toBe('perception');
+    expect(evaluator.adherence.patientProfiles[0].value).toMatchObject({
+      profile: 'trivializing',
+    });
+  });
+
+  it('D. representa tipo combinado con barrera primaria y secundaria', () => {
+    const source = createEvaluator();
+    addNonAdherentAssessment(source, {
+      type: 'combined',
+      barriers: [
+        {
+          conclusionId: conclusionIds.primaryBarrier,
+          role: 'primary',
+          category: 'perception',
+        },
+        {
+          conclusionId: conclusionIds.secondaryBarrier,
+          role: 'secondary',
+          category: 'practical',
+        },
+      ],
+    });
+    synchronizeEvidenceRules(source);
+
+    expect(validate(source).adherence.barriers).toHaveLength(2);
+  });
+
+  it('E. representa non_adherent con tipo no determinable', () => {
+    const source = createEvaluator();
+    addNonAdherentAssessment(source, { typeNotDeterminable: true });
+    synchronizeEvidenceRules(source);
+
+    expect(validate(source).adherence.typeConclusions[0].value.status).toBe(
+      'not_determinable',
+    );
+  });
+
+  it('F. representa medA adherente y medB no adherente', () => {
+    const source = createEvaluator();
+    addAdherentAssessment(source, conclusionIds.adherenceA, [medicationId]);
+    addNonAdherentAssessment(source, {
+      assessmentId: conclusionIds.adherenceB,
+      typeId: conclusionIds.adherenceTypeB,
+      barrierAssessmentId: conclusionIds.barrierAssessmentB,
+      medicationRefs: [medicationIdB],
+    });
+    synchronizeEvidenceRules(source);
+
+    expect(
+      validate(source).adherence.assessments.map((item) => item.value.status),
+    ).toEqual(['adherent', 'non_adherent']);
+  });
+
+  it('G. representa estrategia combined que aborda varias barreras', () => {
+    const source = createEvaluator();
+    addNonAdherentAssessment(source, {
+      type: 'combined',
+      barriers: [
+        {
+          conclusionId: conclusionIds.primaryBarrier,
+          role: 'primary',
+          category: 'perception',
+        },
+        {
+          conclusionId: conclusionIds.secondaryBarrier,
+          role: 'secondary',
+          category: 'practical',
+        },
+      ],
+    });
+    source.adherence.strategies.push({
+      conclusionId: conclusionIds.strategy,
+      kind: 'adherence_strategy',
+      value: {
+        adherenceAssessmentRef: conclusionIds.adherenceA,
+        category: 'combined',
+        componentCategories: ['educational', 'behavioral'],
+        addressedBarrierRefs: [
+          conclusionIds.primaryBarrier,
+          conclusionIds.secondaryBarrier,
+        ],
+      },
+    });
+    synchronizeEvidenceRules(source);
+
+    expect(validate(source).adherence.strategies[0].value).toMatchObject({
+      category: 'combined',
+      componentCategories: ['educational', 'behavioral'],
+    });
+  });
+
+  it('H. representa Actuación sin Intervención', () => {
+    const source = createEvaluator();
+    source.professionalActions.push({
+      conclusionId: conclusionIds.action,
+      kind: 'professional_action',
+      value: {
+        spfaRef: conclusionIds.initialSpfa,
+        category: 'dispense',
+      },
+    });
+    synchronizeEvidenceRules(source);
+
+    const evaluator = validate(source);
+    expect(evaluator.professionalActions).toHaveLength(1);
+    expect(evaluator.pharmaceuticalInterventions).toEqual([]);
+  });
+
+  it('I. representa Intervención sin Actuación ni derivación', () => {
+    const source = createEvaluator();
+    source.pharmaceuticalInterventions.push({
+      conclusionId: conclusionIds.intervention,
+      kind: 'pharmaceutical_intervention',
+      value: {
+        spfaRef: conclusionIds.initialSpfa,
+        target: 'conditions_of_use',
+        addressedConclusionRefs: [conclusionIds.incidence],
+      },
+    });
+    synchronizeEvidenceRules(source);
+
+    const evaluator = validate(source);
+    expect(evaluator.pharmaceuticalInterventions[0].value).not.toHaveProperty(
+      'professionalActionRef',
+    );
+    expect(evaluator.referral.value.status).toBe('not_required');
+  });
+
+  it('J. comparte una única ReferralConclusion entre Actuación e Intervención', () => {
+    const source = createEvaluator();
+    requireReferral(source);
+    source.professionalActions.push({
+      conclusionId: conclusionIds.action,
+      kind: 'professional_action',
+      value: {
+        spfaRef: conclusionIds.initialSpfa,
+        category: 'referral',
+        referralRef: conclusionIds.referral,
+      },
+    });
+    source.pharmaceuticalInterventions.push({
+      conclusionId: conclusionIds.intervention,
+      kind: 'pharmaceutical_intervention',
+      value: {
+        spfaRef: conclusionIds.initialSpfa,
+        professionalActionRef: conclusionIds.action,
+        target: 'patient_state_or_situation',
+        addressedConclusionRefs: [conclusionIds.rnm],
+        referralRef: conclusionIds.referral,
+      },
+    });
+    synchronizeEvidenceRules(source);
+
+    const evaluator = validate(source);
+    expect(evaluator.professionalActions[0].value.referralRef).toBe(
+      evaluator.referral.conclusionId,
+    );
+    expect(evaluator.pharmaceuticalInterventions[0].value.referralRef).toBe(
+      evaluator.referral.conclusionId,
+    );
+  });
+});
+
+describe('EvaluatorViewV2 Incremento 2B invariants', () => {
+  it('materializa medicationRefs en orden lexicográfico canónico', () => {
+    const source = createEvaluator();
+    addAdherentAssessment(source, conclusionIds.adherenceA, [
+      medicationIdB,
+      medicationId,
+    ]);
+    synchronizeEvidenceRules(source);
+
+    expect(validate(source).adherence.assessments[0].value.medicationRefs).toEqual([
+      medicationId,
+      medicationIdB,
+    ]);
+  });
+
+  it('rechaza un ámbito de adherencia vacío', () => {
+    const source = createEvaluator();
+    addAdherentAssessment(source, conclusionIds.adherenceA, []);
+    synchronizeEvidenceRules(source);
+    expect(() => validate(source)).toThrow(/at least one medication/);
+  });
+
+  it('rechaza medicamentos duplicados dentro del ámbito', () => {
+    const source = createEvaluator();
+    addAdherentAssessment(source, conclusionIds.adherenceA, [
+      medicationId,
+      medicationId,
+    ]);
+    synchronizeEvidenceRules(source);
+    expect(() => validate(source)).toThrow(/duplicate medication references/);
+  });
+
+  it('detecta ámbitos idénticos con distinto orden canónico', () => {
+    const source = createEvaluator();
+    addAdherentAssessment(source, conclusionIds.adherenceA, [
+      medicationId,
+      medicationIdB,
+    ]);
+    addAdherentAssessment(source, conclusionIds.adherenceB, [
+      medicationIdB,
+      medicationId,
+    ]);
+    synchronizeEvidenceRules(source);
+    expect(() => validate(source)).toThrow(/duplicate adherence medication scope/);
+  });
+
+  it('rechaza medicamentos inexistentes en un ámbito', () => {
+    const source = createEvaluator();
+    addAdherentAssessment(source, conclusionIds.adherenceA, [
+      'med_10000000-0000-4000-8000-000000000099',
+    ]);
+    synchronizeEvidenceRules(source);
+    expect(() => validate(source)).toThrow(/unknown medication reference/);
+  });
+
+  it('rechaza ámbitos de adherencia solapados', () => {
+    const source = createEvaluator();
+    addAdherentAssessment(source, conclusionIds.adherenceA, [medicationId]);
+    addAdherentAssessment(source, conclusionIds.adherenceB, [
+      medicationId,
+      medicationIdB,
+    ]);
+    synchronizeEvidenceRules(source);
+    expect(() => validate(source)).toThrow(/scope overlaps/);
+  });
+
+  it('rechaza profile en adherent', () => {
+    const source = createEvaluator();
+    addAdherentAssessment(source);
+    source.adherence.patientProfiles.push({
+      conclusionId: conclusionIds.adherenceProfile,
+      kind: 'adherence_patient_profile',
+      value: {
+        adherenceAssessmentRef: conclusionIds.adherenceA,
+        status: 'determined',
+        profile: 'confused',
+      },
+    });
+    synchronizeEvidenceRules(source);
+    expect(() => validate(source)).toThrow(/only valid for non_adherent/);
+  });
+
+  it('rechaza tipo en adherent', () => {
+    const source = createEvaluator();
+    addAdherentAssessment(source);
+    source.adherence.typeConclusions.push({
+      conclusionId: conclusionIds.adherenceTypeA,
+      kind: 'non_adherence_type',
+      value: {
+        adherenceAssessmentRef: conclusionIds.adherenceA,
+        status: 'determined',
+        type: 'intentional',
+      },
+    });
+    synchronizeEvidenceRules(source);
+    expect(() => validate(source)).toThrow(/only valid for non_adherent/);
+  });
+
+  it('rechaza barreras en adherent', () => {
+    const source = createEvaluator();
+    addAdherentAssessment(source);
+    source.adherence.barrierAssessments.push({
+      conclusionId: conclusionIds.barrierAssessmentA,
+      kind: 'adherence_barrier_assessment',
+      value: {
+        adherenceAssessmentRef: conclusionIds.adherenceA,
+        status: 'identified',
+      },
+    });
+    synchronizeEvidenceRules(source);
+    expect(() => validate(source)).toThrow(/only valid for non_adherent/);
+  });
+
+  it('rechaza non_adherent sin tipo', () => {
+    const source = createEvaluator();
+    addNonAdherentAssessment(source);
+    source.adherence.typeConclusions = [];
+    synchronizeEvidenceRules(source);
+    expect(() => validate(source)).toThrow(/requires exactly one type/);
+  });
+
+  it('rechaza non_adherent sin barrier assessment', () => {
+    const source = createEvaluator();
+    addNonAdherentAssessment(source);
+    source.adherence.barrierAssessments = [];
+    source.adherence.barriers = [];
+    synchronizeEvidenceRules(source);
+    expect(() => validate(source)).toThrow(/requires exactly one barrier assessment/);
+  });
+
+  it('rechaza dos barreras primary', () => {
+    const source = createEvaluator();
+    addNonAdherentAssessment(source, {
+      barriers: [
+        {
+          conclusionId: conclusionIds.primaryBarrier,
+          role: 'primary',
+          category: 'practical',
+        },
+        {
+          conclusionId: conclusionIds.secondaryBarrier,
+          role: 'primary',
+          category: 'perception',
+        },
+      ],
+    });
+    synchronizeEvidenceRules(source);
+    expect(() => validate(source)).toThrow(/exactly one primary/);
+  });
+
+  it('rechaza estrategia que referencia barrera de otro assessment', () => {
+    const source = createEvaluator();
+    addNonAdherentAssessment(source);
+    addNonAdherentAssessment(source, {
+      assessmentId: conclusionIds.adherenceB,
+      typeId: conclusionIds.adherenceTypeB,
+      barrierAssessmentId: conclusionIds.barrierAssessmentB,
+      medicationRefs: [medicationIdB],
+      barriers: [
+        {
+          conclusionId: conclusionIds.otherBarrier,
+          role: 'primary',
+          category: 'perception',
+        },
+      ],
+    });
+    source.adherence.strategies.push({
+      conclusionId: conclusionIds.strategy,
+      kind: 'adherence_strategy',
+      value: {
+        adherenceAssessmentRef: conclusionIds.adherenceA,
+        category: 'educational',
+        addressedBarrierRefs: [conclusionIds.otherBarrier],
+      },
+    });
+    synchronizeEvidenceRules(source);
+    expect(() => validate(source)).toThrow(/different adherence assessment/);
+  });
+
+  it('rechaza combined con un solo componente', () => {
+    const source = createEvaluator();
+    addNonAdherentAssessment(source);
+    source.adherence.strategies.push({
+      conclusionId: conclusionIds.strategy,
+      kind: 'adherence_strategy',
+      value: {
+        adherenceAssessmentRef: conclusionIds.adherenceA,
+        category: 'combined',
+        componentCategories: ['technical'],
+        addressedBarrierRefs: [conclusionIds.primaryBarrier],
+      },
+    });
+    synchronizeEvidenceRules(source);
+    expect(() => validate(source)).toThrow(/at least two categories/);
+  });
+
+  it('rechaza clasificación opcional sin VersionRef correspondiente', () => {
+    const source = createEvaluator();
+    addNonAdherentAssessment(source);
+    source.adherence.barriers[0].value.classification = {
+      taxonomyId: 'barrier-catalog',
+      taxonomyVersion: '1',
+      conceptId: 'barrier-a',
+    };
+    synchronizeEvidenceRules(source);
+    expect(() => validate(source)).toThrow(/requires its configured VersionRef/);
+  });
+
+  it('acepta clasificación opcional cuando coincide con VersionRef', () => {
+    const source = createEvaluator();
+    source.versions.barrierTaxonomy = {
+      id: 'barrier-catalog',
+      version: '1',
+    };
+    addNonAdherentAssessment(source);
+    source.adherence.barriers[0].value.classification = {
+      taxonomyId: 'barrier-catalog',
+      taxonomyVersion: '1',
+      conceptId: 'barrier-a',
+    };
+    synchronizeEvidenceRules(source);
+    expect(validate(source).adherence.barriers[0].value.classification).toBeDefined();
+  });
+
+  it('rechaza other_spfa sin transición coincidente', () => {
+    const source = createEvaluator();
+    source.carePath.transitions = [];
+    source.professionalActions.push({
+      conclusionId: conclusionIds.action,
+      kind: 'professional_action',
+      value: {
+        spfaRef: conclusionIds.initialSpfa,
+        category: 'other_spfa',
+        targetSpfaRef: conclusionIds.additionalSpfa,
+      },
+    });
+    synchronizeEvidenceRules(source);
+    expect(() => validate(source)).toThrow(/matching SPFA transition/);
+  });
+
+  it('rechaza professionalActionRef de otro SPFA', () => {
+    const source = createEvaluator();
+    source.professionalActions.push({
+      conclusionId: conclusionIds.action,
+      kind: 'professional_action',
+      value: {
+        spfaRef: conclusionIds.additionalSpfa,
+        category: 'pharmacological_treatment',
+      },
+    });
+    source.pharmaceuticalInterventions.push({
+      conclusionId: conclusionIds.intervention,
+      kind: 'pharmaceutical_intervention',
+      value: {
+        spfaRef: conclusionIds.initialSpfa,
+        professionalActionRef: conclusionIds.action,
+        target: 'treatment',
+        addressedConclusionRefs: [conclusionIds.prmA],
+      },
+    });
+    synchronizeEvidenceRules(source);
+    expect(() => validate(source)).toThrow(/different SPFA/);
+  });
+
+  it('rechaza addressedConclusionRef estructural', () => {
+    const source = createEvaluator();
+    source.pharmaceuticalInterventions.push({
+      conclusionId: conclusionIds.intervention,
+      kind: 'pharmaceutical_intervention',
+      value: {
+        spfaRef: conclusionIds.initialSpfa,
+        target: 'treatment',
+        addressedConclusionRefs: [conclusionIds.initialSpfa],
+      },
+    });
+    synchronizeEvidenceRules(source);
+    expect(() => validate(source)).toThrow(/cannot be addressed/);
+  });
+
+  it('rechaza addressed no_rnm', () => {
+    const source = createEvaluator();
+    setNoPrmOrRnm(source);
+    source.pharmaceuticalInterventions.push({
+      conclusionId: conclusionIds.intervention,
+      kind: 'pharmaceutical_intervention',
+      value: {
+        spfaRef: conclusionIds.initialSpfa,
+        target: 'patient_state_or_situation',
+        addressedConclusionRefs: [conclusionIds.noRnm],
+      },
+    });
+    synchronizeEvidenceRules(source);
+    expect(() => validate(source)).toThrow(/no_rnm cannot be addressed/);
+  });
+
+  it('rechaza referralRef cuando referral es not_required', () => {
+    const source = createEvaluator();
+    source.professionalActions.push({
+      conclusionId: conclusionIds.action,
+      kind: 'professional_action',
+      value: {
+        spfaRef: conclusionIds.initialSpfa,
+        category: 'referral',
+        referralRef: conclusionIds.referral,
+      },
+    });
+    synchronizeEvidenceRules(source);
+    expect(() => validate(source)).toThrow(/required evaluator referral/);
+  });
+
+  it('rechaza destination.label vacío', () => {
+    const source = createEvaluator();
+    requireReferral(source);
+    source.referral.value.destination.label = '   ';
+    synchronizeEvidenceRules(source);
+    expect(() => validate(source)).toThrow(/destination\.label/);
+  });
+
+  it('rechaza propiedades inesperadas en los nuevos tipos', () => {
+    const source = createEvaluator();
+    addAdherentAssessment(source);
+    source.adherence.assessments[0].value.future_secret = true;
+    synchronizeEvidenceRules(source);
+    expect(() => validate(source)).toThrow(/unexpected property/);
   });
 });
