@@ -1,5 +1,6 @@
 import type {
   BiomedicalDatumValue,
+  CaseVersionId,
   CasePatientFactsDraftV2,
   DisclosureDelay,
   DisclosureDomain,
@@ -180,14 +181,16 @@ function optionalNonEmptyString(
   return value === undefined ? undefined : nonEmptyString(value, path);
 }
 
-type OpaqueIdFor<Prefix extends 'fact' | 'med' | 'use'> =
+type OpaqueIdFor<Prefix extends 'fact' | 'med' | 'use' | 'casever'> =
   Prefix extends 'fact'
     ? FactId
     : Prefix extends 'med'
       ? MedicationId
-      : MedicationUseId;
+      : Prefix extends 'use'
+        ? MedicationUseId
+        : CaseVersionId;
 
-function opaqueId<Prefix extends 'fact' | 'med' | 'use'>(
+function opaqueId<Prefix extends 'fact' | 'med' | 'use' | 'casever'>(
   value: unknown,
   prefix: Prefix,
   path: string,
@@ -203,6 +206,13 @@ function opaqueId<Prefix extends 'fact' | 'med' | 'use'>(
     fail(path, `must use the opaque format ${prefix}_<uuid>`);
   }
   return value as OpaqueIdFor<Prefix>;
+}
+
+export function validateCaseVersionId(
+  value: unknown,
+  path = 'caseVersionId',
+): CaseVersionId {
+  return opaqueId(value, 'casever', path);
 }
 
 function controlledValue<const T extends readonly string[]>(
@@ -953,6 +963,7 @@ export function validateCasePatientFactsDraftV2(
 
   const draft: CasePatientFactsDraftV2 = {
     schemaVersion: '2.0',
+    caseVersionId: validateCaseVersionId(source.caseVersionId),
     publicProfile: parsePublicProfile(source.publicProfile),
     initialDemand: parseStringDatum(source.initialDemand, 'initialDemand'),
     encounter: parseEncounter(source.encounter),

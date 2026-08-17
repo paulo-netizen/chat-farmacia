@@ -3,11 +3,15 @@ export type Scale1To5 = 1 | 2 | 3 | 4 | 5;
 declare const factIdBrand: unique symbol;
 declare const medicationIdBrand: unique symbol;
 declare const medicationUseIdBrand: unique symbol;
+declare const caseVersionIdBrand: unique symbol;
 
 export type FactId = string & { readonly [factIdBrand]: true };
 export type MedicationId = string & { readonly [medicationIdBrand]: true };
 export type MedicationUseId = string & {
   readonly [medicationUseIdBrand]: true;
+};
+export type CaseVersionId = string & {
+  readonly [caseVersionIdBrand]: true;
 };
 
 export type DisclosureDomain =
@@ -306,6 +310,7 @@ export type PatientCommunicationProfile = {
 
 export type CasePatientFactsDraftV2 = {
   schemaVersion: '2.0';
+  caseVersionId: CaseVersionId;
   publicProfile: StudentPublicView;
   initialDemand: PatientDatum<string>;
   encounter: PatientEncounterDraftV2;
@@ -324,6 +329,7 @@ export type CasePatientFactsDraftV2 = {
 
 export type PatientRuntimeViewV2 = {
   schemaVersion: '2.0';
+  caseVersionId: CaseVersionId;
   publicProfile: StudentPublicView;
   initialDemand: RuntimePatientDatum<string>;
   encounter: RuntimePatientEncounterV2;

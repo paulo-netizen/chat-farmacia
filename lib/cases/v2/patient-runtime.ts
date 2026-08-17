@@ -283,6 +283,7 @@ export function createPatientRuntimeViewV2(input: unknown): PatientRuntimeViewV2
 
   const runtime: PatientRuntimeViewV2 = {
     schemaVersion: '2.0',
+    caseVersionId: draft.caseVersionId,
     publicProfile: {
       nombre: draft.publicProfile.nombre,
       edad: draft.publicProfile.edad,

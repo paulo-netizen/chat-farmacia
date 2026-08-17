@@ -115,6 +115,7 @@ function notApplicable(reasonCode = 'not_applicable_to_patient') {
 function createDraft(): Record<string, any> {
   return {
     schemaVersion: '2.0',
+    caseVersionId: 'casever_90000000-0000-4000-8000-000000000001',
     publicProfile: {
       nombre: 'María',
       edad: 67,
@@ -734,6 +735,14 @@ describe('PatientRuntimeViewV2 factual scenarios', () => {
 });
 
 describe('PatientRuntimeViewV2 projection', () => {
+  it('conserva el CaseVersionId opaco del borrador validado', () => {
+    const runtime = createPatientRuntimeViewV2(createDraft());
+
+    expect(runtime.caseVersionId).toBe(
+      'casever_90000000-0000-4000-8000-000000000001',
+    );
+  });
+
   it('construye una vista nueva mediante allowlist y conserva hechos válidos', () => {
     const source = createDraft();
     source.ground_truth = { nonAdherenceType: 'unintentional' };
