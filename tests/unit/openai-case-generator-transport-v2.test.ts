@@ -105,6 +105,27 @@ function schemaCompatibilityMetrics(schema: JsonSchema) {
   };
 }
 
+function findArrayValuedItemsKeywords(
+  node: unknown,
+  path = '$',
+  failures: string[] = [],
+): string[] {
+  if (Array.isArray(node)) {
+    node.forEach((item, index) =>
+      findArrayValuedItemsKeywords(item, `${path}[${index}]`, failures),
+    );
+    return failures;
+  }
+  if (typeof node !== 'object' || node === null) return failures;
+
+  Object.entries(node).forEach(([keyword, value]) => {
+    const childPath = `${path}.${keyword}`;
+    if (keyword === 'items' && Array.isArray(value)) failures.push(childPath);
+    findArrayValuedItemsKeywords(value, childPath, failures);
+  });
+  return failures;
+}
+
 function generatedJsonSchema(): JsonSchema {
   return (
     OPENAI_CASE_GENERATOR_TEXT_FORMAT_V1 as unknown as { schema: JsonSchema }
@@ -733,7 +754,50 @@ describe('OpenAI case generator Structured Outputs transport', () => {
     expect(metrics.maximumDepth).toBe(10);
     expect(metrics.propertyCount).toBeLessThanOrEqual(5_000);
     expect(metrics.strictnessFailures).toEqual([]);
+    expect(findArrayValuedItemsKeywords(schema)).toEqual([]);
     expect(OPENAI_MAX_EVIDENCE_DEPTH).toBe(6);
+  });
+
+  it('acepta un report not_required vacío a través de transport, normalización y 3D-A', () => {
+    const transport = createComprehensiveTransport();
+    transport.evaluator.referral.value.report = {
+      status: 'not_required',
+      essentialContents: [],
+    };
+
+    expect(OpenAiGeneratedCaseDraftTransportSchemaV1.parse(transport))
+      .toMatchObject({
+        evaluator: {
+          referral: {
+            value: {
+              report: { status: 'not_required', essentialContents: [] },
+            },
+          },
+        },
+      });
+    expect(validateOpenAiGeneratedCaseDraftTransportV1(transport))
+      .toMatchObject({
+        evaluator: {
+          referral: {
+            value: {
+              report: { status: 'not_required', essentialContents: [] },
+            },
+          },
+        },
+      });
+  });
+
+  it('rechaza contenido no vacío en un report not_required', () => {
+    const transport = createComprehensiveTransport();
+    transport.evaluator.referral.value.report = {
+      status: 'not_required',
+      essentialContents: ['No permitido'],
+    };
+
+    expectBoundaryError(
+      () => validateOpenAiGeneratedCaseDraftTransportV1(transport),
+      'invalid_openai_transport',
+    );
   });
 
   it('acepta y valida un caso mínimo sin sustituir la validación 3D-A', () => {

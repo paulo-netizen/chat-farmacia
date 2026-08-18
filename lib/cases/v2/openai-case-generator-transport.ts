@@ -583,7 +583,7 @@ const report = z.discriminatedUnion('status', [
   z
     .object({
       status: z.literal('not_required'),
-      essentialContents: z.tuple([]),
+      essentialContents: z.array(text).length(0),
     })
     .strict(),
   z
