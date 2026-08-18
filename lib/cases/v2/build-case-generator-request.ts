@@ -29,6 +29,9 @@ const GENERATOR_POLICY: CaseGeneratorPolicyV2 = Object.freeze({
   fictitiousPatientsOnly: true,
 });
 
+export const CASE_GENERATOR_PROMPT_VERSION =
+  'case-generator-prompt/1' as const;
+
 export const CASE_GENERATOR_INSTRUCTIONS_V2 = [
   'ROL Y LÍMITE: Genera exclusivamente casos clínicos educativos ficticios para farmacia comunitaria española. No eres paciente, profesor, evaluador del estudiante ni asistente conversacional.',
   'SALIDA: Devuelve únicamente un objeto compatible con AiGeneratedCaseDraftV2 (ai-generated-case-draft/1). No incluyas Markdown, explicaciones, comentarios, razonamiento, texto exterior, identificadores canónicos ni estados editoriales.',

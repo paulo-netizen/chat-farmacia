@@ -31,6 +31,16 @@ export type OpenAiCaseGeneratorClientV2 = {
   readonly responses: Pick<OpenAI['responses'], 'parse'>;
 };
 
+export type OpenAiCaseGeneratorExecutionReceiptV2 = Readonly<{
+  draft: AiGeneratedCaseDraftV2;
+  responseModel: string;
+}>;
+
+type OpenAiCaseGeneratorInternalExecutionV2 = Readonly<{
+  draft: AiGeneratedCaseDraftV2;
+  responseModel: unknown;
+}>;
+
 export type OpenAiCaseGeneratorExecutionErrorCode =
   | 'invalid_openai_execution_config'
   | 'openai_request_failed'
@@ -38,7 +48,8 @@ export type OpenAiCaseGeneratorExecutionErrorCode =
   | 'openai_incomplete'
   | 'openai_refusal'
   | 'openai_unexpected_status'
-  | 'openai_missing_parsed_output';
+  | 'openai_missing_parsed_output'
+  | 'openai_invalid_response_metadata';
 
 export type OpenAiCaseGeneratorExecutionErrorDetails = {
   readonly incompleteReason?: 'max_output_tokens' | 'content_filter';
@@ -168,11 +179,27 @@ function classifiedError(
   );
 }
 
-export async function executeOpenAiCaseGeneratorV2(
+function validateResponseModel(responseModel: unknown): string {
+  if (
+    typeof responseModel !== 'string' ||
+    responseModel.length === 0 ||
+    responseModel.trim() !== responseModel ||
+    responseModel.length > OPENAI_CASE_GENERATOR_EXECUTION_LIMITS.maxModelLength
+  ) {
+    classifiedError(
+      'openai_invalid_response_metadata',
+      'response.model',
+      'OpenAI returned invalid response model metadata',
+    );
+  }
+  return responseModel;
+}
+
+async function executeOpenAiCaseGeneratorInternalV2(
   client: OpenAiCaseGeneratorClientV2,
   request: GeneratorRequestV2,
   configInput: OpenAiCaseGeneratorExecutionConfigV2,
-): Promise<AiGeneratedCaseDraftV2> {
+): Promise<OpenAiCaseGeneratorInternalExecutionV2> {
   const config = validateExecutionConfig(configInput);
   const params = buildOpenAiCaseGeneratorParamsV2(request);
   const requestOptions: RequestOptions = {
@@ -271,5 +298,37 @@ export async function executeOpenAiCaseGeneratorV2(
     );
   }
 
-  return validateOpenAiGeneratedCaseDraftTransportV1(response.output_parsed);
+  const draft = validateOpenAiGeneratedCaseDraftTransportV1(
+    response.output_parsed,
+  );
+  return Object.freeze({ draft, responseModel: response.model });
+}
+
+export async function executeOpenAiCaseGeneratorWithReceiptV2(
+  client: OpenAiCaseGeneratorClientV2,
+  request: GeneratorRequestV2,
+  configInput: OpenAiCaseGeneratorExecutionConfigV2,
+): Promise<OpenAiCaseGeneratorExecutionReceiptV2> {
+  const execution = await executeOpenAiCaseGeneratorInternalV2(
+    client,
+    request,
+    configInput,
+  );
+  return Object.freeze({
+    draft: execution.draft,
+    responseModel: validateResponseModel(execution.responseModel),
+  });
+}
+
+export async function executeOpenAiCaseGeneratorV2(
+  client: OpenAiCaseGeneratorClientV2,
+  request: GeneratorRequestV2,
+  configInput: OpenAiCaseGeneratorExecutionConfigV2,
+): Promise<AiGeneratedCaseDraftV2> {
+  const execution = await executeOpenAiCaseGeneratorInternalV2(
+    client,
+    request,
+    configInput,
+  );
+  return execution.draft;
 }

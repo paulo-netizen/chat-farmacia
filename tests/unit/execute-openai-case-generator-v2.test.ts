@@ -3,6 +3,7 @@ import { describe, expect, it, vi } from 'vitest';
 import { buildOpenAiCaseGeneratorParamsV2 } from '@/lib/cases/v2/build-openai-case-generator-params';
 import type { GeneratorRequestV2 } from '@/lib/cases/v2/case-generator-request-types';
 import {
+  executeOpenAiCaseGeneratorWithReceiptV2,
   executeOpenAiCaseGeneratorV2,
   OPENAI_CASE_GENERATOR_EXECUTION_LIMITS,
   OpenAiCaseGeneratorExecutionError,
@@ -190,6 +191,7 @@ const executionConfig: OpenAiCaseGeneratorExecutionConfigV2 = {
 
 function response(overrides: Record<string, unknown> = {}) {
   return {
+    model: 'actual-response-model',
     status: 'completed',
     error: null,
     incomplete_details: null,
@@ -224,6 +226,79 @@ async function expectExecutionError(
 }
 
 describe('executeOpenAiCaseGeneratorV2', () => {
+  it('devuelve un receipt cuyo modelo procede exclusivamente de response.model', async () => {
+    const { client, parse } = mockClient(
+      response({ model: 'actual-provider-model' }),
+    );
+
+    const receipt = await executeOpenAiCaseGeneratorWithReceiptV2(
+      client,
+      createRequest(),
+      { ...executionConfig, model: 'requested-config-model' },
+    );
+
+    expect(parse).toHaveBeenCalledTimes(1);
+    expect(receipt.draft.contractVersion).toBe('ai-generated-case-draft/1');
+    expect(receipt.responseModel).toBe('actual-provider-model');
+    expect(receipt.responseModel).not.toBe('requested-config-model');
+  });
+
+  it.each([
+    ['ausente', undefined],
+    ['no-string', 42],
+    ['vacío', ''],
+    ['whitespace exterior', ' actual-model '],
+    [
+      'demasiado largo',
+      'm'.repeat(OPENAI_CASE_GENERATOR_EXECUTION_LIMITS.maxModelLength + 1),
+    ],
+  ])('rechaza response.model %s sin fallback a config.model', async (_, model) => {
+    const { client, parse } = mockClient(response({ model }));
+
+    const error = await expectExecutionError(
+      executeOpenAiCaseGeneratorWithReceiptV2(
+        client,
+        createRequest(),
+        executionConfig,
+      ),
+      'openai_invalid_response_metadata',
+    );
+
+    expect(error.path).toBe('response.model');
+    if (typeof model === 'string' && model.length > 0) {
+      expect(error.message).not.toContain(model);
+    }
+    expect(error.message).not.toContain(executionConfig.model);
+    expect(parse).toHaveBeenCalledTimes(1);
+  });
+
+  it('mantiene la API legacy independiente de response.model ausente', async () => {
+    const providerResponse = response();
+    Reflect.deleteProperty(providerResponse, 'model');
+    const legacy = mockClient(providerResponse);
+    const receipt = mockClient(providerResponse);
+
+    await expect(
+      executeOpenAiCaseGeneratorV2(
+        legacy.client,
+        createRequest(),
+        executionConfig,
+      ),
+    ).resolves.toMatchObject({ contractVersion: 'ai-generated-case-draft/1' });
+    const error = await expectExecutionError(
+      executeOpenAiCaseGeneratorWithReceiptV2(
+        receipt.client,
+        createRequest(),
+        executionConfig,
+      ),
+      'openai_invalid_response_metadata',
+    );
+
+    expect(error.path).toBe('response.model');
+    expect(legacy.parse).toHaveBeenCalledTimes(1);
+    expect(receipt.parse).toHaveBeenCalledTimes(1);
+  });
+
   it('ejecuta exactamente una llamada con parámetros y options server-owned', async () => {
     const request = createRequest();
     const expectedParams = buildOpenAiCaseGeneratorParamsV2(request);
@@ -247,6 +322,8 @@ describe('executeOpenAiCaseGeneratorV2', () => {
     );
     expect(result.contractVersion).toBe('ai-generated-case-draft/1');
     expect(result.patientFacts.publicProfile.nombre).toBe('María');
+    expect(result).not.toHaveProperty('responseModel');
+    expect(result).not.toHaveProperty('draft');
   });
 
   it('envuelve excepciones de request sin reintentar', async () => {
