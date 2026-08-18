@@ -43,6 +43,12 @@ export type GenerationAssemblyContextV2 = Readonly<{
   ): DisclosureRule;
 }>;
 
+export type VersionedGenerationAssemblyContextV2 =
+  GenerationAssemblyContextV2 &
+    Readonly<{
+      disclosurePolicyVersion: string;
+    }>;
+
 export type CanonicalGeneratedCaseCoreV2 = Readonly<{
   caseVersionId: CaseVersionId;
   patientFacts: CasePatientFactsDraftV2;

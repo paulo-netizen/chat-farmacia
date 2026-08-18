@@ -68,6 +68,8 @@ import type {
 import { validateEvaluatorViewV2 } from './validate-evaluator-view';
 import { validateCasePatientFactsDraftV2 } from './validate-patient-facts';
 
+export const GENERATION_ASSEMBLER_VERSION = 'generation-assembly/1' as const;
+
 const DISCLOSURE_DOMAINS = new Set<DisclosureDomain>([
   'initial_demand', 'patient_identity', 'caregiver_context', 'health_problems',
   'clinical_history', 'physiological_status', 'pregnancy_lactation',
