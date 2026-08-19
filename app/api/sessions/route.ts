@@ -1,92 +1,141 @@
 import { NextResponse } from 'next/server';
-import { pool } from '@/lib/db';
-import { getUserFromRequest } from '@/lib/auth';
-import {
-  createStudentCasePublicData,
-  createStudentSessionDto,
-} from '@/lib/cases/student-session-dto';
 
-type StudentCaseRow = {
-  case_id: number;
-  nombre: unknown;
-  edad: unknown;
-  sexo: unknown;
-  tratamiento: unknown;
+import { getUserFromRequest } from '@/lib/auth';
+import { createStudentSessionDto } from '@/lib/cases/student-session-dto';
+import { resolveStudentPublicCaseVersionV2 } from '@/lib/cases/v2/resolve-student-public-case-version';
+import { pool } from '@/lib/db';
+
+type StudentCaseVersionDatabaseRow = {
+  id: unknown;
+  case_id: unknown;
+  status: unknown;
+  content_format: unknown;
+  content: unknown;
 };
 
-async function getOrAssignCaseForStudent(userId: number) {
+const POSITIVE_BIGINT_TEXT_PATTERN = /^[1-9]\d*$/;
+
+function normalizeCaseId(value: unknown): number {
+  if (
+    typeof value !== 'string' ||
+    !POSITIVE_BIGINT_TEXT_PATTERN.test(value)
+  ) {
+    throw new Error('Invalid case version case_id');
+  }
+
+  const caseId = Number(value);
+  if (!Number.isSafeInteger(caseId) || caseId <= 0) {
+    throw new Error('Invalid case version case_id');
+  }
+
+  return caseId;
+}
+
+async function createSessionForStudent(userId: number) {
   const client = await pool.connect();
+  let transactionStarted = false;
+
   try {
-    // 1) Buscar un caso nuevo no asignado al alumno
-    const { rows: available } = await client.query(
+    await client.query('BEGIN');
+    transactionStarted = true;
+
+    const { rows: availableRows } = await client.query(
       `
       SELECT
-        c.id AS case_id,
-        c.spec ->> 'nombre' AS nombre,
-        c.spec ->> 'edad' AS edad,
-        c.spec ->> 'sexo' AS sexo,
-        c.spec ->> 'tratamiento' AS tratamiento
-      FROM cases c
-      LEFT JOIN case_assignments ca
-        ON ca.case_id = c.id AND ca.student_id = $1
-      WHERE c.status IN ('approved', 'published')
+        cv.id,
+        cv.case_id::text AS case_id,
+        cv.status,
+        cv.content_format,
+        cv.content
+      FROM public.case_versions AS cv
+      LEFT JOIN public.case_assignments AS ca
+        ON ca.case_id = cv.case_id
+       AND ca.student_id = $1
+      WHERE cv.status = 'PUBLISHED'
         AND ca.id IS NULL
       ORDER BY random()
       LIMIT 1
+      FOR SHARE OF cv
       `,
-      [userId]
+      [userId],
     );
 
-    let caseRow: StudentCaseRow;
+    let caseVersionRow = availableRows[0] as
+      | StudentCaseVersionDatabaseRow
+      | undefined;
 
-    if (available.length > 0) {
-      // Se encontró un caso nuevo
-      caseRow = available[0] as StudentCaseRow;
-    } else {
-      // 2) Si no quedan casos nuevos, escoger cualquiera disponible en modo aleatorio
-      const { rows } = await client.query(
+    if (caseVersionRow === undefined) {
+      const { rows: fallbackRows } = await client.query(
         `
         SELECT
-          id AS case_id,
-          spec ->> 'nombre' AS nombre,
-          spec ->> 'edad' AS edad,
-          spec ->> 'sexo' AS sexo,
-          spec ->> 'tratamiento' AS tratamiento
-        FROM cases
-        WHERE status IN ('approved', 'published')
+          cv.id,
+          cv.case_id::text AS case_id,
+          cv.status,
+          cv.content_format,
+          cv.content
+        FROM public.case_versions AS cv
+        WHERE cv.status = 'PUBLISHED'
         ORDER BY random()
         LIMIT 1
-        `
+        FOR SHARE OF cv
+        `,
       );
-
-      if (rows.length === 0) {
-        throw new Error('No hay casos publicados disponibles');
-      }
-
-      caseRow = rows[0] as StudentCaseRow;
+      caseVersionRow = fallbackRows[0] as
+        | StudentCaseVersionDatabaseRow
+        | undefined;
     }
 
-    // 3) Registrar asignación en case_assignments (o no hacer nada si ya existía)
-    const publicCaseData = createStudentCasePublicData({
-      nombre: caseRow.nombre,
-      edad: caseRow.edad,
-      sexo: caseRow.sexo,
-      tratamiento: caseRow.tratamiento,
+    if (caseVersionRow === undefined) {
+      throw new Error('No published case version available');
+    }
+
+    const resolved = resolveStudentPublicCaseVersionV2({
+      id: caseVersionRow.id,
+      case_id: normalizeCaseId(caseVersionRow.case_id),
+      status: caseVersionRow.status,
+      content_format: caseVersionRow.content_format,
+      content: caseVersionRow.content,
     });
 
     await client.query(
       `
-      INSERT INTO case_assignments (student_id, case_id)
+      INSERT INTO public.case_assignments (student_id, case_id)
       VALUES ($1, $2)
       ON CONFLICT (student_id, case_id) DO NOTHING
       `,
-      [userId, caseRow.case_id]
+      [userId, resolved.caseId],
     );
 
-    return {
-      caseId: caseRow.case_id,
-      publicCaseData,
-    };
+    const { rows: sessionRows } = await client.query(
+      `
+      INSERT INTO public.sessions (
+        user_id,
+        case_id,
+        case_version_id
+      )
+      VALUES ($1, $2, $3)
+      RETURNING id
+      `,
+      [userId, resolved.caseId, resolved.caseVersionId],
+    );
+
+    const response = createStudentSessionDto({
+      sessionId: sessionRows[0]?.id,
+      ...resolved.publicCaseData,
+    });
+
+    await client.query('COMMIT');
+    transactionStarted = false;
+    return response;
+  } catch (error) {
+    if (transactionStarted) {
+      try {
+        await client.query('ROLLBACK');
+      } catch (rollbackError) {
+        console.error('Error revirtiendo creación de sesión:', rollbackError);
+      }
+    }
+    throw error;
   } finally {
     client.release();
   }
@@ -94,42 +143,19 @@ async function getOrAssignCaseForStudent(userId: number) {
 
 export async function POST(req: Request) {
   try {
-    // Obtener usuario del cookie JWT
     const user = await getUserFromRequest(req);
 
     if (!user) {
       return NextResponse.json({ error: 'No autenticado' }, { status: 401 });
     }
 
-    // En Fase 1 incluso profesores entran en el chat igual que alumnos
-    const selectedCase = await getOrAssignCaseForStudent(user.id);
-
-    const client = await pool.connect();
-    try {
-      const { rows: sessionRows } = await client.query(
-        `
-        INSERT INTO sessions (user_id, case_id)
-        VALUES ($1, $2)
-        RETURNING id
-        `,
-        [user.id, selectedCase.caseId]
-      );
-
-      const response = createStudentSessionDto({
-        sessionId: sessionRows[0]?.id,
-        ...selectedCase.publicCaseData,
-      });
-
-      return NextResponse.json(response);
-    } finally {
-      client.release();
-    }
-  } catch (err) {
-    console.error('Error creando sesión:', err);
+    const response = await createSessionForStudent(user.id);
+    return NextResponse.json(response);
+  } catch (error) {
+    console.error('Error creando sesión:', error);
     return NextResponse.json(
       { error: 'Error creando sesión' },
-      { status: 500 }
+      { status: 500 },
     );
   }
 }
-
