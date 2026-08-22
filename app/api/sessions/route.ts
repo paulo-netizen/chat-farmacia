@@ -2,7 +2,10 @@ import { NextResponse } from 'next/server';
 
 import { getUserFromRequest } from '@/lib/auth';
 import { createStudentSessionDto } from '@/lib/cases/student-session-dto';
-import { resolveStudentPublicCaseVersionV2 } from '@/lib/cases/v2/resolve-student-public-case-version';
+import {
+  resolveStudentPublicCaseVersionForResumeV2,
+  resolveStudentPublicCaseVersionV2,
+} from '@/lib/cases/v2/resolve-student-public-case-version';
 import { pool } from '@/lib/db';
 
 type StudentCaseVersionDatabaseRow = {
@@ -11,6 +14,17 @@ type StudentCaseVersionDatabaseRow = {
   status: unknown;
   content_format: unknown;
   content: unknown;
+};
+
+type ActiveStudentSessionDatabaseRow = {
+  session_id: unknown;
+  session_case_id: unknown;
+  session_case_version_id: unknown;
+  version_id: unknown;
+  version_case_id: unknown;
+  version_status: unknown;
+  version_content_format: unknown;
+  version_content: unknown;
 };
 
 const POSITIVE_BIGINT_TEXT_PATTERN = /^[1-9]\d*$/;
@@ -38,6 +52,76 @@ async function createSessionForStudent(userId: number) {
   try {
     await client.query('BEGIN');
     transactionStarted = true;
+
+    await client.query(
+      `
+      SELECT pg_advisory_xact_lock(
+        hashtextextended(
+          'chatusal:v2:student-session-start:' || $1::text,
+          0
+        )
+      )
+      `,
+      [userId],
+    );
+
+    const { rows: activeSessionRows } = await client.query(
+      `
+      SELECT
+        s.id AS session_id,
+        s.case_id::text AS session_case_id,
+        s.case_version_id AS session_case_version_id,
+        cv.id AS version_id,
+        cv.case_id::text AS version_case_id,
+        cv.status AS version_status,
+        cv.content_format AS version_content_format,
+        cv.content AS version_content
+      FROM public.sessions AS s
+      LEFT JOIN public.case_versions AS cv
+        ON cv.id = s.case_version_id
+       AND cv.case_id = s.case_id
+      WHERE s.user_id = $1
+        AND s.status = 'active'
+      ORDER BY s.created_at ASC, s.id ASC
+      `,
+      [userId],
+    );
+
+    if (activeSessionRows.length > 1) {
+      throw new Error(`Multiple active sessions for user ${userId}`);
+    }
+
+    if (activeSessionRows.length === 1) {
+      const activeSessionRow =
+        activeSessionRows[0] as ActiveStudentSessionDatabaseRow;
+      const sessionCaseId = normalizeCaseId(
+        activeSessionRow.session_case_id,
+      );
+      const resolved = resolveStudentPublicCaseVersionForResumeV2({
+        id: activeSessionRow.version_id,
+        case_id: normalizeCaseId(activeSessionRow.version_case_id),
+        status: activeSessionRow.version_status,
+        content_format: activeSessionRow.version_content_format,
+        content: activeSessionRow.version_content,
+      });
+
+      if (
+        sessionCaseId !== resolved.caseId ||
+        activeSessionRow.session_case_version_id !==
+          resolved.caseVersionId
+      ) {
+        throw new Error('Invalid active session case version anchor');
+      }
+
+      const response = createStudentSessionDto({
+        sessionId: activeSessionRow.session_id,
+        ...resolved.publicCaseData,
+      });
+
+      await client.query('COMMIT');
+      transactionStarted = false;
+      return response;
+    }
 
     const { rows: availableRows } = await client.query(
       `
