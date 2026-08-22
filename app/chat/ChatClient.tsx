@@ -1,13 +1,55 @@
 'use client';
 
-import { useEffect, useState, FormEvent } from 'react';
+import { FormEvent, useCallback, useEffect, useState } from 'react';
 import { useRouter } from 'next/navigation';
-import type { StudentSessionDto } from '@/lib/cases/student-session-dto';
+import {
+  createStudentSessionDto,
+  type StudentSessionDto,
+} from '@/lib/cases/student-session-dto';
 
 type ChatMessage = {
   role: 'student' | 'patient';
   content: string;
 };
+
+type ActiveSessionPayload = {
+  session: StudentSessionDto;
+  messages: ChatMessage[];
+};
+
+function asRecord(value: unknown): Record<string, unknown> {
+  if (typeof value !== 'object' || value === null || Array.isArray(value)) {
+    throw new Error('Invalid active session payload');
+  }
+
+  return value as Record<string, unknown>;
+}
+
+function parseActiveSessionPayload(value: unknown): ActiveSessionPayload {
+  const payload = asRecord(value);
+  const session = createStudentSessionDto(payload.session);
+
+  if (!Array.isArray(payload.messages)) {
+    throw new Error('Invalid active session messages');
+  }
+
+  const messages = payload.messages.map((messageValue): ChatMessage => {
+    const message = asRecord(messageValue);
+    if (message.role !== 'student' && message.role !== 'patient') {
+      throw new Error('Invalid active session message role');
+    }
+    if (typeof message.content !== 'string') {
+      throw new Error('Invalid active session message content');
+    }
+
+    return {
+      role: message.role,
+      content: message.content,
+    };
+  });
+
+  return { session, messages };
+}
 
 export default function ChatClient() {
   const router = useRouter();
@@ -15,6 +57,7 @@ export default function ChatClient() {
   const [messages, setMessages] = useState<ChatMessage[]>([]);
   const [input, setInput] = useState('');
   const [loadingCase, setLoadingCase] = useState(true);
+  const [startingCase, setStartingCase] = useState(false);
   const [sending, setSending] = useState(false);
   const [showEval, setShowEval] = useState(false);
   const [evalTipo, setEvalTipo] = useState('');
@@ -23,38 +66,93 @@ export default function ChatClient() {
   const [evalResult, setEvalResult] = useState<any>(null);
   const [error, setError] = useState<string | null>(null);
 
-  useEffect(() => {
-    async function initSession() {
+  const loadActiveSession = useCallback(
+    async (
+      expectedSessionId?: string,
+    ): Promise<ActiveSessionPayload | null> => {
+      setLoadingCase(true);
+      setError(null);
+
       try {
-        const res = await fetch('/api/sessions', { method: 'POST' });
-        if (!res.ok) {
-          if (res.status === 401) {
-            router.push('/login');
-            return;
-          }
-          const data = await res.json().catch(() => ({}));
-          setError(data.error || 'No se pudo crear la sesión');
-          setLoadingCase(false);
-          return;
+        const res = await fetch('/api/sessions/active', {
+          method: 'GET',
+        });
+
+        if (res.status === 401) {
+          setSessionData(null);
+          setMessages([]);
+          router.push('/login');
+          return null;
         }
-        const data = (await res.json()) as StudentSessionDto;
-        setSessionData(data);
-        setMessages([
-          {
-            role: 'patient' as const,
-            content:
-              'Hola, soy el paciente. Puedes hacerme las preguntas que consideres para entender mejor mi situación con la medicación.',
-          },
-        ]);
+
+        if (res.status === 204) {
+          setSessionData(null);
+          setMessages([]);
+          if (expectedSessionId !== undefined) {
+            throw new Error('Active session missing after start');
+          }
+          return null;
+        }
+
+        if (!res.ok) {
+          throw new Error('Active session recovery failed');
+        }
+
+        const recovered = parseActiveSessionPayload(await res.json());
+        if (
+          expectedSessionId !== undefined &&
+          expectedSessionId !== recovered.session.sessionId
+        ) {
+          throw new Error('Active session mismatch after start');
+        }
+
+        setSessionData(recovered.session);
+        setMessages(recovered.messages);
+        return recovered;
       } catch (err) {
         console.error(err);
-        setError('Error conectando con el servidor');
+        setSessionData(null);
+        setMessages([]);
+        setError('No se pudo recuperar la sesión activa');
+        return null;
       } finally {
         setLoadingCase(false);
       }
+    },
+    [router],
+  );
+
+  useEffect(() => {
+    void loadActiveSession();
+  }, [loadActiveSession]);
+
+  async function handleStartCase() {
+    if (startingCase) return;
+
+    setStartingCase(true);
+    setError(null);
+
+    try {
+      const res = await fetch('/api/sessions', { method: 'POST' });
+      if (res.status === 401) {
+        router.push('/login');
+        return;
+      }
+      if (!res.ok) {
+        throw new Error('Session start failed');
+      }
+
+      const postDto = createStudentSessionDto(await res.json());
+      await loadActiveSession(postDto.sessionId);
+    } catch (err) {
+      console.error(err);
+      setSessionData(null);
+      setMessages([]);
+      setError('No se pudo iniciar el caso');
+    } finally {
+      setStartingCase(false);
     }
-    initSession();
-  }, [router]);
+  }
 
   async function handleSend(e: FormEvent) {
     e.preventDefault();
@@ -135,7 +233,7 @@ export default function ChatClient() {
   }
 
   if (loadingCase) {
-    return <p>Cargando caso clínico...</p>;
+    return <p>Comprobando sesión activa...</p>;
   }
 
   if (error) {
@@ -143,7 +241,9 @@ export default function ChatClient() {
       <div>
         <p style={{ color: '#dc2626', marginBottom: 12 }}>{error}</p>
         <button
-          onClick={() => router.refresh()}
+          onClick={() => {
+            void loadActiveSession();
+          }}
           style={{
             padding: '8px 12px',
             borderRadius: 4,
@@ -159,7 +259,29 @@ export default function ChatClient() {
   }
 
   if (!sessionData) {
-    return <p>No se pudo inicializar la sesión.</p>;
+    return (
+      <div>
+        <p style={{ marginBottom: 12 }}>No hay ningún caso activo.</p>
+        <button
+          onClick={() => {
+            void handleStartCase();
+          }}
+          disabled={startingCase}
+          style={{
+            padding: '8px 12px',
+            borderRadius: 4,
+            border: 'none',
+            backgroundColor: '#2563eb',
+            color: 'white',
+            fontWeight: 500,
+            opacity: startingCase ? 0.6 : 1,
+            cursor: startingCase ? 'default' : 'pointer',
+          }}
+        >
+          {startingCase ? 'Iniciando sesión...' : 'Comenzar caso'}
+        </button>
+      </div>
+    );
   }
 
   return (
