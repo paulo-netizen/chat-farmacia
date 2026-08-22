@@ -95,7 +95,7 @@ async function recoverActiveSessionForStudent(
        AND cv.case_id = s.case_id
       WHERE s.user_id = $1
         AND s.status = 'active'
-      ORDER BY s.created_at ASC, s.id ASC
+      ORDER BY s.started_at ASC, s.id ASC
       `,
       [userId],
     );

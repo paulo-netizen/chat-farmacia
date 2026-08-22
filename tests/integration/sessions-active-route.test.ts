@@ -399,7 +399,8 @@ describe('GET /api/sessions/active', () => {
     expect(activeSql).toContain("s.status = 'active'");
     expect(activeSql).toContain('cv.id = s.case_version_id');
     expect(activeSql).toContain('cv.case_id = s.case_id');
-    expect(activeSql).toContain('ORDER BY s.created_at ASC, s.id ASC');
+    expect(activeSql).toContain('ORDER BY s.started_at ASC, s.id ASC');
+    expect(activeSql).not.toContain('s.created_at');
     expect(activeSql).not.toMatch(/\bLIMIT\s+1\b/i);
     expect(activeSql).not.toMatch(/\bcv\.status\s*=/i);
     expect(activeSql).not.toMatch(/\bpublic\.cases\b/i);

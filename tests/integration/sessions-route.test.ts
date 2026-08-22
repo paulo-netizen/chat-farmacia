@@ -704,8 +704,9 @@ describe('POST /api/sessions', () => {
     );
     expect(activeLookup).toContain('cv.case_id::text AS version_case_id');
     expect(activeLookup).toContain(
-      'ORDER BY s.created_at ASC, s.id ASC',
+      'ORDER BY s.started_at ASC, s.id ASC',
     );
+    expect(activeLookup).not.toContain('s.created_at');
     expect(activeLookup).not.toMatch(/\bcv\.status\s*=/i);
     expect(activeLookup).not.toMatch(/\bLIMIT\s+1\b/i);
     expect(activeLookup).not.toMatch(/\bpublic\.cases\b/i);
