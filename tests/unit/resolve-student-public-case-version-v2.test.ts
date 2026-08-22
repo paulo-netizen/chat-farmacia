@@ -4,6 +4,7 @@ import { describe, expect, it } from 'vitest';
 
 import {
   StudentPublicCaseVersionResolutionError,
+  resolveStudentPublicCaseVersionForResumeV2,
   resolveStudentPublicCaseVersionV2,
   type StudentPublicCaseVersionResolutionErrorCode,
 } from '@/lib/cases/v2/resolve-student-public-case-version';
@@ -48,9 +49,15 @@ function generatedContent() {
           ...publicProfile,
           future_secret: 'no debe salir',
         },
+        hiddenFacts: {
+          adherence: 'clasificación protegida',
+        },
         hiddenPatientFacts: {
           concern: 'oculta',
         },
+      },
+      groundTruth: {
+        answer: 'solución protegida',
       },
       evaluator: {
         conclusions: ['solución protegida'],
@@ -498,5 +505,187 @@ describe('resolveStudentPublicCaseVersionV2', () => {
     ]) {
       expect(source).not.toContain(forbidden);
     }
+  });
+});
+
+describe('resolveStudentPublicCaseVersionForResumeV2', () => {
+  it.each([
+    ['PUBLISHED legacy', () => legacyRow()],
+    [
+      'ARCHIVED legacy',
+      () => legacyRow({ status: 'ARCHIVED' }),
+    ],
+    ['PUBLISHED generated', () => generatedRow()],
+    [
+      'ARCHIVED generated',
+      () => generatedRow({ status: 'ARCHIVED' }),
+    ],
+  ])('resolves an exact frozen public allowlist for %s', (_kind, makeRow) => {
+    const row = makeRow();
+    const result = resolveStudentPublicCaseVersionForResumeV2(row);
+    const serialized = JSON.stringify(result);
+    const content = row.content as Record<string, unknown>;
+    const sourceReference =
+      row.content_format === 'LEGACY_V1_SNAPSHOT'
+        ? (content.spec as object)
+        : ((content.sourceOfTruth as ReturnType<
+            typeof generatedContent
+          >['sourceOfTruth']).patientFacts.publicProfile as object);
+
+    expect(result).toEqual({
+      caseId: 17,
+      caseVersionId: CASE_VERSION_ID,
+      publicCaseData: publicProfile,
+    });
+    expect(Object.keys(result).sort()).toEqual(
+      ['caseId', 'caseVersionId', 'publicCaseData'].sort(),
+    );
+    expect(Object.keys(result.publicCaseData).sort()).toEqual(
+      ['edad', 'nombre', 'sexo', 'tratamiento'].sort(),
+    );
+    expect(Object.isFrozen(result)).toBe(true);
+    expect(Object.isFrozen(result.publicCaseData)).toBe(true);
+    expect(result.publicCaseData).not.toBe(sourceReference);
+
+    for (const protectedValue of [
+      'groundTruth',
+      'hiddenFacts',
+      'hiddenPatientFacts',
+      'evaluator',
+      'derived',
+      'provenance',
+      'future_secret',
+      'solución protegida',
+      'clasificación protegida',
+    ]) {
+      expect(serialized).not.toContain(protectedValue);
+    }
+  });
+
+  it.each([
+    'AI_DRAFT',
+    'TEACHER_DRAFT',
+    'IN_REVIEW',
+    'VALIDATED',
+  ])('rejects canonical non-resumable status %s', (status) => {
+    const error = expectResolutionError(
+      () =>
+        resolveStudentPublicCaseVersionForResumeV2(
+          legacyRow({ status }),
+        ),
+      'case_version_not_resumable',
+      'status',
+    );
+
+    expect(error.message).toBe('case_version_not_resumable at status');
+    expect('cause' in error).toBe(false);
+  });
+
+  it.each(['published', 'approved', 'UNKNOWN', null, undefined])(
+    'rejects unknown raw status %p',
+    (status) => {
+      expectResolutionError(
+        () =>
+          resolveStudentPublicCaseVersionForResumeV2(
+            legacyRow({ status }),
+          ),
+        'invalid_case_version_row',
+        'status',
+      );
+    },
+  );
+
+  it('applies resumable status policy before validating content', () => {
+    expectResolutionError(
+      () =>
+        resolveStudentPublicCaseVersionForResumeV2(
+          legacyRow({ status: 'TEACHER_DRAFT', content: null }),
+        ),
+      'case_version_not_resumable',
+      'status',
+    );
+  });
+
+  it.each(['TEACHER_AUTHORED', 'LEGACY_V2', null, undefined])(
+    'rejects unsupported resume content format %p',
+    (contentFormat) => {
+      expectResolutionError(
+        () =>
+          resolveStudentPublicCaseVersionForResumeV2(
+            legacyRow({
+              status: 'ARCHIVED',
+              content_format: contentFormat,
+            }),
+          ),
+        'unsupported_content_format',
+        'content_format',
+      );
+    },
+  );
+
+  it('rejects an archived generated bundle with mismatched source identity', () => {
+    const content = generatedContent();
+    expectResolutionError(
+      () =>
+        resolveStudentPublicCaseVersionForResumeV2(
+          generatedRow({
+            status: 'ARCHIVED',
+            content: {
+              ...content,
+              sourceOfTruth: {
+                ...content.sourceOfTruth,
+                caseVersionId: OTHER_CASE_VERSION_ID,
+              },
+            },
+          }),
+        ),
+      'case_version_identity_mismatch',
+      'content.sourceOfTruth.caseVersionId',
+    );
+  });
+
+  it('rejects an archived generated bundle with mismatched patient facts identity', () => {
+    const content = generatedContent();
+    expectResolutionError(
+      () =>
+        resolveStudentPublicCaseVersionForResumeV2(
+          generatedRow({
+            status: 'ARCHIVED',
+            content: {
+              ...content,
+              sourceOfTruth: {
+                ...content.sourceOfTruth,
+                patientFacts: {
+                  ...content.sourceOfTruth.patientFacts,
+                  caseVersionId: OTHER_CASE_VERSION_ID,
+                },
+              },
+            },
+          }),
+        ),
+      'case_version_identity_mismatch',
+      'content.sourceOfTruth.patientFacts.caseVersionId',
+    );
+  });
+
+  it('rejects an archived generated bundle with malformed identity', () => {
+    const content = generatedContent();
+    expectResolutionError(
+      () =>
+        resolveStudentPublicCaseVersionForResumeV2(
+          generatedRow({
+            status: 'ARCHIVED',
+            content: {
+              ...content,
+              sourceOfTruth: {
+                ...content.sourceOfTruth,
+                caseVersionId: 'casever-semantic',
+              },
+            },
+          }),
+        ),
+      'invalid_case_version_content',
+      'content.sourceOfTruth.caseVersionId',
+    );
   });
 });

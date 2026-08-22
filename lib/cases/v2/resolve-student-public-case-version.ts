@@ -5,6 +5,7 @@ import {
 import {
   isCaseVersionAvailableToStudentsV2,
   isCaseVersionStatusV2,
+  type CaseVersionStatusV2,
 } from './case-version-lifecycle';
 import type { CaseVersionId } from './types';
 import { validateCaseVersionId } from './validate-patient-facts';
@@ -26,6 +27,7 @@ export type ResolvedStudentPublicCaseVersionV2 = Readonly<{
 export type StudentPublicCaseVersionResolutionErrorCode =
   | 'invalid_case_version_row'
   | 'case_version_not_published'
+  | 'case_version_not_resumable'
   | 'unsupported_content_format'
   | 'invalid_case_version_content'
   | 'case_version_identity_mismatch';
@@ -152,8 +154,25 @@ function resolveGeneratedPublicCaseData(
   );
 }
 
-export function resolveStudentPublicCaseVersionV2(
+type CaseVersionStatusPolicy = (
+  status: CaseVersionStatusV2,
+) => void;
+
+const requirePublishedStatus: CaseVersionStatusPolicy = (status) => {
+  if (!isCaseVersionAvailableToStudentsV2(status)) {
+    fail('case_version_not_published', 'status');
+  }
+};
+
+const requireResumableStatus: CaseVersionStatusPolicy = (status) => {
+  if (status !== 'PUBLISHED' && status !== 'ARCHIVED') {
+    fail('case_version_not_resumable', 'status');
+  }
+};
+
+function resolveStudentPublicCaseVersionWithStatusPolicy(
   input: unknown,
+  requireStatus: CaseVersionStatusPolicy,
 ): ResolvedStudentPublicCaseVersionV2 {
   const row = asRecord(input, 'invalid_case_version_row', 'input');
   const caseId = parseCaseId(row.case_id);
@@ -166,9 +185,7 @@ export function resolveStudentPublicCaseVersionV2(
   if (!isCaseVersionStatusV2(row.status)) {
     fail('invalid_case_version_row', 'status');
   }
-  if (!isCaseVersionAvailableToStudentsV2(row.status)) {
-    fail('case_version_not_published', 'status');
-  }
+  requireStatus(row.status);
 
   if (
     row.content_format !== 'LEGACY_V1_SNAPSHOT' &&
@@ -192,4 +209,22 @@ export function resolveStudentPublicCaseVersionV2(
     caseVersionId,
     publicCaseData,
   });
+}
+
+export function resolveStudentPublicCaseVersionV2(
+  input: unknown,
+): ResolvedStudentPublicCaseVersionV2 {
+  return resolveStudentPublicCaseVersionWithStatusPolicy(
+    input,
+    requirePublishedStatus,
+  );
+}
+
+export function resolveStudentPublicCaseVersionForResumeV2(
+  input: unknown,
+): ResolvedStudentPublicCaseVersionV2 {
+  return resolveStudentPublicCaseVersionWithStatusPolicy(
+    input,
+    requireResumableStatus,
+  );
 }
