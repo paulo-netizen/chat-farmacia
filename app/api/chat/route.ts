@@ -74,7 +74,7 @@ export async function POST(req: Request) {
       `select role, content
        from messages
        where session_id = $1
-       order by created_at asc`,
+       order by created_at asc, id asc`,
       [sessionId],
     );
 
