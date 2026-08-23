@@ -1,7 +1,11 @@
 import { NextResponse } from 'next/server';
 
 import { requireUser } from '@/lib/auth';
-import { buildPatientChatSystemPromptV2 } from '@/lib/cases/v2/patient-chat-prompt';
+import {
+  generateSafePatientReplyV2,
+  PatientResponseSafetyErrorV2,
+  type PatientResponseSafetyCallReceiptV2,
+} from '@/lib/cases/v2/generate-safe-patient-reply';
 import {
   resolveSessionPatientClinicalRuntimeV2,
   SessionClinicalRuntimeErrorV2,
@@ -18,6 +22,24 @@ type PersistedChatMessage = Readonly<{
   role: 'student' | 'patient';
   content: string;
 }>;
+
+type ObservedPatientResponseUsage = Readonly<{
+  inputTokens: number;
+  outputTokens: number;
+  hasObservedUsage: boolean;
+}>;
+
+const PATIENT_RESPONSE_GENERATOR_CONFIG = Object.freeze({
+  model: MODEL_CHAT,
+  maxTokens: 200,
+  timeoutMs: 30_000,
+});
+
+const PATIENT_RESPONSE_VALIDATOR_CONFIG = Object.freeze({
+  model: MODEL_CHAT,
+  maxOutputTokens: 300,
+  timeoutMs: 30_000,
+});
 
 async function readChatRequestBody(req: Request): Promise<unknown> {
   try {
@@ -65,6 +87,39 @@ function parsePersistedMessages(value: unknown): PersistedChatMessage[] {
   });
 }
 
+function sumObservedPatientResponseUsageV2(
+  calls: readonly PatientResponseSafetyCallReceiptV2[],
+): ObservedPatientResponseUsage {
+  let inputTokens = 0;
+  let outputTokens = 0;
+  let hasObservedUsage = false;
+  for (const call of calls) {
+    if (call.inputTokens === undefined || call.outputTokens === undefined) {
+      continue;
+    }
+    hasObservedUsage = true;
+    inputTokens += call.inputTokens;
+    outputTokens += call.outputTokens;
+  }
+  return { inputTokens, outputTokens, hasObservedUsage };
+}
+
+async function persistObservedPatientResponseUsage(
+  sessionId: string,
+  calls: readonly PatientResponseSafetyCallReceiptV2[],
+): Promise<void> {
+  const usage = sumObservedPatientResponseUsageV2(calls);
+  if (!usage.hasObservedUsage) return;
+
+  await pool.query(
+    `update sessions
+     set prompt_tokens = prompt_tokens + $1,
+         completion_tokens = completion_tokens + $2
+     where id = $3`,
+    [usage.inputTokens, usage.outputTokens, sessionId],
+  );
+}
+
 function runtimeErrorResponse(error: SessionClinicalRuntimeErrorV2) {
   if (error.code === 'session_not_found_or_forbidden') {
     return NextResponse.json(
@@ -85,6 +140,7 @@ function runtimeErrorResponse(error: SessionClinicalRuntimeErrorV2) {
 }
 
 export async function POST(req: Request) {
+  let bodyForAccounting: ChatRequestBody | null = null;
   try {
     const user = await requireUser();
     const body = parseChatRequestBody(await readChatRequestBody(req));
@@ -92,20 +148,12 @@ export async function POST(req: Request) {
     if (body === null) {
       return NextResponse.json({ error: 'Faltan datos' }, { status: 400 });
     }
+    bodyForAccounting = body;
 
     const runtime = await resolveSessionPatientClinicalRuntimeV2({
       authenticatedUserId: user.id,
       sessionId: body.sessionId,
     });
-    const systemContent = buildPatientChatSystemPromptV2(
-      runtime.clinicalContent,
-    );
-
-    await pool.query(
-      `insert into messages (session_id, role, content)
-       values ($1, 'student', $2)`,
-      [body.sessionId, body.message],
-    );
 
     const messagesResult = await pool.query(
       `select role, content
@@ -114,59 +162,44 @@ export async function POST(req: Request) {
        order by created_at asc, id asc`,
       [body.sessionId],
     );
-    const persistedMessages = parsePersistedMessages(messagesResult.rows);
-    const chatMessages = [
-      { role: 'system' as const, content: systemContent },
-      ...persistedMessages.map((message) => ({
-        role:
-          message.role === 'student'
-            ? ('user' as const)
-            : ('assistant' as const),
-        content: message.content,
-      })),
-    ];
+    const acceptedConversation = parsePersistedMessages(messagesResult.rows);
 
-    const completion = await openai.chat.completions.create({
-      model: MODEL_CHAT,
-      messages: chatMessages,
-      max_tokens: 200,
-    });
+    await pool.query(
+      `insert into messages (session_id, role, content)
+       values ($1, 'student', $2)`,
+      [body.sessionId, body.message],
+    );
 
-    const reply =
-      completion.choices[0]?.message?.content ??
-      'Lo siento, no sé qué responder ahora mismo.';
+    const acceptedReply = await generateSafePatientReplyV2(
+      {
+        clinicalContent: runtime.clinicalContent,
+        acceptedConversation,
+        currentStudentTurn: body.message,
+      },
+      {
+        patientGenerator: {
+          client: openai,
+          config: PATIENT_RESPONSE_GENERATOR_CONFIG,
+        },
+        semanticValidator: {
+          client: openai,
+          config: PATIENT_RESPONSE_VALIDATOR_CONFIG,
+        },
+      },
+    );
+
+    await persistObservedPatientResponseUsage(
+      body.sessionId,
+      acceptedReply.receipt.calls,
+    );
 
     await pool.query(
       `insert into messages (session_id, role, content)
        values ($1, 'patient', $2)`,
-      [body.sessionId, reply],
+      [body.sessionId, acceptedReply.reply],
     );
 
-    const usage = completion.usage;
-    if (usage) {
-      const promptTokens = usage.prompt_tokens ?? 0;
-      const completionTokens = usage.completion_tokens ?? 0;
-      const priceIn = parseFloat(
-        process.env.PRICE_INPUT_EUR_PER_MTOK || '0',
-      );
-      const priceOut = parseFloat(
-        process.env.PRICE_OUTPUT_EUR_PER_MTOK || '0',
-      );
-      const cost =
-        (promptTokens / 1_000_000) * priceIn +
-        (completionTokens / 1_000_000) * priceOut;
-
-      await pool.query(
-        `update sessions
-         set prompt_tokens = prompt_tokens + $1,
-             completion_tokens = completion_tokens + $2,
-             cost_eur = cost_eur + $3
-         where id = $4`,
-        [promptTokens, completionTokens, cost, body.sessionId],
-      );
-    }
-
-    return NextResponse.json({ reply });
+    return NextResponse.json({ reply: acceptedReply.reply });
   } catch (error: unknown) {
     if (error instanceof SessionClinicalRuntimeErrorV2) {
       return runtimeErrorResponse(error);
@@ -174,7 +207,23 @@ export async function POST(req: Request) {
     if (error instanceof Error && error.message === 'UNAUTHENTICATED') {
       return NextResponse.json({ error: 'No autenticado' }, { status: 401 });
     }
-    console.error(error);
+    if (error instanceof PatientResponseSafetyErrorV2) {
+      try {
+        if (bodyForAccounting === null) {
+          return NextResponse.json({ error: 'Error en el chat' }, { status: 500 });
+        }
+        await persistObservedPatientResponseUsage(
+          bodyForAccounting.sessionId,
+          error.calls,
+        );
+      } catch {
+        return NextResponse.json({ error: 'Error en el chat' }, { status: 500 });
+      }
+      return NextResponse.json(
+        { error: 'No se pudo generar una respuesta segura del paciente' },
+        { status: 503 },
+      );
+    }
     return NextResponse.json({ error: 'Error en el chat' }, { status: 500 });
   }
 }
