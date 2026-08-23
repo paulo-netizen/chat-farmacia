@@ -516,6 +516,8 @@ describe('AT-004 Undefined data and factual fidelity', () => {
     ['¿Es alérgica a algo?', 'Soy alérgica a la penicilina.', 'FACT_CONTRADICTION'],
     ['¿Para qué sirve el enalapril?', 'Sirve exactamente para curar una arritmia.', 'UNSUPPORTED_FACT'],
     ['Hábleme de su vida.', 'Tengo dos hijos, soy arquitecta y padezco asma.', 'UNSUPPORTED_FACT'],
+    ['¿Tiene hijos?', 'No tengo hijos.', 'UNSUPPORTED_FACT'],
+    ['¿En qué trabaja?', 'Actualmente no trabajo.', 'UNSUPPORTED_FACT'],
   ])('%s rejects unsupported or contradictory candidate', async (studentMessage, candidate, violation) => {
     await runSemanticRetry(studentMessage, candidate, violation);
     const context = parseValidatorInput(0).validationContext;

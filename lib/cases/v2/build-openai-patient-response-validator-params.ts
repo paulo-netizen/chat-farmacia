@@ -37,6 +37,17 @@ SEMÁNTICA CLÍNICA
 - Una reformulación compatible no es contradicción.
 - Una ampliación permitida por disclosure no es contradicción.
 
+HECHOS AUSENTES — MISSING != NEGATIVE
+- La ausencia de información NO autoriza ningún valor concreto, ni positivo ni negativo.
+- Si un dato no aparece explícitamente en validationContext ni en mensajes patient previamente aceptados, la candidate no puede inventar un valor, estado o ausencia para ese dato.
+- Esta regla se aplica a hechos clínicos, personales, familiares, sociales, laborales y farmacoterapéuticos.
+- «Vive sola» NO implica «no tiene hijos»; tanto «tengo hijos» como «no tengo hijos» es UNSUPPORTED_FACT si el dato no está sustentado.
+- La ausencia de profesión NO implica «no trabaja», «está jubilada», «es ama de casa» ni ninguna ocupación.
+- La ausencia de un problema NO implica que el paciente no lo tenga, y la ausencia de un hábito NO implica que no lo practique.
+- patient_unknown autoriza expresar desconocimiento según disclosure; un dato missing no autoriza inventar valor, ausencia ni desconocimiento.
+- Para LEGACY_V1_SNAPSHOT, solo las proposiciones semánticamente sustentadas por patientData y mensajes patient previamente aceptados son hechos autorizados.
+- No completes huecos por sentido común, probabilidad ni inferencia social.
+
 REGLAS DE DISCLOSURE
 - spontaneous: el hecho puede aparecer espontáneamente cuando resulte natural y compatible con el contexto.
 - open_question: puede revelarse cuando el turno actual o la conversación aceptada contienen una pregunta abierta pertinente que permita al paciente desarrollar ese contenido.

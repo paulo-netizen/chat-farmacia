@@ -258,6 +258,27 @@ describe('buildOpenAiPatientResponseValidatorParamsV2', () => {
     );
   });
 
+  it('defines missing facts as neither negative nor inferable personal data', () => {
+    const params = buildOpenAiPatientResponseValidatorParamsV2(request());
+    const { instructions, input } = params;
+
+    expect(instructions).toContain('MISSING != NEGATIVE');
+    expect(instructions).toContain(
+      'hechos clínicos, personales, familiares, sociales, laborales y farmacoterapéuticos',
+    );
+    expect(instructions).toContain('«Vive sola» NO implica «no tiene hijos»');
+    expect(instructions).toContain(
+      'La ausencia de profesión NO implica «no trabaja», «está jubilada», «es ama de casa»',
+    );
+    expect(instructions).toContain(
+      'un dato missing no autoriza inventar valor, ausencia ni desconocimiento',
+    );
+    expect(instructions).toContain('LEGACY_V1_SNAPSHOT');
+    expect(instructions).toContain('patientData');
+    expect(input).not.toContain('«Vive sola» NO implica «no tiene hijos»');
+    expect(input).not.toContain('«está jubilada»');
+  });
+
   it('defines every disclosure mode without inventing numeric rapport', () => {
     const instructions = buildOpenAiPatientResponseValidatorParamsV2(
       request(),
