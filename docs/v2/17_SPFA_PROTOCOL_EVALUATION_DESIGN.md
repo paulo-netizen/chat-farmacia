@@ -378,6 +378,48 @@ aplicar una regla versionada a un caso concreto. Por ello:
 - un resultado de sesión `NOT_APPLICABLE` debe estar respaldado por la aplicación
   del caso, no ser decidido ad hoc por el evaluador de la transcripción.
 
+### 8.2. Set de protocolos fijado por versión de caso
+
+`CaseSpfaProtocolSetV2` agrupa únicamente las definiciones exactas utilizadas
+por una versión de caso y sus aplicaciones ya ligadas a los nodos del
+`carePath`:
+
+```ts
+type CaseSpfaProtocolSetV2 = Readonly<{
+  schemaVersion: '2.0';
+  catalogRef: VersionRef;
+  definitions: NonEmptyArray<SpfaProtocolDefinitionV2>;
+  applications: NonEmptyArray<CaseSpfaProtocolApplicationV2>;
+}>;
+```
+
+`catalogRef` coincide exactamente con `EvaluatorViewV2.versions.protocol` y
+representa el catálogo o paquete docente versionado con el que se construyó el
+evaluator. No es la referencia a un protocolo individual. Cada definición
+individual conserva su identidad exacta `SpfaProtocolId + version`, y cada
+aplicación resuelve su `protocolRef` contra una de esas definiciones sin usar
+servicio, subtipo, label ni posición como matching.
+
+El set contiene exactamente una aplicación para `carePath.initialSpfa` y una
+para cada elemento de `carePath.additionalSpfas`. No admite aplicaciones
+huérfanas o duplicadas ni definiciones sin uso: no es el catálogo completo de
+la instalación, sino el subconjunto inmutable fijado para esa `caseVersionId`.
+
+La frontera de enriquecimiento mantiene dos etapas explícitas:
+
+```text
+CanonicalGeneratedCaseCoreV2
+  patientFacts + evaluator
+        ↓ SPFA enrichment boundary
+SpfaIntegratedGeneratedCaseCoreV2
+  patientFacts + evaluator + spfaProtocolSet
+```
+
+El core canónico sigue siendo el resultado del ensamblado IA y no adquiere
+publicabilidad implícita. El core integrado demuestra que el recorrido SPFA
+tiene definiciones y aplicaciones completas y fijadas, pero su incorporación
+al bundle final y al lifecycle de publicación pertenece a M5-C2B.
+
 ## 9. Cobertura de información
 
 ```ts
@@ -586,9 +628,9 @@ y versionadas.
    no reinterpreta sesiones históricas.
 5. Las versiones del protocolo deben ser reproducibles y resolubles incluso si
    ya no son las vigentes para nuevas publicaciones.
-6. `EvaluatorViewV2.versions.protocol` sigue siendo el marcador de versión del
-   evaluador actual. M5-B/C deberá definir su coherencia con las referencias por
-   aplicación sin cambiar silenciosamente el significado del campo existente.
+6. `EvaluatorViewV2.versions.protocol` es el marcador del catálogo o paquete
+   docente versionado y coincide con `CaseSpfaProtocolSetV2.catalogRef`. No se
+   compara con el `SpfaProtocolRefV2` de una definición individual.
 
 ## 15. Política Legacy
 
@@ -633,10 +675,12 @@ El futuro validador de publicación debe fallar de forma cerrada ante:
 - referencia “latest” no fijada.
 
 El `GeneratedCaseBundleV2` actual mantiene como fuente de verdad
-`patientFacts` y `evaluator`, y deriva runtime, summary y compliance. M5-C deberá
-extender de forma deliberada esa fuente de verdad con protocolos/aplicaciones y
-actualizar sus builders, validators, fingerprint/provenance y publicación. No se
-debe ocultar esta nueva semántica solo dentro de un summary derivado.
+`patientFacts` y `evaluator`, y deriva runtime, summary y compliance. M5-C2A
+introduce una frontera previa y explícita que produce un core enriquecido con el
+set SPFA validado. M5-C2B deberá extender deliberadamente la fuente de verdad del
+bundle y actualizar sus builders, validators, fingerprint/provenance y
+publicación. No se debe ocultar esta nueva semántica solo dentro de un summary
+derivado.
 
 ## 17. Evidencia, errores y fail-closed
 
@@ -665,11 +709,22 @@ debe ocultar esta nueva semántica solo dentro de un summary derivado.
 Implementar IDs nominales, definiciones, dominios, requisitos discriminados,
 version refs y validación estricta, sin catálogo clínico inventado.
 
-### M5-C — Aplicaciones y bindings de caso
+### M5-C1 — Aplicaciones y bindings individuales de caso — CLOSED
 
-Implementar `CaseSpfaProtocolApplicationV2`, validación cruzada con
-`PatientFacts`/`EvaluatorViewV2.carePath`, integración en bundle/fingerprint y
-reglas de publicación fail-closed.
+Implementados `CaseSpfaProtocolApplicationV2`, targets tipados y validación
+cruzada con `PatientFacts`/`EvaluatorViewV2.carePath`.
+
+### M5-C2A — Set de protocolos del caso y enriquecimiento
+
+Agrupar las definiciones fijadas y una aplicación exacta por cada nodo SPFA del
+`carePath`, y transformar explícitamente `CanonicalGeneratedCaseCoreV2` en
+`SpfaIntegratedGeneratedCaseCoreV2`.
+
+### M5-C2B — Integración final en bundle/generador
+
+Incorporar el set SPFA validado a la fuente de verdad final, builders,
+fingerprint/provenance y reglas de publicación fail-closed. Este paso continúa
+pendiente.
 
 ### M5-D — Evidencia de cobertura de información
 
