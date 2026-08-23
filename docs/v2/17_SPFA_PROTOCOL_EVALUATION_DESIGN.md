@@ -674,13 +674,28 @@ El futuro validador de publicación debe fallar de forma cerrada ante:
 - `NOT_APPLICABLE` sin una decisión de aplicabilidad válida;
 - referencia “latest” no fijada.
 
-El `GeneratedCaseBundleV2` actual mantiene como fuente de verdad
-`patientFacts` y `evaluator`, y deriva runtime, summary y compliance. M5-C2A
-introduce una frontera previa y explícita que produce un core enriquecido con el
-set SPFA validado. M5-C2B deberá extender deliberadamente la fuente de verdad del
-bundle y actualizar sus builders, validators, fingerprint/provenance y
-publicación. No se debe ocultar esta nueva semántica solo dentro de un summary
-derivado.
+`GeneratedCaseBundleV2.sourceOfTruth` contiene obligatoriamente `patientFacts`,
+`evaluator` y el `spfaProtocolSet` validado. La construcción de nuevos bundles
+Generated V2 sigue este pipeline sin fallback:
+
+```text
+AI draft
+  ↓ canonical assembly
+CanonicalGeneratedCaseCoreV2
+  ↓ resolver SPFA usando IDs canónicos
+SpfaIntegratedGeneratedCaseCoreV2
+  ↓ bundle construction
+GeneratedCaseBundleV2
+```
+
+El resolver recibe una copia clínica canónica y su resultado `unknown` atraviesa
+la frontera de attachment/validación antes de construir el bundle. No existe un
+set vacío por defecto, inferencia desde el servicio ni resolución contra el
+catálogo “latest”. El `sourceBrief.fingerprint` conserva exclusivamente la
+semántica del brief y la canonicalización `teaching-brief-v2/1`; el set exacto es
+reproducible porque queda almacenado en `sourceOfTruth`. La provenance registra
+separadamente `spfaIntegrationVersion`, que versiona la etapa server-owned de
+integración y no sustituye a `spfaProtocolSet.catalogRef`.
 
 ## 17. Evidencia, errores y fail-closed
 
@@ -714,17 +729,19 @@ version refs y validación estricta, sin catálogo clínico inventado.
 Implementados `CaseSpfaProtocolApplicationV2`, targets tipados y validación
 cruzada con `PatientFacts`/`EvaluatorViewV2.carePath`.
 
-### M5-C2A — Set de protocolos del caso y enriquecimiento
+### M5-C2A — Set de protocolos del caso y enriquecimiento — CLOSED
 
 Agrupar las definiciones fijadas y una aplicación exacta por cada nodo SPFA del
 `carePath`, y transformar explícitamente `CanonicalGeneratedCaseCoreV2` en
 `SpfaIntegratedGeneratedCaseCoreV2`.
 
-### M5-C2B — Integración final en bundle/generador
+### M5-C2B — Integración final en bundle/generador — CLOSED
 
-Incorporar el set SPFA validado a la fuente de verdad final, builders,
-fingerprint/provenance y reglas de publicación fail-closed. Este paso continúa
-pendiente.
+El set SPFA validado forma parte obligatoria de la fuente de verdad final. El
+builder acepta exclusivamente el core integrado, revalida el attachment y falla
+de forma cerrada ante ausencia o incoherencia. El pipeline generador resuelve el
+set únicamente después del ensamblado canónico y registra la versión de
+integración en provenance, sin alterar el fingerprint del brief.
 
 ### M5-D — Evidencia de cobertura de información
 

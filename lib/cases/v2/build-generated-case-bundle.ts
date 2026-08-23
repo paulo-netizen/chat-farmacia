@@ -2,6 +2,7 @@ import { createHash } from 'node:crypto';
 
 import { buildBriefComplianceReportV2 } from './build-brief-compliance-report';
 import { buildTeachingCaseSummaryV2 } from './build-teaching-case-summary';
+import { attachSpfaProtocolSetToGeneratedCaseCoreV2 } from './attach-spfa-protocol-set';
 import {
   GeneratedCaseBundleBuildError,
   type ContentFingerprintV1,
@@ -10,6 +11,7 @@ import {
 } from './generated-case-bundle-types';
 import type { CanonicalGeneratedCaseCoreV2 } from './generation-assembly-types';
 import { createPatientRuntimeViewV2 } from './patient-runtime';
+import type { SpfaIntegratedGeneratedCaseCoreV2 } from './spfa-protocol-set-types';
 import type { TeachingCaseGenerationBriefV2 } from './teaching-brief-types';
 import { validateTeachingCaseGenerationBriefV2 } from './validate-teaching-brief';
 
@@ -80,6 +82,7 @@ function validateAndCloneProvenance(
       'model',
       'assemblerVersion',
       'disclosurePolicyVersion',
+      'spfaIntegrationVersion',
     ],
     'provenance',
     'invalid_provenance',
@@ -109,19 +112,11 @@ function validateAndCloneProvenance(
       source.disclosurePolicyVersion,
       'provenance.disclosurePolicyVersion',
     ),
+    spfaIntegrationVersion: boundedString(
+      source.spfaIntegrationVersion,
+      'provenance.spfaIntegrationVersion',
+    ),
   };
-}
-
-function cloneMaterialized<T>(value: T): T {
-  if (Array.isArray(value)) {
-    return value.map((item) => cloneMaterialized(item)) as T;
-  }
-  if (typeof value !== 'object' || value === null) return value;
-  const result: Record<string, unknown> = {};
-  for (const [key, item] of Object.entries(value as Record<string, unknown>)) {
-    if (item !== undefined) result[key] = cloneMaterialized(item);
-  }
-  return result as T;
 }
 
 function ordinalCompare(left: string, right: string): number {
@@ -194,42 +189,43 @@ function fingerprintBrief(
   }
 }
 
-function validateCoreIdentity(core: CanonicalGeneratedCaseCoreV2): void {
-  const source = asRecord(core, 'core', 'invalid_core');
+function validateIntegratedCore(
+  coreInput: SpfaIntegratedGeneratedCaseCoreV2,
+): SpfaIntegratedGeneratedCaseCoreV2 {
+  const source = asRecord(coreInput, 'core', 'invalid_core');
   assertExactKeys(
     source,
-    ['caseVersionId', 'patientFacts', 'evaluator'],
+    ['caseVersionId', 'patientFacts', 'evaluator', 'spfaProtocolSet'],
     'core',
     'invalid_core',
   );
-  if (typeof source.caseVersionId !== 'string') {
-    fail('invalid_core', 'core.caseVersionId', 'must be a CaseVersionId');
-  }
-  const patientFacts = asRecord(
-    source.patientFacts,
-    'core.patientFacts',
-    'invalid_core',
-  );
-  const evaluator = asRecord(source.evaluator, 'core.evaluator', 'invalid_core');
-  if (patientFacts.caseVersionId !== source.caseVersionId) {
-    fail(
-      'invalid_core',
-      'core.patientFacts.caseVersionId',
-      'must match core.caseVersionId',
+
+  try {
+    return attachSpfaProtocolSetToGeneratedCaseCoreV2(
+      {
+        caseVersionId: source.caseVersionId,
+        patientFacts: source.patientFacts,
+        evaluator: source.evaluator,
+      } as CanonicalGeneratedCaseCoreV2,
+      source.spfaProtocolSet,
     );
-  }
-  if (evaluator.caseVersionId !== source.caseVersionId) {
+  } catch (cause) {
+    const path = errorPath(cause, 'core');
+    const isCoreFailure = path === 'core' || path.startsWith('core.');
     fail(
-      'invalid_core',
-      'core.evaluator.caseVersionId',
-      'must match core.caseVersionId',
+      isCoreFailure ? 'invalid_core' : 'spfa_protocol_set_validation_failed',
+      path,
+      isCoreFailure
+        ? 'integrated clinical core validation failed'
+        : 'SPFA protocol set validation failed',
+      cause,
     );
   }
 }
 
 export function buildGeneratedCaseBundleV2(
   briefInput: TeachingCaseGenerationBriefV2,
-  coreInput: CanonicalGeneratedCaseCoreV2,
+  coreInput: SpfaIntegratedGeneratedCaseCoreV2,
   provenanceInput: GenerationProvenanceV2,
 ): GeneratedCaseBundleV2 {
   let brief: TeachingCaseGenerationBriefV2;
@@ -244,9 +240,9 @@ export function buildGeneratedCaseBundleV2(
     );
   }
 
-  validateCoreIdentity(coreInput);
-  const patientFacts = cloneMaterialized(coreInput.patientFacts);
-  const evaluator = cloneMaterialized(coreInput.evaluator);
+  const core = validateIntegratedCore(coreInput);
+  const patientFacts = core.patientFacts;
+  const evaluator = core.evaluator;
 
   let patientRuntime;
   try {
@@ -295,9 +291,10 @@ export function buildGeneratedCaseBundleV2(
       fingerprint,
     },
     sourceOfTruth: {
-      caseVersionId: coreInput.caseVersionId,
+      caseVersionId: core.caseVersionId,
       patientFacts,
       evaluator,
+      spfaProtocolSet: core.spfaProtocolSet,
     },
     derived: {
       patientRuntime,

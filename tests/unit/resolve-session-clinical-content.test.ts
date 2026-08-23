@@ -2,6 +2,10 @@ import { readFileSync } from 'node:fs';
 
 import { describe, expect, it } from 'vitest';
 
+import {
+  attachSpfaProtocolSetToGeneratedCaseCoreV2,
+  SPFA_PROTOCOL_SET_INTEGRATION_VERSION,
+} from '../../lib/cases/v2/attach-spfa-protocol-set';
 import { buildGeneratedCaseBundleV2 } from '../../lib/cases/v2/build-generated-case-bundle';
 import type { GenerationProvenanceV2 } from '../../lib/cases/v2/generated-case-bundle-types';
 import type { CanonicalGeneratedCaseCoreV2 } from '../../lib/cases/v2/generation-assembly-types';
@@ -107,6 +111,42 @@ function generatedCore(): CanonicalGeneratedCaseCoreV2 {
   };
 }
 
+function integratedGeneratedCore() {
+  const core = generatedCore();
+  const spfa = core.evaluator.carePath.initialSpfa;
+  const protocolId = 'spfa_protocol_50000000-0000-4000-8000-000000000001';
+  const requirementId =
+    'spfa_requirement_60000000-0000-4000-8000-000000000001';
+  const definition = {
+    schemaVersion: '2.0', protocolId, version: 'test-1',
+    service: 'dispensing', subtype: 'continuation',
+    requirements: [{
+      kind: 'INFORMATION_REQUIREMENT', requirementId,
+      semanticDomain: { kind: 'patient_information', disclosureDomain: 'initial_demand' },
+      teacherLabel: 'Demanda inicial', description: 'Comprueba la demanda',
+      defaultImportance: 'RELEVANT', informationGoal: 'Conocer la demanda',
+      safetyCriticality: { safetyCritical: false }, applicability: { kind: 'ALWAYS' },
+    }],
+  };
+  return attachSpfaProtocolSetToGeneratedCaseCoreV2(core, {
+    schemaVersion: '2.0', catalogRef: { ...core.evaluator.versions.protocol },
+    definitions: [definition],
+    applications: [{
+      schemaVersion: '2.0', caseVersionId: core.caseVersionId,
+      carePathSpfaRef: spfa.conclusionId,
+      protocolRef: { protocolId, version: definition.version },
+      requirements: [{
+        kind: 'INFORMATION_REQUIREMENT', requirementRef: requirementId,
+        applicability: { status: 'APPLICABLE', effectiveImportance: 'RELEVANT' },
+        informationTargets: [{
+          targetId: 'spfa_target_70000000-0000-4000-8000-000000000001',
+          target: { kind: 'FACT', factRef: core.patientFacts.initialDemand.factId },
+        }],
+      }],
+    }],
+  });
+}
+
 function generatedBrief() {
   return validateTeachingCaseGenerationBriefV2({
     schemaVersion: '2.0',
@@ -133,9 +173,10 @@ function generatedInput() {
     generatorContractVersion: 'ai-generated-case-draft/1', promptVersion: 'case-generator/1',
     model: { provider: 'openai', identifier: 'synthetic-model' },
     assemblerVersion: 'generation-assembly/1', disclosurePolicyVersion: 'disclosure-policy/1',
+    spfaIntegrationVersion: SPFA_PROTOCOL_SET_INTEGRATION_VERSION,
   };
   const content: any = buildGeneratedCaseBundleV2(
-    generatedBrief(), generatedCore(), provenance,
+    generatedBrief(), integratedGeneratedCore(), provenance,
   );
   Object.assign(content, {
     future_secret: 'never project',

@@ -6,6 +6,9 @@ import {
   validateSpfaProtocolSetClinicalContextV2,
 } from './validate-spfa-protocol-set';
 
+export const SPFA_PROTOCOL_SET_INTEGRATION_VERSION =
+  'spfa-protocol-set-integration/1' as const;
+
 function fail(path: string, message: string): never {
   throw new SpfaProtocolSetValidationError(path, message);
 }

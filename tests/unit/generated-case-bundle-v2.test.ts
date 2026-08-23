@@ -1,11 +1,16 @@
 import { describe, expect, it } from 'vitest';
 
+import {
+  attachSpfaProtocolSetToGeneratedCaseCoreV2,
+  SPFA_PROTOCOL_SET_INTEGRATION_VERSION,
+} from '../../lib/cases/v2/attach-spfa-protocol-set';
 import { buildGeneratedCaseBundleV2 } from '../../lib/cases/v2/build-generated-case-bundle';
 import {
   GeneratedCaseBundleBuildError,
   type GenerationProvenanceV2,
 } from '../../lib/cases/v2/generated-case-bundle-types';
 import type { CanonicalGeneratedCaseCoreV2 } from '../../lib/cases/v2/generation-assembly-types';
+import type { SpfaIntegratedGeneratedCaseCoreV2 } from '../../lib/cases/v2/spfa-protocol-set-types';
 import type { TeachingCaseGenerationBriefV2 } from '../../lib/cases/v2/teaching-brief-types';
 import { validateTeachingCaseGenerationBriefV2 } from '../../lib/cases/v2/validate-teaching-brief';
 
@@ -243,6 +248,83 @@ function createBrief(source = createBriefUnknown()): TeachingCaseGenerationBrief
   return validateTeachingCaseGenerationBriefV2(source);
 }
 
+function createProtocolSet(
+  core: CanonicalGeneratedCaseCoreV2,
+  variant: 'primary' | 'alternate' = 'primary',
+): Record<string, unknown> {
+  const suffix = variant === 'primary' ? '1' : '2';
+  const spfa = core.evaluator.carePath.initialSpfa;
+  const protocolId = `spfa_protocol_50000000-0000-4000-8000-00000000000${suffix}`;
+  const requirementId = `spfa_requirement_60000000-0000-4000-8000-00000000000${suffix}`;
+  const definition = {
+    schemaVersion: '2.0',
+    protocolId,
+    version: `test-${suffix}`,
+    service: spfa.value.service,
+    ...(spfa.value.service === 'dispensing'
+      ? { subtype: spfa.value.subtype }
+      : {}),
+    requirements: [
+      {
+        kind: 'INFORMATION_REQUIREMENT',
+        requirementId,
+        semanticDomain: {
+          kind: 'patient_information',
+          disclosureDomain: 'initial_demand',
+        },
+        teacherLabel: `Demanda inicial ${suffix}`,
+        description: `Comprueba la demanda inicial ${suffix}`,
+        defaultImportance: 'RELEVANT',
+        informationGoal: `Conocer la demanda ${suffix}`,
+        safetyCriticality: { safetyCritical: false },
+        applicability: { kind: 'ALWAYS' },
+      },
+    ],
+  };
+  return {
+    schemaVersion: '2.0',
+    catalogRef: { ...core.evaluator.versions.protocol },
+    definitions: [definition],
+    applications: [
+      {
+        schemaVersion: '2.0',
+        caseVersionId: core.caseVersionId,
+        carePathSpfaRef: spfa.conclusionId,
+        protocolRef: { protocolId, version: definition.version },
+        requirements: [
+          {
+            kind: 'INFORMATION_REQUIREMENT',
+            requirementRef: requirementId,
+            applicability: {
+              status: 'APPLICABLE',
+              effectiveImportance: 'RELEVANT',
+            },
+            informationTargets: [
+              {
+                targetId: `spfa_target_70000000-0000-4000-8000-00000000000${suffix}`,
+                target: {
+                  kind: 'FACT',
+                  factRef: core.patientFacts.initialDemand.factId,
+                },
+              },
+            ],
+          },
+        ],
+      },
+    ],
+  };
+}
+
+function createIntegratedCore(
+  core = createCore(),
+  variant: 'primary' | 'alternate' = 'primary',
+): SpfaIntegratedGeneratedCaseCoreV2 {
+  return attachSpfaProtocolSetToGeneratedCaseCoreV2(
+    core,
+    createProtocolSet(core, variant),
+  );
+}
+
 function createProvenance(): GenerationProvenanceV2 {
   return {
     generatorContractVersion: 'ai-generated-case-draft/1',
@@ -250,6 +332,7 @@ function createProvenance(): GenerationProvenanceV2 {
     model: { provider: 'openai', identifier: 'model-version' },
     assemblerVersion: 'generation-assembly/1',
     disclosurePolicyVersion: 'disclosure-policy/1',
+    spfaIntegrationVersion: SPFA_PROTOCOL_SET_INTEGRATION_VERSION,
   };
 }
 
@@ -279,7 +362,11 @@ function reverseObjectKeyOrder(value: unknown): unknown {
 }
 
 function fingerprint(brief: TeachingCaseGenerationBriefV2): string {
-  return buildGeneratedCaseBundleV2(brief, createCore(), createProvenance())
+  return buildGeneratedCaseBundleV2(
+    brief,
+    createIntegratedCore(),
+    createProvenance(),
+  )
     .sourceBrief.fingerprint.value;
 }
 
@@ -287,12 +374,12 @@ describe('GeneratedCaseBundleV2', () => {
   it('builds a minimal bundle with explicit source-of-truth and derived sections', () => {
     const bundle = buildGeneratedCaseBundleV2(
       createBrief(),
-      createCore(),
+      createIntegratedCore(),
       createProvenance(),
     );
 
     expect(Object.keys(bundle.sourceOfTruth).sort()).toEqual(
-      ['caseVersionId', 'patientFacts', 'evaluator'].sort(),
+      ['caseVersionId', 'patientFacts', 'evaluator', 'spfaProtocolSet'].sort(),
     );
     expect(Object.keys(bundle.derived).sort()).toEqual(
       ['patientRuntime', 'teachingSummary', 'complianceReport'].sort(),
@@ -304,7 +391,7 @@ describe('GeneratedCaseBundleV2', () => {
   it('keeps the same caseVersionId throughout canonical and derived data', () => {
     const bundle = buildGeneratedCaseBundleV2(
       createBrief(),
-      createCore(),
+      createIntegratedCore(),
       createProvenance(),
     );
 
@@ -323,7 +410,7 @@ describe('GeneratedCaseBundleV2', () => {
     };
     const bundle = buildGeneratedCaseBundleV2(
       createBrief(source),
-      createCore(),
+      createIntegratedCore(),
       createProvenance(),
     );
 
@@ -334,7 +421,7 @@ describe('GeneratedCaseBundleV2', () => {
   it('returns a valid bundle when compliance requires review', () => {
     const bundle = buildGeneratedCaseBundleV2(
       createBrief(),
-      createCore(),
+      createIntegratedCore(),
       createProvenance(),
     );
 
@@ -380,6 +467,30 @@ describe('GeneratedCaseBundleV2', () => {
     expect(fingerprint(createBrief())).not.toBe(fingerprint(createBrief(changed)));
   });
 
+  it('keeps the source brief fingerprint independent from the pinned SPFA set', () => {
+    const brief = createBrief();
+    const primary = buildGeneratedCaseBundleV2(
+      brief,
+      createIntegratedCore(createCore(), 'primary'),
+      createProvenance(),
+    );
+    const alternate = buildGeneratedCaseBundleV2(
+      brief,
+      createIntegratedCore(createCore(), 'alternate'),
+      createProvenance(),
+    );
+
+    expect(primary.sourceBrief.fingerprint).toEqual(
+      alternate.sourceBrief.fingerprint,
+    );
+    expect(primary.sourceBrief.fingerprint.canonicalization).toBe(
+      'teaching-brief-v2/1',
+    );
+    expect(primary.sourceOfTruth.spfaProtocolSet).not.toEqual(
+      alternate.sourceOfTruth.spfaProtocolSet,
+    );
+  });
+
   it('preserves array order in the fingerprint', () => {
     const first = createBriefUnknown();
     first.carePath.initialSpfa.decision = {
@@ -400,7 +511,7 @@ describe('GeneratedCaseBundleV2', () => {
     const before = clone(provenance);
     const bundle = buildGeneratedCaseBundleV2(
       createBrief(),
-      createCore(),
+      createIntegratedCore(),
       provenance,
     );
 
@@ -413,7 +524,7 @@ describe('GeneratedCaseBundleV2', () => {
 
   it('does not mutate brief or core and does not retain their mutable references', () => {
     const brief = createBrief();
-    const core = createCore();
+    const core = createIntegratedCore();
     const briefBefore = clone(brief);
     const coreBefore = clone(core);
     const bundle = buildGeneratedCaseBundleV2(brief, core, createProvenance());
@@ -424,40 +535,56 @@ describe('GeneratedCaseBundleV2', () => {
     expect(bundle.sourceOfTruth.patientFacts.publicProfile.nombre).toBe('María');
   });
 
-  it('wraps runtime construction failures', () => {
-    const core = createCore();
+  it('stores the canonical SPFA set without retaining caller references', () => {
+    const core = createIntegratedCore();
+    const bundle = buildGeneratedCaseBundleV2(
+      createBrief(),
+      core,
+      createProvenance(),
+    );
+
+    expect(bundle.sourceOfTruth.spfaProtocolSet).not.toBe(core.spfaProtocolSet);
+    expect(bundle.sourceOfTruth.spfaProtocolSet.definitions).not.toBe(
+      core.spfaProtocolSet.definitions,
+    );
+    expect(bundle.sourceOfTruth.spfaProtocolSet.definitions[0]).not.toBe(
+      core.spfaProtocolSet.definitions[0],
+    );
+    expect(bundle.sourceOfTruth.spfaProtocolSet.applications).not.toBe(
+      core.spfaProtocolSet.applications,
+    );
+    expect(bundle.sourceOfTruth.spfaProtocolSet).toEqual(core.spfaProtocolSet);
+  });
+
+  it('rejects invalid patient facts in the integrated core', () => {
+    const core = createIntegratedCore();
     (core.patientFacts as any).initialDemand = { state: 'not_defined' };
 
     const error = expectBuildError(
       () => buildGeneratedCaseBundleV2(createBrief(), core, createProvenance()),
-      'runtime_build_failed',
+      'invalid_core',
     );
     expect(error.cause).toBeDefined();
   });
 
-  it('wraps summary construction failures', () => {
-    const core = createCore();
+  it('rejects invalid evaluator data in the integrated core', () => {
+    const core = createIntegratedCore();
     delete (core.evaluator.carePath.initialSpfa.value as any).subtype;
 
     const error = expectBuildError(
       () => buildGeneratedCaseBundleV2(createBrief(), core, createProvenance()),
-      'summary_build_failed',
+      'invalid_core',
     );
     expect(error.cause).toBeDefined();
   });
 
-  it('wraps compliance construction failures', () => {
-    const core = createCore();
-    core.evaluator.carePath.additionalSpfas.push({
-      conclusionId:
-        'conclusion_40000000-0000-4000-8000-000000000099' as any,
-      kind: 'spfa',
-      value: { service: 'dispensing', subtype: 'continuation' },
-    });
+  it('rejects an incomplete SPFA set without its care path application', () => {
+    const core: any = clone(createIntegratedCore());
+    core.spfaProtocolSet.applications = [];
 
     const error = expectBuildError(
       () => buildGeneratedCaseBundleV2(createBrief(), core, createProvenance()),
-      'compliance_build_failed',
+      'spfa_protocol_set_validation_failed',
     );
     expect(error.cause).toBeDefined();
   });
@@ -465,7 +592,60 @@ describe('GeneratedCaseBundleV2', () => {
   it('rejects invalid or telemetry-contaminated provenance', () => {
     const provenance = { ...createProvenance(), requestId: 'technical-id' } as any;
     expectBuildError(
-      () => buildGeneratedCaseBundleV2(createBrief(), createCore(), provenance),
+      () => buildGeneratedCaseBundleV2(createBrief(), createIntegratedCore(), provenance),
+      'invalid_provenance',
+    );
+  });
+
+  it.each([
+    ['missing', (core: any) => { delete core.spfaProtocolSet; }],
+    ['malformed', (core: any) => { core.spfaProtocolSet = []; }],
+    ['catalog mismatch', (core: any) => {
+      core.spfaProtocolSet.catalogRef.id = 'different-catalog';
+    }],
+  ])('rejects a %s SPFA protocol set', (_label, mutate) => {
+    const core: any = clone(createIntegratedCore());
+    mutate(core);
+    expectBuildError(
+      () => buildGeneratedCaseBundleV2(createBrief(), core, createProvenance()),
+      'spfa_protocol_set_validation_failed',
+    );
+  });
+
+  it('rejects extra integrated-core properties', () => {
+    const core: any = { ...createIntegratedCore(), future_secret: true };
+    expectBuildError(
+      () => buildGeneratedCaseBundleV2(createBrief(), core, createProvenance()),
+      'invalid_core',
+    );
+  });
+
+  it.each([
+    ['patientFacts', (core: any) => {
+      core.patientFacts.caseVersionId =
+        'casever_90000000-0000-4000-8000-000000000099';
+    }],
+    ['evaluator', (core: any) => {
+      core.evaluator.caseVersionId =
+        'casever_90000000-0000-4000-8000-000000000099';
+    }],
+  ])('rejects %s case identity mismatch', (_label, mutate) => {
+    const core: any = clone(createIntegratedCore());
+    mutate(core);
+    expectBuildError(
+      () => buildGeneratedCaseBundleV2(createBrief(), core, createProvenance()),
+      'invalid_core',
+    );
+  });
+
+  it.each([
+    ['missing', (provenance: any) => { delete provenance.spfaIntegrationVersion; }],
+    ['empty', (provenance: any) => { provenance.spfaIntegrationVersion = ''; }],
+  ])('rejects %s SPFA integration provenance', (_label, mutate) => {
+    const provenance: any = createProvenance();
+    mutate(provenance);
+    expectBuildError(
+      () => buildGeneratedCaseBundleV2(createBrief(), createIntegratedCore(), provenance),
       'invalid_provenance',
     );
   });

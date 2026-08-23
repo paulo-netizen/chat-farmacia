@@ -3,6 +3,7 @@ import { readFileSync } from 'node:fs';
 import { beforeEach, describe, expect, it, vi } from 'vitest';
 
 import { GENERATION_ASSEMBLER_VERSION } from '@/lib/cases/v2/assemble-canonical-generated-case';
+import { SPFA_PROTOCOL_SET_INTEGRATION_VERSION } from '@/lib/cases/v2/attach-spfa-protocol-set';
 import type {
   AiDisclosureIntent,
   AiTaxonomyCatalog,
@@ -11,15 +12,20 @@ import type {
 import { AI_GENERATION_CONTRACT_VERSION } from '@/lib/cases/v2/ai-generation-types';
 import { CASE_GENERATOR_PROMPT_VERSION } from '@/lib/cases/v2/build-case-generator-request';
 import type { GeneratorTaxonomyCatalogsV2 } from '@/lib/cases/v2/case-generator-request-types';
-import { generateOpenAiCaseBundleV2 } from '@/lib/cases/v2/generate-openai-case-bundle';
+import {
+  generateOpenAiCaseBundleV2,
+  type SpfaProtocolSetResolverV2,
+} from '@/lib/cases/v2/generate-openai-case-bundle';
 import { GeneratedCaseBundleBuildError } from '@/lib/cases/v2/generated-case-bundle-types';
 import {
   GenerationAssemblyError,
+  type CanonicalGeneratedCaseCoreV2,
   type VersionedGenerationAssemblyContextV2,
 } from '@/lib/cases/v2/generation-assembly-types';
 import type { TeachingCaseGenerationBriefV2 } from '@/lib/cases/v2/teaching-brief-types';
 import type { DisclosureRule } from '@/lib/cases/v2/types';
 import { validateAiGeneratedCaseDraftV2 } from '@/lib/cases/v2/validate-ai-generated-case-draft';
+import { SpfaProtocolSetValidationError } from '@/lib/cases/v2/validate-spfa-protocol-set';
 import { validateTeachingCaseGenerationBriefV2 } from '@/lib/cases/v2/validate-teaching-brief';
 
 const mocks = vi.hoisted(() => ({
@@ -384,6 +390,77 @@ function createReceipt() {
   };
 }
 
+function createProtocolSetForCore(core: CanonicalGeneratedCaseCoreV2) {
+  const spfa = core.evaluator.carePath.initialSpfa;
+  const protocolId = 'spfa_protocol_50000000-0000-4000-8000-000000000077';
+  const requirementId =
+    'spfa_requirement_60000000-0000-4000-8000-000000000077';
+  const definition = {
+    schemaVersion: '2.0',
+    protocolId,
+    version: 'test-1',
+    service: spfa.value.service,
+    ...(spfa.value.service === 'dispensing'
+      ? { subtype: spfa.value.subtype }
+      : {}),
+    requirements: [
+      {
+        kind: 'INFORMATION_REQUIREMENT',
+        requirementId,
+        semanticDomain: {
+          kind: 'patient_information',
+          disclosureDomain: 'initial_demand',
+        },
+        teacherLabel: 'Demanda inicial',
+        description: 'Comprueba la demanda inicial',
+        defaultImportance: 'RELEVANT',
+        informationGoal: 'Conocer la demanda',
+        safetyCriticality: { safetyCritical: false },
+        applicability: { kind: 'ALWAYS' },
+      },
+    ],
+  };
+  return {
+    schemaVersion: '2.0',
+    catalogRef: { ...core.evaluator.versions.protocol },
+    definitions: [definition],
+    applications: [
+      {
+        schemaVersion: '2.0',
+        caseVersionId: core.caseVersionId,
+        carePathSpfaRef: spfa.conclusionId,
+        protocolRef: { protocolId, version: definition.version },
+        requirements: [
+          {
+            kind: 'INFORMATION_REQUIREMENT',
+            requirementRef: requirementId,
+            applicability: {
+              status: 'APPLICABLE',
+              effectiveImportance: 'RELEVANT',
+            },
+            informationTargets: [
+              {
+                targetId:
+                  'spfa_target_70000000-0000-4000-8000-000000000077',
+                target: {
+                  kind: 'FACT',
+                  factRef: core.patientFacts.initialDemand.factId,
+                },
+              },
+            ],
+          },
+        ],
+      },
+    ],
+  };
+}
+
+function createResolver(): ReturnType<typeof vi.fn<SpfaProtocolSetResolverV2>> {
+  return vi.fn((core: CanonicalGeneratedCaseCoreV2) =>
+    createProtocolSetForCore(core),
+  );
+}
+
 function expectSameError<T extends Error>(
   error: T,
   promise: Promise<unknown>,
@@ -413,15 +490,30 @@ describe('generateOpenAiCaseBundleV2', () => {
       ...createContext(),
       assemblerVersion: 'attacker-controlled',
     } as VersionedGenerationAssemblyContextV2;
+    const resolver = createResolver();
 
     const bundle = await generateOpenAiCaseBundleV2(
       brief,
       catalogs,
       context,
+      resolver,
     );
 
     expect(mocks.generateWithReceipt).toHaveBeenCalledTimes(1);
     expect(mocks.generateWithReceipt).toHaveBeenCalledWith(brief, catalogs);
+    expect(resolver).toHaveBeenCalledTimes(1);
+    const resolverCore = resolver.mock.calls[0][0];
+    expect(resolverCore.patientFacts.initialDemand.factId).toBe(
+      'fact_10000000-0000-4000-8000-000000000001',
+    );
+    expect(resolverCore.evaluator.carePath.initialSpfa.conclusionId).toBe(
+      'conclusion_40000000-0000-4000-8000-000000000001',
+    );
+    expect(JSON.stringify(resolverCore)).not.toMatch(
+      /localFactKey|localMedicationKey|localUseKey|localConclusionKey|"lf_1"|"lc_1"/,
+    );
+    expect(context.allocateFactId).toHaveBeenCalled();
+    expect(context.allocateConclusionId).toHaveBeenCalled();
     expect(Object.keys(bundle).sort()).toEqual(
       ['schemaVersion', 'sourceBrief', 'sourceOfTruth', 'derived', 'provenance'].sort(),
     );
@@ -436,7 +528,7 @@ describe('generateOpenAiCaseBundleV2', () => {
     });
     expect(bundle.sourceBrief.fingerprint.value).toMatch(/^[0-9a-f]{64}$/);
     expect(Object.keys(bundle.sourceOfTruth).sort()).toEqual(
-      ['caseVersionId', 'patientFacts', 'evaluator'].sort(),
+      ['caseVersionId', 'patientFacts', 'evaluator', 'spfaProtocolSet'].sort(),
     );
     expect(Object.keys(bundle.derived).sort()).toEqual(
       ['patientRuntime', 'teachingSummary', 'complianceReport'].sort(),
@@ -444,6 +536,8 @@ describe('generateOpenAiCaseBundleV2', () => {
     expect(bundle.sourceOfTruth.caseVersionId).toBe(caseVersionId);
     expect(bundle.sourceOfTruth.patientFacts.caseVersionId).toBe(caseVersionId);
     expect(bundle.sourceOfTruth.evaluator.caseVersionId).toBe(caseVersionId);
+    expect(bundle.sourceOfTruth.spfaProtocolSet.applications[0].carePathSpfaRef)
+      .toBe(bundle.sourceOfTruth.evaluator.carePath.initialSpfa.conclusionId);
     expect(bundle.derived.patientRuntime.caseVersionId).toBe(caseVersionId);
     expect(bundle.derived.teachingSummary.caseVersionId).toBe(caseVersionId);
     expect(bundle.derived.complianceReport.caseVersionId).toBe(caseVersionId);
@@ -453,6 +547,7 @@ describe('generateOpenAiCaseBundleV2', () => {
       model: { provider: 'openai', identifier: 'actual-provider-model' },
       assemblerVersion: GENERATION_ASSEMBLER_VERSION,
       disclosurePolicyVersion: 'disclosure-policy/test-1',
+      spfaIntegrationVersion: SPFA_PROTOCOL_SET_INTEGRATION_VERSION,
     });
 
     const serialized = JSON.stringify(bundle);
@@ -472,16 +567,25 @@ describe('generateOpenAiCaseBundleV2', () => {
     expect(bundle.provenance.model.identifier).not.toContain('attacker');
     expect(bundle.provenance.assemblerVersion).not.toContain('evil');
     expect(bundle.provenance.disclosurePolicyVersion).not.toContain('evil');
+    expect(bundle.provenance.spfaIntegrationVersion).toBe(
+      SPFA_PROTOCOL_SET_INTEGRATION_VERSION,
+    );
   });
 
   it('propagates generation errors before using the assembly context', async () => {
     const generationError = new Error('synthetic generation failure');
     mocks.generateWithReceipt.mockRejectedValueOnce(generationError);
     const context = createContext();
+    const resolver = createResolver();
 
     await expectSameError(
       generationError,
-      generateOpenAiCaseBundleV2(createBrief(), createCatalogs(), context),
+      generateOpenAiCaseBundleV2(
+        createBrief(),
+        createCatalogs(),
+        context,
+        resolver,
+      ),
     );
 
     expect(context.allocateMedicationId).not.toHaveBeenCalled();
@@ -490,6 +594,7 @@ describe('generateOpenAiCaseBundleV2', () => {
     expect(context.allocateConclusionId).not.toHaveBeenCalled();
     expect(context.resolveTaxonomy).not.toHaveBeenCalled();
     expect(context.resolveDisclosure).not.toHaveBeenCalled();
+    expect(resolver).not.toHaveBeenCalled();
   });
 
   it('propagates real canonical assembly errors without wrapping', async () => {
@@ -498,9 +603,15 @@ describe('generateOpenAiCaseBundleV2', () => {
     const context = createContext({
       allocateFactId: vi.fn(() => duplicateFactId),
     });
+    const resolver = createResolver();
 
     try {
-      await generateOpenAiCaseBundleV2(createBrief(), createCatalogs(), context);
+      await generateOpenAiCaseBundleV2(
+        createBrief(),
+        createCatalogs(),
+        context,
+        resolver,
+      );
       throw new Error('expected assembly error');
     } catch (error) {
       expect(error).toBeInstanceOf(GenerationAssemblyError);
@@ -509,13 +620,20 @@ describe('generateOpenAiCaseBundleV2', () => {
       );
     }
     expect(mocks.generateWithReceipt).toHaveBeenCalledTimes(1);
+    expect(resolver).not.toHaveBeenCalled();
   });
 
   it('propagates invalid provenance from the real bundle builder', async () => {
     const context = createContext({ disclosurePolicyVersion: '' });
+    const resolver = createResolver();
 
     try {
-      await generateOpenAiCaseBundleV2(createBrief(), createCatalogs(), context);
+      await generateOpenAiCaseBundleV2(
+        createBrief(),
+        createCatalogs(),
+        context,
+        resolver,
+      );
       throw new Error('expected provenance error');
     } catch (error) {
       expect(error).toBeInstanceOf(GeneratedCaseBundleBuildError);
@@ -530,6 +648,7 @@ describe('generateOpenAiCaseBundleV2', () => {
       createBrief(),
       createCatalogs(),
       createContext(),
+      createResolver(),
     );
 
     expect(bundle.derived.complianceReport.overallStatus).toBe(
@@ -546,10 +665,90 @@ describe('generateOpenAiCaseBundleV2', () => {
       createBrief(source),
       createCatalogs(),
       createContext(),
+      createResolver(),
     );
 
     expect(bundle.derived.complianceReport.overallStatus).toBe('non_compliant');
     expect(bundle.derived.complianceReport.hasHardFailures).toBe(true);
+  });
+
+  it('propagates a resolver error unchanged', async () => {
+    const resolverError = new Error('synthetic SPFA resolver failure');
+    const resolver = vi.fn<SpfaProtocolSetResolverV2>(() => {
+      throw resolverError;
+    });
+
+    await expectSameError(
+      resolverError,
+      generateOpenAiCaseBundleV2(
+        createBrief(),
+        createCatalogs(),
+        createContext(),
+        resolver,
+      ),
+    );
+    expect(resolver).toHaveBeenCalledTimes(1);
+  });
+
+  it.each([
+    ['malformed', () => ({ schemaVersion: '2.0' })],
+    ['incomplete', (core: CanonicalGeneratedCaseCoreV2) => ({
+      ...createProtocolSetForCore(core),
+      applications: [],
+    })],
+  ])('fails closed for %s resolver output', async (_label, output) => {
+    const resolver = vi.fn<SpfaProtocolSetResolverV2>((core) => output(core));
+
+    await expect(
+      generateOpenAiCaseBundleV2(
+        createBrief(),
+        createCatalogs(),
+        createContext(),
+        resolver,
+      ),
+    ).rejects.toBeInstanceOf(SpfaProtocolSetValidationError);
+    expect(resolver).toHaveBeenCalledTimes(1);
+  });
+
+  it('isolates the canonical source and provenance from resolver mutation', async () => {
+    const resolver = vi.fn<SpfaProtocolSetResolverV2>((core) => {
+      const set = createProtocolSetForCore(core);
+      (core.patientFacts.publicProfile as any).nombre = 'Resolver mutation';
+      (core as any).provenance = { spfaIntegrationVersion: 'attacker' };
+      return set;
+    });
+
+    const bundle = await generateOpenAiCaseBundleV2(
+      createBrief(),
+      createCatalogs(),
+      createContext(),
+      resolver,
+    );
+
+    expect(bundle.sourceOfTruth.patientFacts.publicProfile.nombre).toBe('María');
+    expect(bundle.provenance.spfaIntegrationVersion).toBe(
+      SPFA_PROTOCOL_SET_INTEGRATION_VERSION,
+    );
+    expect(JSON.stringify(bundle)).not.toContain('Resolver mutation');
+    expect(JSON.stringify(bundle)).not.toContain('"spfaIntegrationVersion":"attacker"');
+  });
+
+  it('rejects resolver attempts to insert AI-local keys into the SPFA set', async () => {
+    const resolver = vi.fn<SpfaProtocolSetResolverV2>((core) => {
+      const set: any = createProtocolSetForCore(core);
+      set.definitions[0].localFactKey = 'lf_1';
+      return set;
+    });
+
+    await expect(
+      generateOpenAiCaseBundleV2(
+        createBrief(),
+        createCatalogs(),
+        createContext(),
+        resolver,
+      ),
+    ).rejects.toBeInstanceOf(SpfaProtocolSetValidationError);
+    expect(resolver).toHaveBeenCalledTimes(1);
   });
 
   it('contains no direct OpenAI configuration, environment, or network access', () => {

@@ -1,5 +1,6 @@
 import type { BriefComplianceReportV2 } from './brief-compliance-types';
 import type { EvaluatorViewV2 } from './evaluator-types';
+import type { CaseSpfaProtocolSetV2 } from './spfa-protocol-set-types';
 import type { TeachingBriefId } from './teaching-brief-types';
 import type { TeachingCaseSummaryV2 } from './teaching-case-summary-types';
 import type {
@@ -29,6 +30,7 @@ export type GenerationProvenanceV2 = Readonly<{
   }>;
   assemblerVersion: string;
   disclosurePolicyVersion: string;
+  spfaIntegrationVersion: string;
 }>;
 
 export type GeneratedCaseBundleV2 = Readonly<{
@@ -38,6 +40,7 @@ export type GeneratedCaseBundleV2 = Readonly<{
     caseVersionId: CaseVersionId;
     patientFacts: CasePatientFactsDraftV2;
     evaluator: EvaluatorViewV2;
+    spfaProtocolSet: CaseSpfaProtocolSetV2;
   }>;
   derived: Readonly<{
     patientRuntime: PatientRuntimeViewV2;
@@ -50,6 +53,7 @@ export type GeneratedCaseBundleV2 = Readonly<{
 export type GeneratedCaseBundleBuildErrorCode =
   | 'invalid_source_brief'
   | 'invalid_core'
+  | 'spfa_protocol_set_validation_failed'
   | 'runtime_build_failed'
   | 'summary_build_failed'
   | 'compliance_build_failed'
