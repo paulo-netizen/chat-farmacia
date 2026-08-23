@@ -20,6 +20,13 @@ export type ValidatedPatientResponseTextV2 = string & {
   readonly [validatedPatientResponseTextV2Brand]: true;
 };
 
+declare const acceptedPatientResponseTextV2Brand: unique symbol;
+
+/** Text that has passed both the deterministic and semantic safety boundaries. */
+export type AcceptedPatientResponseTextV2 = ValidatedPatientResponseTextV2 & {
+  readonly [acceptedPatientResponseTextV2Brand]: true;
+};
+
 export type PatientResponseNonEmptyArrayV2<T> = readonly [T, ...T[]];
 
 export type PatientResponseDeterministicGuardResultV2 =
