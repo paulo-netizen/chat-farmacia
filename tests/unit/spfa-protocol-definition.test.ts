@@ -481,6 +481,26 @@ describe('SPFA protocol definition V2', () => {
       );
     });
 
+    it.each(['pharmaceutical_indication', 'medication_adherence'])(
+      'rejects dispensing_subtype protocol information on service %s',
+      (service) => {
+        expectValidationError(
+          protocol({
+            service,
+            requirements: [
+              informationRequirement({
+                semanticDomain: {
+                  kind: 'protocol_information',
+                  domain: 'dispensing_subtype',
+                },
+              }),
+            ],
+          }),
+          'spfaProtocolDefinition.requirements[0].semanticDomain.domain',
+        );
+      },
+    );
+
     it('rejects an invalid action domain', () => {
       expectValidationError(
         protocol({

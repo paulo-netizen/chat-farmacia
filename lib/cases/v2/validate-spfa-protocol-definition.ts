@@ -368,13 +368,24 @@ function parseRequirement(
 
   if (kind === 'INFORMATION_REQUIREMENT') {
     assertExactKeys(source, [...commonKeys, 'informationGoal'], path);
+    const semanticDomain = parseInformationDomain(
+      source.semanticDomain,
+      `${path}.semanticDomain`,
+    );
+    if (
+      semanticDomain.kind === 'protocol_information' &&
+      semanticDomain.domain === 'dispensing_subtype' &&
+      service !== 'dispensing'
+    ) {
+      fail(
+        `${path}.semanticDomain.domain`,
+        'dispensing_subtype is only valid for dispensing protocols',
+      );
+    }
     const result: SpfaInformationRequirementDefinitionV2 = {
       kind,
       requirementId: common.requirementId,
-      semanticDomain: parseInformationDomain(
-        source.semanticDomain,
-        `${path}.semanticDomain`,
-      ),
+      semanticDomain,
       teacherLabel: common.teacherLabel,
       description: common.description,
       defaultImportance: common.defaultImportance,

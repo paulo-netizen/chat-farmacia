@@ -308,7 +308,16 @@ type AppliedRequirementApplicabilityV2 =
     }
   | {
       status: 'NOT_APPLICABLE';
-      reasonRef: SpfaApplicabilityPolicyId;
+      reason: AppliedNotApplicableReasonV2;
+    };
+
+type AppliedNotApplicableReasonV2 =
+  | {
+      kind: 'DISPENSING_SUBTYPE_MISMATCH';
+    }
+  | {
+      kind: 'CASE_DETERMINED';
+      policyRef: SpfaApplicabilityPolicyId;
     };
 
 type AppliedInformationRequirementV2 = Readonly<{
@@ -364,7 +373,8 @@ aplicar una regla versionada a un caso concreto. Por ello:
 - nunca se confunde con `OPTIONAL`;
 - no genera penalización ni requisito pendiente;
 - no recibe cobertura ni resultado de actuación ordinarios;
-- debe conservar su razón tipada para trazabilidad;
+- debe conservar su razón tipada para trazabilidad: mismatch de subtipo o la
+  política `CASE_DETERMINED` exacta que se materializó;
 - un resultado de sesión `NOT_APPLICABLE` debe estar respaldado por la aplicación
   del caso, no ser decidido ad hoc por el evaluador de la transcripción.
 
