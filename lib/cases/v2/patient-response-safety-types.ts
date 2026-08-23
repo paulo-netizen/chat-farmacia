@@ -31,3 +31,28 @@ export type PatientResponseDeterministicGuardResultV2 =
       decision: 'RETRY';
       violations: PatientResponseNonEmptyArrayV2<PatientResponseDeterministicViolationCodeV2>;
     }>;
+
+export const PATIENT_RESPONSE_VALIDATION_SCHEMA_VERSION_V2 = '1.0' as const;
+
+export type PatientResponseViolationCodeV2 =
+  | 'ROLE_BREAK'
+  | 'PROTECTED_LEAK'
+  | 'UNSUPPORTED_FACT'
+  | 'FACT_CONTRADICTION'
+  | 'HISTORY_CONTRADICTION'
+  | 'DISCLOSURE_VIOLATION'
+  | 'INTERNAL_IDENTIFIER'
+  | 'META_OUTPUT'
+  | 'OTHER_UNSAFE_OUTPUT';
+
+export type PatientResponseValidationResultV2 =
+  | Readonly<{
+      schemaVersion: typeof PATIENT_RESPONSE_VALIDATION_SCHEMA_VERSION_V2;
+      decision: 'PASS';
+      violations: readonly [];
+    }>
+  | Readonly<{
+      schemaVersion: typeof PATIENT_RESPONSE_VALIDATION_SCHEMA_VERSION_V2;
+      decision: 'RETRY';
+      violations: PatientResponseNonEmptyArrayV2<PatientResponseViolationCodeV2>;
+    }>;
