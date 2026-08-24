@@ -9,3 +9,6 @@ node_modules/
 # Salidas de compilación
 .next/
 out/
+
+# Cache incremental de TypeScript
+*.tsbuildinfo
