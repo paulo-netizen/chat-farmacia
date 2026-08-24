@@ -560,6 +560,23 @@ SPFA/requisito, los descriptors mínimos y los candidate message refs en orden
 canónico. Cambiar un fact ajeno al target no altera el contexto ni su
 fingerprint.
 
+### 8.7. Frontera de request y transport semántico OpenAI
+
+M5-D3C1 transforma el contexto canónico D3B y el transcript D1 en un request
+server-only para el adjudicador semántico. El provider recibe únicamente D3B y
+una proyección explícita de mensajes con `messageRef`, role y content: para
+requisitos de información recibe la conversación student/patient aceptada y,
+para actuación, solo los mensajes student candidatos. El transcript es dato no
+confiable; cualquier instrucción contenida en sus mensajes carece de autoridad
+sobre el adjudicador.
+
+El transport del provider no es una `SpfaSemanticAdjudicationV2`. Structured
+Outputs valida exclusivamente la forma cerrada de decisiones y supports; D3A
+continúa siendo la autoridad sobre targets, mensajes, roles, orden y
+referencias. El schema no contiene rationale, confidence, score, feedback ni
+excerpt. Tampoco recibe fuente clínica oculta fuera de la allowlist D3B. La
+normalización y validación contra D3A pertenecen a D3C2.
+
 ## 9. Cobertura de información
 
 ```ts
@@ -921,10 +938,21 @@ resueltos. Revalida C1/C2, reconstruye D2, no contiene policy de disclosure,
 scoring, metadata de seguridad ni facts ajenos, y fija mediante fingerprint el
 input semántico exacto permitido.
 
-#### M5-D3C — Provider y Structured Outputs — PENDING
+#### M5-D3C1 — Frontera de transport y request del provider — CLOSED
 
-Pendiente incorporar el provider detrás del contrato D3A, con schema estricto y
-sin permitir referencias fuera del universo D2.
+Implementados el prompt semántico versionado, la proyección segura del
+transcript, el request fijado al fingerprint D3B y el schema Structured Outputs
+estricto. No existe cliente ni llamada OpenAI en esta etapa.
+
+#### M5-D3C2 — Executor OpenAI y normalización D3A — PENDING
+
+Pendiente ejecutar el provider, normalizar su transport sin excerpts y someter
+el resultado a la autoridad estructural D3A.
+
+#### M5-D3C3 — Aceptación live controlada — PENDING
+
+Pendiente validar el adjudicador con escenarios live controlados después de
+cerrar executor y normalización.
 
 #### M5-D3D — Integración y aceptación — PENDING
 
