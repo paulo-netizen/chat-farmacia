@@ -109,6 +109,11 @@ type SpfaProtocolRefV2 = Readonly<{
 }>;
 ```
 
+`SessionMessageId` no es UUID. Representa el `bigint` positivo de PostgreSQL
+como decimal string canónico: solo `[1-9][0-9]*`, con límite superior
+`9223372036854775807`. No admite cero, signo, ceros iniciales, decimales,
+notación exponencial ni conversión a `number` de JavaScript.
+
 Una nueva versión conserva un `SpfaProtocolRequirementId` cuando el significado
 docente sigue siendo el mismo. Si el significado cambia de forma incompatible,
 debe recibir otro ID. `teacherLabel` y `description` son metadata editable y
@@ -420,6 +425,48 @@ publicabilidad implícita. El core integrado demuestra que el recorrido SPFA
 tiene definiciones y aplicaciones completas y fijadas, pero su incorporación
 al bundle final y al lifecycle de publicación pertenece a M5-C2B.
 
+### 8.3. Snapshot inmutable del transcript de sesión
+
+M5-D1 fija el transcript evaluable mediante:
+
+```ts
+type SessionTranscriptMessageV2 = Readonly<{
+  messageId: SessionMessageId;
+  role: 'student' | 'patient';
+  content: string;
+  createdAt: string;
+}>;
+
+type SessionTranscriptFingerprintV1 = Readonly<{
+  algorithm: 'sha256';
+  canonicalization: 'session-transcript-v2/1';
+  value: string;
+}>;
+
+type SessionTranscriptSnapshotV2 = Readonly<{
+  schemaVersion: '2.0';
+  sessionId: string;
+  caseVersionId: CaseVersionId;
+  messages: readonly SessionTranscriptMessageV2[];
+  fingerprint: SessionTranscriptFingerprintV1;
+}>;
+```
+
+El `createdAt` de entrada debe ser un instante ISO/RFC3339 con timezone explícito:
+`Z` o un offset `±HH:MM`. Los timestamps locales sin offset y las fechas
+imposibles se rechazan. La salida se normaliza siempre con `Date.toISOString()`;
+así, el fingerprint no depende de la zona horaria del proceso. Los mensajes se
+ordenan por ese instante UTC ascendente y, en empate, por el valor numérico
+`BigInt` de `messageId` ascendente. Así, `9` precede a `10` sin perder precisión. El
+fingerprint SHA-256 cubre `sessionId`, `caseVersionId` y todos los campos de cada
+mensaje ya ordenado. La canonicalización se identifica como
+`session-transcript-v2/1`.
+
+Un snapshot persistido no es autoridad por contener un hash: su boundary valida
+las claves exactas, reconstruye el contenido canónico, recalcula el fingerprint
+y exige igualdad exacta. Los mensajes se copian a objetos nuevos y un ID de
+mensaje solo puede aparecer una vez.
+
 ## 9. Cobertura de información
 
 ```ts
@@ -478,6 +525,13 @@ type SpfaRequirementCoverageV2 =
 faltan. El excerpt es una ayuda de presentación; la autoridad es `messageRef` y
 el mensaje inmutable de la sesión. Una implementación podrá añadir una referencia
 estable de turno como metadata, pero no sustituir el ID real por un texto copiado.
+
+Cuando existe, `excerpt` debe ser un string no vacío y un substring literal del
+`content` real. No se acepta paráfrasis, fuzzy matching ni texto inventado. La
+compatibilidad estructural también es estricta: `PATIENT_STATEMENT` y
+`PATIENT_CONFIRMATION` solo pueden citar mensajes `patient`, mientras que
+`STUDENT_QUESTION` y `STUDENT_ACTION` solo pueden citar mensajes `student`. El
+`speaker` declarado debe coincidir además con el `role` real del mensaje.
 
 `STUDENT_ASKED` no es un origen de cobertura. Una pregunta puede ser evidencia
 de exploración, pero solo una respuesta aceptada del paciente —o información
@@ -745,10 +799,24 @@ integración en provenance, sin alterar el fingerprint del brief.
 
 ### M5-D — Evidencia de cobertura de información
 
-Definir transcript pinning, evidencia estable, origen espontáneo/elicited,
-equivalencia semántica y resultados parciales. Implementar primero un extractor
-determinista/contractual y dejar cualquier ayuda IA detrás de una frontera
-validada.
+#### M5-D1 — Snapshot de transcript y contratos de evidencia/resultado — CLOSED
+
+Implementados el transcript canónico fijado por fingerprint, las referencias a
+mensajes reales, las particiones exactas de targets, los orígenes estructurales
+de información, los outcomes de actuación y el resultado fijado a
+sesión/caseVersion/transcript/SPFA/requisito. D1 no decide si el contenido citado
+satisface semánticamente un target.
+
+#### M5-D2 — Baseline determinista y frontera de candidatos semánticos
+
+Pendiente. Resolver los casos inequívocos de evidencia pública y preparar una
+frontera validada para candidatos semánticos sin convertir preguntas o acciones
+del estudiante en hechos.
+
+#### M5-D3 — Extracción/validación semántica si resulta necesaria
+
+Pendiente. Incorporar ayuda semántica solo detrás de los contratos D1/D2, sin
+permitir referencias inventadas ni perder el pinning del transcript.
 
 ### M5-E — Evaluador de sesión SPFA
 
