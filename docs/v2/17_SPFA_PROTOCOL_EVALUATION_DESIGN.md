@@ -535,6 +535,31 @@ exhaustividad y orden canónico, pero preserva el status que aporta quien realiz
 la adjudicación. Un candidato no es evidencia semántica y una adjudicación
 semántica tampoco es todavía cobertura o resultado final D1.
 
+### 8.6. Contexto canónico de targets semánticos
+
+M5-D3B construye una proyección exclusivamente server-side para describir a la
+etapa semántica los targets que D2 dejó sin resolver. No se devuelve al alumno,
+no inspecciona el contenido del transcript, no adjudica y no materializa
+cobertura D1. Antes de proyectar, revalida el core clínico y su set SPFA mediante
+las fronteras C1/C2, reconstruye el baseline D2 desde el transcript D1 canónico y
+exige equivalencia estructural completa con el baseline recibido.
+
+El contexto contiene solo el servicio/subtipo SPFA, el dominio y goal del
+requisito, y exactamente un descriptor por `unresolvedTargetRef`. Los facts se
+describen mediante locations tipadas y un datum sin `factId`, disclosure ni
+perfil comunicativo. Los medicamentos aportan únicamente su `displayName`; un
+target farmacoterapéutico no arrastra dosis, pauta u otros facts salvo que sean
+el dato solicitado. Las conclusiones y transiciones se proyectan de forma
+allowlist sin evaluator completo, reglas de evidencia, scoring ni metadata de
+seguridad.
+
+`targetRef` es la identidad externa permitida para enlazar D2, D3C y D3A. Los
+`factRef` y `medicationRef` permanecen server-side. El fingerprint
+`spfa-semantic-target-context-v2/1` fija exactamente el pinning, la semántica
+SPFA/requisito, los descriptors mínimos y los candidate message refs en orden
+canónico. Cambiar un fact ajeno al target no altera el contexto ni su
+fingerprint.
+
 ## 9. Cobertura de información
 
 ```ts
@@ -889,10 +914,12 @@ decisiones cubren exactamente los targets no resueltos, los soportes solo pueden
 usar pares del universo semántico y las preguntas de origen deben referenciar
 mensajes D1 anteriores. No se inspecciona el texto para decidir semántica.
 
-#### M5-D3B — Contexto canónico de targets semánticos — PENDING
+#### M5-D3B — Contexto canónico de targets semánticos — CLOSED
 
-Pendiente construir la proyección mínima y segura que describa los targets a un
-adjudicador semántico sin exponer información ajena a la tarea.
+Implementada la proyección server-only mínima y reproducible de los targets no
+resueltos. Revalida C1/C2, reconstruye D2, no contiene policy de disclosure,
+scoring, metadata de seguridad ni facts ajenos, y fija mediante fingerprint el
+input semántico exacto permitido.
 
 #### M5-D3C — Provider y Structured Outputs — PENDING
 
