@@ -467,6 +467,49 @@ las claves exactas, reconstruye el contenido canónico, recalcula el fingerprint
 y exige igualdad exacta. Los mensajes se copian a objetos nuevos y un ID de
 mensaje solo puede aparecer una vez.
 
+### 8.4. Baseline determinista y universo semántico
+
+M5-D2 reconoce de forma determinista únicamente los targets
+`PUBLIC_PROFILE(age|sex)`. Un target `FACT`, `MEDICATION_ENTITY` o
+`MEDICATION_FACT`, y cualquier target de actuación, permanece `unresolved`.
+Aunque `StudentPublicView.tratamiento` sea visible, su texto no permite resolver
+por sí solo una entidad o un hecho farmacoterapéutico y nunca se compara como
+identidad.
+
+```ts
+type SpfaDeterministicResolutionV2 =
+  | 'NOT_APPLICABLE'
+  | 'DETERMINISTIC_COMPLETE'
+  | 'DETERMINISTIC_PARTIAL'
+  | 'SEMANTIC_REQUIRED';
+
+type SpfaSemanticEvidenceCandidateV2 = Readonly<{
+  targetRef: SpfaRequirementTargetId;
+  messageRef: SessionMessageId;
+}>;
+```
+
+`unresolved` no significa `NOT_COVERED`: indica exclusivamente que el transcript
+todavía requiere interpretación. Para información, el universo contiene el
+producto de cada target no resuelto por cada mensaje `patient`; para actuaciones,
+por cada mensaje `student`. Respeta primero el orden de targets de la aplicación
+y después el orden canónico del transcript. Los targets públicos ya resueltos y
+los requisitos `NOT_APPLICABLE` no generan candidatos.
+
+Un candidato no es evidencia ni un match semántico. El universo solo limita los
+pares target↔mensaje que una capa posterior puede referenciar. La selección
+validada puede elegir un subconjunto y se reordena según el universo, pero tampoco
+demuestra cobertura, actuación ni pertinencia clínica. No admite confidence,
+score, rationale, excerpt, evidence kind, origin, modelo ni feedback. M5-D3 será
+la única etapa que podrá convertir candidatos validados en evidencia semántica,
+si resulta necesaria, detrás de contratos fail-closed.
+
+El materializador D2 solo emite un resultado D1 cuando no queda interpretación
+pendiente: información completamente pública produce `COVERED` con origen
+`PUBLIC_INFORMATION`, y un requisito no aplicable produce `NOT_APPLICABLE`.
+`DETERMINISTIC_PARTIAL` y `SEMANTIC_REQUIRED` devuelven `null`; nunca se fabrica
+prematuramente `PARTIALLY_COVERED`.
+
 ## 9. Cobertura de información
 
 ```ts
@@ -807,13 +850,14 @@ de información, los outcomes de actuación y el resultado fijado a
 sesión/caseVersion/transcript/SPFA/requisito. D1 no decide si el contenido citado
 satisface semánticamente un target.
 
-#### M5-D2 — Baseline determinista y frontera de candidatos semánticos
+#### M5-D2 — Baseline determinista y frontera de candidatos semánticos — CLOSED
 
-Pendiente. Resolver los casos inequívocos de evidencia pública y preparar una
-frontera validada para candidatos semánticos sin convertir preguntas o acciones
-del estudiante en hechos.
+Implementados el reconocimiento exclusivo de `PUBLIC_PROFILE(age|sex)`, la
+separación explícita de targets no resueltos, el universo canónico target↔mensaje,
+la selección fail-closed y la materialización D1 solo cuando no queda nada
+pendiente. D2 no inspecciona texto ni decide equivalencia semántica.
 
-#### M5-D3 — Extracción/validación semántica si resulta necesaria
+#### M5-D3 — Extracción/validación semántica si resulta necesaria — PENDING
 
 Pendiente. Incorporar ayuda semántica solo detrás de los contratos D1/D2, sin
 permitir referencias inventadas ni perder el pinning del transcript.
