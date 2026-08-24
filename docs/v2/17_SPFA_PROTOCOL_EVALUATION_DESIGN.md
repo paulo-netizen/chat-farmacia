@@ -510,6 +510,31 @@ pendiente: información completamente pública produce `COVERED` con origen
 `DETERMINISTIC_PARTIAL` y `SEMANTIC_REQUIRED` devuelven `null`; nunca se fabrica
 prematuramente `PARTIALLY_COVERED`.
 
+### 8.5. Adjudicación semántica estructural
+
+M5-D3A introduce `SpfaSemanticAdjudicationV2` únicamente para baselines
+`DETERMINISTIC_PARTIAL` o `SEMANTIC_REQUIRED`. La adjudicación queda fijada a la
+sesión, versión de caso, fingerprint completo del transcript, SPFA y requisito
+exactos del baseline. Contiene exactamente una decisión `SUPPORTED`,
+`NOT_SUPPORTED` o `UNCERTAIN` por cada target no resuelto y ninguna para targets
+públicos ya resueltos. `UNCERTAIN` conserva una decisión distinta de
+`NOT_SUPPORTED`; ninguna de las dos se convierte todavía en cobertura final.
+
+Cada soporte semántico debe reutilizar un par target↔mensaje del universo D2.
+Para información, el mensaje es del paciente y se distingue una declaración
+espontánea de una respuesta obtenida tras una pregunta anterior del estudiante.
+La pregunta es metadata de origen referenciada mediante un mensaje D1 real; no
+es un candidato D2 ni crea evidencia factual por sí sola. Una confirmación del
+paciente solo puede ser `ELICITED`. Para actuaciones, el soporte es siempre un
+mensaje del estudiante con `evidenceKind: STUDENT_ACTION`.
+
+Los excerpts son opcionales, no vacíos y literales respecto del mensaje real.
+No existe matching aproximado, reparación de referencias ni decisión semántica
+basada en el texto dentro de D3A. La frontera valida estructura, referencias,
+exhaustividad y orden canónico, pero preserva el status que aporta quien realiza
+la adjudicación. Un candidato no es evidencia semántica y una adjudicación
+semántica tampoco es todavía cobertura o resultado final D1.
+
 ## 9. Cobertura de información
 
 ```ts
@@ -857,10 +882,34 @@ separación explícita de targets no resueltos, el universo canónico target↔m
 la selección fail-closed y la materialización D1 solo cuando no queda nada
 pendiente. D2 no inspecciona texto ni decide equivalencia semántica.
 
-#### M5-D3 — Extracción/validación semántica si resulta necesaria — PENDING
+#### M5-D3A — Contratos y validación de adjudicación semántica — CLOSED
 
-Pendiente. Incorporar ayuda semántica solo detrás de los contratos D1/D2, sin
-permitir referencias inventadas ni perder el pinning del transcript.
+Implementada la frontera estricta fijada al baseline D2 y al transcript D1. Las
+decisiones cubren exactamente los targets no resueltos, los soportes solo pueden
+usar pares del universo semántico y las preguntas de origen deben referenciar
+mensajes D1 anteriores. No se inspecciona el texto para decidir semántica.
+
+#### M5-D3B — Contexto canónico de targets semánticos — PENDING
+
+Pendiente construir la proyección mínima y segura que describa los targets a un
+adjudicador semántico sin exponer información ajena a la tarea.
+
+#### M5-D3C — Provider y Structured Outputs — PENDING
+
+Pendiente incorporar el provider detrás del contrato D3A, con schema estricto y
+sin permitir referencias fuera del universo D2.
+
+#### M5-D3D — Integración y aceptación — PENDING
+
+Pendiente integrar la adjudicación validada y demostrar sus fronteras mediante
+pruebas de aceptación, sin confundirla todavía con el resultado final de
+cobertura.
+
+Invariantes de D3: candidato no equivale a evidencia semántica; evidencia
+semántica no equivale a cobertura final; `UNCERTAIN` no equivale a
+`NOT_SUPPORTED`; cada par citado procede del universo D2; una pregunta de origen
+es metadata D1 y no evidencia factual; no se inventan referencias; y no se
+deduce semántica mediante búsquedas o coincidencias textuales en esta frontera.
 
 ### M5-E — Evaluador de sesión SPFA
 
