@@ -390,6 +390,14 @@ function createReceipt() {
   };
 }
 
+function requiredInitialDemandFactId(core: CanonicalGeneratedCaseCoreV2) {
+  const initialDemand = core.patientFacts.initialDemand;
+  if (initialDemand.state !== 'known') {
+    throw new Error('fixture initialDemand must be known');
+  }
+  return initialDemand.factId;
+}
+
 function createProtocolSetForCore(core: CanonicalGeneratedCaseCoreV2) {
   const spfa = core.evaluator.carePath.initialSpfa;
   const protocolId = 'spfa_protocol_50000000-0000-4000-8000-000000000077';
@@ -444,7 +452,7 @@ function createProtocolSetForCore(core: CanonicalGeneratedCaseCoreV2) {
                   'spfa_target_70000000-0000-4000-8000-000000000077',
                 target: {
                   kind: 'FACT',
-                  factRef: core.patientFacts.initialDemand.factId,
+                  factRef: requiredInitialDemandFactId(core),
                 },
               },
             ],
@@ -503,7 +511,7 @@ describe('generateOpenAiCaseBundleV2', () => {
     expect(mocks.generateWithReceipt).toHaveBeenCalledWith(brief, catalogs);
     expect(resolver).toHaveBeenCalledTimes(1);
     const resolverCore = resolver.mock.calls[0][0];
-    expect(resolverCore.patientFacts.initialDemand.factId).toBe(
+    expect(requiredInitialDemandFactId(resolverCore)).toBe(
       'fact_10000000-0000-4000-8000-000000000001',
     );
     expect(resolverCore.evaluator.carePath.initialSpfa.conclusionId).toBe(

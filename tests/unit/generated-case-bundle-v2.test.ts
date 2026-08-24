@@ -248,6 +248,14 @@ function createBrief(source = createBriefUnknown()): TeachingCaseGenerationBrief
   return validateTeachingCaseGenerationBriefV2(source);
 }
 
+function requiredInitialDemandFactId(core: CanonicalGeneratedCaseCoreV2) {
+  const initialDemand = core.patientFacts.initialDemand;
+  if (initialDemand.state !== 'known') {
+    throw new Error('fixture initialDemand must be known');
+  }
+  return initialDemand.factId;
+}
+
 function createProtocolSet(
   core: CanonicalGeneratedCaseCoreV2,
   variant: 'primary' | 'alternate' = 'primary',
@@ -304,7 +312,7 @@ function createProtocolSet(
                 targetId: `spfa_target_70000000-0000-4000-8000-00000000000${suffix}`,
                 target: {
                   kind: 'FACT',
-                  factRef: core.patientFacts.initialDemand.factId,
+                  factRef: requiredInitialDemandFactId(core),
                 },
               },
             ],

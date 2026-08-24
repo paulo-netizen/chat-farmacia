@@ -111,6 +111,14 @@ function generatedCore(): CanonicalGeneratedCaseCoreV2 {
   };
 }
 
+function requiredInitialDemandFactId(core: CanonicalGeneratedCaseCoreV2) {
+  const initialDemand = core.patientFacts.initialDemand;
+  if (initialDemand.state !== 'known') {
+    throw new Error('fixture initialDemand must be known');
+  }
+  return initialDemand.factId;
+}
+
 function integratedGeneratedCore() {
   const core = generatedCore();
   const spfa = core.evaluator.carePath.initialSpfa;
@@ -140,7 +148,7 @@ function integratedGeneratedCore() {
         applicability: { status: 'APPLICABLE', effectiveImportance: 'RELEVANT' },
         informationTargets: [{
           targetId: 'spfa_target_70000000-0000-4000-8000-000000000001',
-          target: { kind: 'FACT', factRef: core.patientFacts.initialDemand.factId },
+          target: { kind: 'FACT', factRef: requiredInitialDemandFactId(core) },
         }],
       }],
     }],
