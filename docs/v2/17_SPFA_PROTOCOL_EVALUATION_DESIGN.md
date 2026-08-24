@@ -577,6 +577,32 @@ referencias. El schema no contiene rationale, confidence, score, feedback ni
 excerpt. Tampoco recibe fuente clínica oculta fuera de la allowlist D3B. La
 normalización y validación contra D3A pertenecen a D3C2.
 
+### 8.8. Executor semántico y autoridad D3A
+
+M5-D3C2 fija una única cadena de ejecución:
+
+```text
+D3C1 request
+→ responses.parse
+→ D3C1 transport validation
+→ server-owned normalization
+→ D3A authority validation
+→ execution receipt
+```
+
+El executor usa un cliente inyectable y configuración server-owned, desactiva
+persistencia y retries del SDK, y toma snapshots canónicos del transcript y del
+baseline antes de esperar al provider. Structured Outputs controla la forma,
+pero nunca la autoridad: el provider no controla session, case version,
+fingerprint, SPFA, requisito ni kind. La normalización inyecta ese pinning desde
+el baseline y D3A valida obligatoriamente targets, mensajes, roles, orden y
+universo de candidatos.
+
+`UNCERTAIN` se conserva literalmente. No existen retries semánticos, reparación
+de referencias, fallback de modelo, persistencia, scoring ni feedback. Modelo y
+versión del prompt se registran únicamente en el receipt de ejecución y no se
+incorporan a la adjudicación clínica.
+
 ## 9. Cobertura de información
 
 ```ts
@@ -944,10 +970,12 @@ Implementados el prompt semántico versionado, la proyección segura del
 transcript, el request fijado al fingerprint D3B y el schema Structured Outputs
 estricto. No existe cliente ni llamada OpenAI en esta etapa.
 
-#### M5-D3C2 — Executor OpenAI y normalización D3A — PENDING
+#### M5-D3C2 — Executor OpenAI y normalización D3A — CLOSED
 
-Pendiente ejecutar el provider, normalizar su transport sin excerpts y someter
-el resultado a la autoridad estructural D3A.
+Implementado el executor con cliente inyectable, snapshots previos al await,
+clasificación fail-closed de respuestas OpenAI, normalización server-owned y
+validación D3A obligatoria. Este incremento usa providers mockeados y no realiza
+llamadas live.
 
 #### M5-D3C3 — Aceptación live controlada — PENDING
 
