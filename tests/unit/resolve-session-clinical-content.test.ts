@@ -13,6 +13,7 @@ import { createPatientRuntimeViewV2 } from '../../lib/cases/v2/patient-runtime';
 import {
   resolveSessionEvaluatorClinicalContentV2,
   resolveSessionPatientClinicalContentV2,
+  resolveSessionSpfaClinicalContentV2,
 } from '../../lib/cases/v2/resolve-session-clinical-content';
 import { SessionClinicalContentErrorV2 } from '../../lib/cases/v2/session-clinical-content-types';
 import { validateTeachingCaseGenerationBriefV2 } from '../../lib/cases/v2/validate-teaching-brief';
@@ -415,6 +416,89 @@ describe('generated session clinical content', () => {
 
     expectCode(
       () => resolveSessionPatientClinicalContentV2(input),
+      'source_format_mismatch',
+    );
+  });
+});
+
+describe('generated SPFA clinical core capability', () => {
+  it('reconstructs the complete validated server-only SPFA core', () => {
+    const result = resolveSessionSpfaClinicalContentV2(generatedInput());
+    expect(Object.keys(result).sort()).toEqual([
+      'caseVersionId',
+      'evaluator',
+      'patientFacts',
+      'spfaProtocolSet',
+    ]);
+    expect(result.caseVersionId).toBe(caseVersionId);
+    expect(result.patientFacts.publicProfile.nombre).toBe('María');
+    expect(result.evaluator.carePath.initialSpfa.value).toEqual({
+      service: 'dispensing',
+      subtype: 'continuation',
+    });
+    expect(result.spfaProtocolSet.applications).toHaveLength(1);
+  });
+
+  it('does not return the raw bundle or its derived/provenance sections', () => {
+    const result = resolveSessionSpfaClinicalContentV2(generatedInput());
+    expect(result).not.toHaveProperty('sourceOfTruth');
+    expect(result).not.toHaveProperty('derived');
+    expect(result).not.toHaveProperty('provenance');
+    expect(result).not.toHaveProperty('sourceBrief');
+    expect(JSON.stringify(result)).not.toContain('never project');
+  });
+
+  it('rejects Legacy without fabricating an SPFA protocol capability', () => {
+    expectCode(
+      () => resolveSessionSpfaClinicalContentV2(legacyInput()),
+      'spfa_evaluation_not_available',
+    );
+  });
+
+  it('rejects a missing SPFA protocol set fail-closed', () => {
+    const input = clone(generatedInput()) as any;
+    delete input.content.sourceOfTruth.spfaProtocolSet;
+    expectCode(
+      () => resolveSessionSpfaClinicalContentV2(input),
+      'invalid_case_version_content',
+    );
+  });
+
+  it('rejects an invalid SPFA protocol set fail-closed', () => {
+    const input = clone(generatedInput()) as any;
+    input.content.sourceOfTruth.spfaProtocolSet.catalogRef.id = 'wrong-catalog';
+    expectCode(
+      () => resolveSessionSpfaClinicalContentV2(input),
+      'spfa_runtime_validation_failed',
+    );
+  });
+
+  it('rejects case-version drift before returning a core', () => {
+    const input = clone(generatedInput()) as any;
+    input.content.sourceOfTruth.spfaProtocolSet.applications[0].caseVersionId =
+      'casever_90000000-0000-4000-8000-000000000099';
+    expectCode(
+      () => resolveSessionSpfaClinicalContentV2(input),
+      'spfa_runtime_validation_failed',
+    );
+  });
+
+  it('rejects invalid patient facts before returning a core', () => {
+    const input = clone(generatedInput()) as any;
+    input.content.sourceOfTruth.patientFacts.initialDemand = {
+      state: 'not_defined',
+    };
+    expectCode(
+      () => resolveSessionSpfaClinicalContentV2(input),
+      'patient_runtime_validation_failed',
+    );
+  });
+
+  it('rejects a source/format mismatch before returning a core', () => {
+    const input = clone(generatedInput()) as any;
+    input.sourceKind = 'LEGACY_V1';
+    expectCode(
+      () => resolveSessionSpfaClinicalContentV2(input),
       'source_format_mismatch',
     );
   });

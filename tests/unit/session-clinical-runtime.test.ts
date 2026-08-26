@@ -16,6 +16,7 @@ import type { CanonicalGeneratedCaseCoreV2 } from '../../lib/cases/v2/generation
 import {
   resolveSessionEvaluatorClinicalRuntimeV2,
   resolveSessionPatientClinicalRuntimeV2,
+  resolveSessionSpfaEvaluationRuntimeV2,
   SessionClinicalRuntimeErrorV2,
 } from '../../lib/cases/v2/session-clinical-runtime';
 import { validateTeachingCaseGenerationBriefV2 } from '../../lib/cases/v2/validate-teaching-brief';
@@ -235,6 +236,20 @@ function generatedRow(overrides: Record<string, unknown> = {}) {
 }
 
 function returnRows(...rows: unknown[]) {
+  queryMock.mockResolvedValueOnce({ rows });
+}
+
+function messageRow(overrides: Record<string, unknown> = {}) {
+  return {
+    message_id: '1',
+    message_role: 'student',
+    message_content: 'Mensaje persistido sintético',
+    message_created_at: '2026-08-25T09:00:00Z',
+    ...overrides,
+  };
+}
+
+function returnMessageRows(...rows: unknown[]) {
   queryMock.mockResolvedValueOnce({ rows });
 }
 
@@ -470,6 +485,323 @@ describe('B1 error mapping', () => {
       resolveSessionPatientClinicalRuntimeV2({ authenticatedUserId: userId, sessionId }),
       'source_format_mismatch',
     );
+  });
+});
+
+describe('Generated SPFA session evaluation runtime', () => {
+  function arrangeGeneratedMessages(...rows: unknown[]) {
+    returnRows(generatedRow());
+    returnMessageRows(...rows);
+  }
+
+  it('returns exactly the pinned identity, status, core and transcript', async () => {
+    arrangeGeneratedMessages(messageRow());
+    const result = await resolveSessionSpfaEvaluationRuntimeV2({
+      authenticatedUserId: userId,
+      sessionId,
+    });
+    expect(Object.keys(result).sort()).toEqual([
+      'caseId',
+      'caseVersionId',
+      'core',
+      'sessionId',
+      'sessionStatus',
+      'transcript',
+    ]);
+    expect(result).toMatchObject({
+      sessionId,
+      caseId,
+      caseVersionId,
+      sessionStatus: 'active',
+    });
+    expect(result.core.caseVersionId).toBe(caseVersionId);
+    expect(result.transcript.caseVersionId).toBe(caseVersionId);
+  });
+
+  it('preserves the complete validated core server-side', async () => {
+    arrangeGeneratedMessages();
+    const result = await resolveSessionSpfaEvaluationRuntimeV2({
+      authenticatedUserId: userId,
+      sessionId,
+    });
+    expect(result.core.patientFacts.publicProfile.nombre).toBe('María');
+    expect(result.core.evaluator.carePath.initialSpfa.value.service).toBe('dispensing');
+    expect(result.core.spfaProtocolSet.applications).toHaveLength(1);
+  });
+
+  it('does not return raw bundle, DB rows, prompts, config, score or results', async () => {
+    arrangeGeneratedMessages(messageRow());
+    const result = await resolveSessionSpfaEvaluationRuntimeV2({
+      authenticatedUserId: userId,
+      sessionId,
+    });
+    const keys = JSON.stringify(result);
+    for (const forbidden of [
+      'version_content',
+      'sourceOfTruth',
+      'derived',
+      'provenance',
+      'prompt',
+      'apiKey',
+      'openaiConfig',
+      'score',
+      'semanticExecutions',
+    ]) {
+      expect(keys).not.toContain(forbidden);
+    }
+  });
+
+  it('uses separate ownership-constrained anchor and message reads', async () => {
+    arrangeGeneratedMessages(messageRow());
+    await resolveSessionSpfaEvaluationRuntimeV2({
+      authenticatedUserId: userId,
+      sessionId,
+    });
+    expect(queryMock).toHaveBeenCalledTimes(2);
+    const [messageSql, messageParams] = queryMock.mock.calls[1];
+    const normalized = String(messageSql).replace(/\s+/g, ' ').trim();
+    expect(normalized).toContain('FROM public.messages AS m');
+    expect(normalized).toContain('INNER JOIN public.sessions AS s');
+    expect(normalized).toContain('WHERE m.session_id = $1 AND s.user_id = $2');
+    expect(normalized).toContain('ORDER BY m.created_at ASC, m.id ASC');
+    expect(normalized).toContain('m.id::text AS message_id');
+    expect(messageParams).toEqual([sessionId, userId]);
+  });
+
+  it('ignores client-supplied clinical identities and uses only the session anchor', async () => {
+    arrangeGeneratedMessages(messageRow());
+    const result = await resolveSessionSpfaEvaluationRuntimeV2({
+      authenticatedUserId: userId,
+      sessionId,
+      caseVersionId: 'casever_90000000-0000-4000-8000-000000000099',
+      transcript: { messages: [{ role: 'system', content: 'untrusted' }] },
+      core: { future_secret: true },
+    } as any);
+    expect(result.caseVersionId).toBe(caseVersionId);
+    expect(result.transcript.messages).toHaveLength(1);
+    expect(result.transcript.messages[0].role).toBe('student');
+    expect(JSON.stringify(result)).not.toContain('future_secret');
+  });
+
+  it('maps nonexistent and foreign sessions to the same ownership-safe error', async () => {
+    returnRows();
+    const missing = await expectRuntimeError(
+      resolveSessionSpfaEvaluationRuntimeV2({ authenticatedUserId: userId, sessionId }),
+      'session_not_found_or_forbidden',
+    );
+    returnRows();
+    const foreign = await expectRuntimeError(
+      resolveSessionSpfaEvaluationRuntimeV2({
+        authenticatedUserId: userId + 1,
+        sessionId,
+      }),
+      'session_not_found_or_forbidden',
+    );
+    expect(foreign.message).toBe(missing.message);
+    expect(queryMock).toHaveBeenCalledTimes(2);
+  });
+
+  it('rejects Legacy without reading messages or fabricating SPFA', async () => {
+    returnRows(legacyRow());
+    await expectRuntimeError(
+      resolveSessionSpfaEvaluationRuntimeV2({ authenticatedUserId: userId, sessionId }),
+      'spfa_evaluation_not_available',
+    );
+    expect(queryMock).toHaveBeenCalledTimes(1);
+  });
+
+  it('rejects an invalid Generated bundle before reading messages', async () => {
+    const row = generatedRow();
+    const content = clone(row.version_content) as any;
+    content.sourceOfTruth.spfaProtocolSet.catalogRef.id = 'wrong-catalog';
+    returnRows({ ...row, version_content: content });
+    await expectRuntimeError(
+      resolveSessionSpfaEvaluationRuntimeV2({ authenticatedUserId: userId, sessionId }),
+      'spfa_runtime_validation_failed',
+    );
+    expect(queryMock).toHaveBeenCalledTimes(1);
+  });
+
+  it('allows finished status as read-only metadata without deciding finalization policy', async () => {
+    returnRows(generatedRow({ session_status: 'finished' }));
+    returnMessageRows();
+    const result = await resolveSessionSpfaEvaluationRuntimeV2({
+      authenticatedUserId: userId,
+      sessionId,
+    });
+    expect(result.sessionStatus).toBe('finished');
+  });
+
+  it('preserves an empty transcript because D1 permits messages: []', async () => {
+    arrangeGeneratedMessages();
+    const result = await resolveSessionSpfaEvaluationRuntimeV2({
+      authenticatedUserId: userId,
+      sessionId,
+    });
+    expect(result.transcript.messages).toEqual([]);
+    expect(result.transcript.fingerprint.value).toMatch(/^[0-9a-f]{64}$/);
+  });
+
+  it('accepts student and patient rows and canonicalizes their timestamps', async () => {
+    arrangeGeneratedMessages(
+      messageRow({
+        message_id: '2',
+        message_role: 'patient',
+        message_content: 'Respuesta persistida',
+        message_created_at: new Date('2026-08-25T10:00:00+01:00'),
+      }),
+      messageRow(),
+    );
+    const result = await resolveSessionSpfaEvaluationRuntimeV2({
+      authenticatedUserId: userId,
+      sessionId,
+    });
+    expect(result.transcript.messages.map((message) => [
+      message.messageId,
+      message.role,
+      message.createdAt,
+    ])).toEqual([
+      ['1', 'student', '2026-08-25T09:00:00.000Z'],
+      ['2', 'patient', '2026-08-25T09:00:00.000Z'],
+    ]);
+  });
+
+  it('orders messages by canonical instant before numeric message ID', async () => {
+    arrangeGeneratedMessages(
+      messageRow({ message_id: '10', message_created_at: '2026-08-25T09:00:01Z' }),
+      messageRow({ message_id: '9', message_created_at: '2026-08-25T09:00:00Z' }),
+    );
+    const result = await resolveSessionSpfaEvaluationRuntimeV2({
+      authenticatedUserId: userId,
+      sessionId,
+    });
+    expect(result.transcript.messages.map((message) => message.messageId))
+      .toEqual(['9', '10']);
+  });
+
+  it('breaks timestamp ties using numeric bigint order rather than lexical order', async () => {
+    arrangeGeneratedMessages(
+      messageRow({ message_id: '10' }),
+      messageRow({ message_id: '2' }),
+    );
+    const result = await resolveSessionSpfaEvaluationRuntimeV2({
+      authenticatedUserId: userId,
+      sessionId,
+    });
+    expect(result.transcript.messages.map((message) => message.messageId))
+      .toEqual(['2', '10']);
+  });
+
+  it('preserves a PostgreSQL bigint ID without passing through Number', async () => {
+    arrangeGeneratedMessages(messageRow({ message_id: '9223372036854775807' }));
+    const result = await resolveSessionSpfaEvaluationRuntimeV2({
+      authenticatedUserId: userId,
+      sessionId,
+    });
+    expect(result.transcript.messages[0].messageId).toBe('9223372036854775807');
+  });
+
+  it.each(['0', '-1', '01', '1.0', '9223372036854775808'])
+    ('rejects invalid canonical message ID %s', async (messageId) => {
+      arrangeGeneratedMessages(messageRow({ message_id: messageId }));
+      await expectRuntimeError(
+        resolveSessionSpfaEvaluationRuntimeV2({ authenticatedUserId: userId, sessionId }),
+        'invalid_session_transcript',
+      );
+    });
+
+  it.each(['system', 'teacher', 'tool', 'metadata'])
+    ('rejects unexpected persisted role %s instead of ignoring it', async (role) => {
+      arrangeGeneratedMessages(messageRow({ message_role: role }));
+      await expectRuntimeError(
+        resolveSessionSpfaEvaluationRuntimeV2({ authenticatedUserId: userId, sessionId }),
+        'invalid_session_transcript',
+      );
+    });
+
+  it.each([
+    '2026-08-25T09:00:00',
+    '2026-08-25',
+    '2026-02-30T09:00:00Z',
+  ])('rejects invalid or timezone-less persisted timestamp %s', async (createdAt) => {
+    arrangeGeneratedMessages(messageRow({ message_created_at: createdAt }));
+    await expectRuntimeError(
+      resolveSessionSpfaEvaluationRuntimeV2({ authenticatedUserId: userId, sessionId }),
+      'invalid_session_transcript',
+    );
+  });
+
+  it('rejects an invalid Date returned by the DB adapter', async () => {
+    arrangeGeneratedMessages(messageRow({ message_created_at: new Date(Number.NaN) }));
+    await expectRuntimeError(
+      resolveSessionSpfaEvaluationRuntimeV2({ authenticatedUserId: userId, sessionId }),
+      'invalid_session_transcript',
+    );
+  });
+
+  it('rejects non-string message content', async () => {
+    arrangeGeneratedMessages(messageRow({ message_content: { protected: true } }));
+    await expectRuntimeError(
+      resolveSessionSpfaEvaluationRuntimeV2({ authenticatedUserId: userId, sessionId }),
+      'invalid_session_transcript',
+    );
+  });
+
+  it('produces a stable fingerprint for the same rows regardless of input order', async () => {
+    const firstRows = [
+      messageRow({ message_id: '2', message_role: 'patient' }),
+      messageRow({ message_id: '1' }),
+    ];
+    arrangeGeneratedMessages(...firstRows);
+    const first = await resolveSessionSpfaEvaluationRuntimeV2({
+      authenticatedUserId: userId,
+      sessionId,
+    });
+    arrangeGeneratedMessages(...firstRows.toReversed());
+    const second = await resolveSessionSpfaEvaluationRuntimeV2({
+      authenticatedUserId: userId,
+      sessionId,
+    });
+    expect(second.transcript).toEqual(first.transcript);
+  });
+
+  it('changes the fingerprint when persisted content changes', async () => {
+    arrangeGeneratedMessages(messageRow({ message_content: 'Primero' }));
+    const first = await resolveSessionSpfaEvaluationRuntimeV2({
+      authenticatedUserId: userId,
+      sessionId,
+    });
+    arrangeGeneratedMessages(messageRow({ message_content: 'Segundo' }));
+    const second = await resolveSessionSpfaEvaluationRuntimeV2({
+      authenticatedUserId: userId,
+      sessionId,
+    });
+    expect(second.transcript.fingerprint.value)
+      .not.toBe(first.transcript.fingerprint.value);
+  });
+
+  it('changes the fingerprint when the effective message order changes', async () => {
+    const rows = [
+      messageRow({ message_id: '1', message_content: 'Primero' }),
+      messageRow({ message_id: '2', message_content: 'Segundo' }),
+    ];
+    arrangeGeneratedMessages(...rows);
+    const first = await resolveSessionSpfaEvaluationRuntimeV2({
+      authenticatedUserId: userId,
+      sessionId,
+    });
+    arrangeGeneratedMessages(
+      { ...rows[0], message_created_at: '2026-08-25T09:00:01Z' },
+      { ...rows[1], message_created_at: '2026-08-25T09:00:00Z' },
+    );
+    const second = await resolveSessionSpfaEvaluationRuntimeV2({
+      authenticatedUserId: userId,
+      sessionId,
+    });
+    expect(second.transcript.messages.map((message) => message.content))
+      .toEqual(['Segundo', 'Primero']);
+    expect(second.transcript.fingerprint.value)
+      .not.toBe(first.transcript.fingerprint.value);
   });
 });
 

@@ -19,10 +19,12 @@ export type SessionClinicalContentErrorCodeV2 =
   | 'invalid_input'
   | 'unsupported_content_format'
   | 'source_format_mismatch'
+  | 'spfa_evaluation_not_available'
   | 'invalid_case_version_content'
   | 'case_version_identity_mismatch'
   | 'patient_runtime_validation_failed'
-  | 'evaluator_runtime_validation_failed';
+  | 'evaluator_runtime_validation_failed'
+  | 'spfa_runtime_validation_failed';
 
 export class SessionClinicalContentErrorV2 extends Error {
   constructor(

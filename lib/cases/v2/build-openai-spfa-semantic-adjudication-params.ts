@@ -46,9 +46,10 @@ ACTUACIONES DEL ESTUDIANTE
 - No supongas que el estudiante realizó una actuación solo porque fuese recomendable.
 
 DECISIÓN
-- Si existe soporte semántico suficiente, usa SUPPORTED con supports no vacío.
-- Si no existe soporte, usa NOT_SUPPORTED con supports vacío.
-- Si la evidencia es insuficiente o ambigua, usa UNCERTAIN con supports vacío.
+- SUPPORTED: existe evidencia semánticamente pertinente y suficiente para confirmar el target concreto; usa supports no vacío.
+- UNCERTAIN: existe contenido semánticamente pertinente al target, pero es vago, incompleto, ambiguo, contradictorio o insuficientemente específico para confirmar el target exacto; usa supports vacío.
+- NOT_SUPPORTED: ningún mensaje candidato aporta contenido semánticamente pertinente que permita evaluar o confirmar el target; usa supports vacío.
+- Una descripción cualitativa de una magnitud o atributo no confirma un valor cuantitativo exacto, pero sí es evidencia pertinente: clasifícala UNCERTAIN, no NOT_SUPPORTED.
 - UNCERTAIN no equivale a NOT_SUPPORTED.
 `.trim();
 

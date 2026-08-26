@@ -333,6 +333,21 @@ describe('OpenAI SPFA semantic adjudication request boundary', () => {
 });
 
 describe('SPFA semantic adjudicator instructions', () => {
+  it('defines the semantic boundary between all three verdicts', () => {
+    const prompt = SPFA_SEMANTIC_ADJUDICATION_INSTRUCTIONS_V1;
+    for (const rule of [
+      'SUPPORTED: existe evidencia semánticamente pertinente y suficiente',
+      'UNCERTAIN: existe contenido semánticamente pertinente al target',
+      'vago, incompleto, ambiguo, contradictorio o insuficientemente específico',
+      'NOT_SUPPORTED: ningún mensaje candidato aporta contenido semánticamente pertinente',
+      'descripción cualitativa de una magnitud o atributo',
+      'no confirma un valor cuantitativo exacto',
+      'clasifícala UNCERTAIN, no NOT_SUPPORTED',
+    ]) {
+      expect(prompt).toContain(rule);
+    }
+  });
+
   it('contains the complete semantic and role rules without clinical hardcoding', () => {
     const prompt = SPFA_SEMANTIC_ADJUDICATION_INSTRUCTIONS_V1;
     for (const rule of [

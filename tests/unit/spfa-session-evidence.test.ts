@@ -458,6 +458,7 @@ describe('SpfaRequirementCoverageV2', () => {
     expect(validateInformation({
       status: 'PARTIALLY_COVERED', origin: 'PATIENT_SPONTANEOUS',
       coveredTargetRefs: [ids.targetA], remainingTargetRefs: [ids.targetB],
+      uncertainTargetRefs: [],
       evidence: [patientStatement()],
     })).toMatchObject({ coverage: { status: 'PARTIALLY_COVERED' } });
   });
@@ -465,7 +466,8 @@ describe('SpfaRequirementCoverageV2', () => {
   it('accepts exact not-covered and not-applicable results', () => {
     expect(validateInformation({
       status: 'NOT_COVERED', coveredTargetRefs: [],
-      remainingTargetRefs: [ids.targetA, ids.targetB], evidence: [studentQuestion()],
+      remainingTargetRefs: [ids.targetA, ids.targetB], uncertainTargetRefs: [],
+      evidence: [studentQuestion()],
     })).toMatchObject({ coverage: { status: 'NOT_COVERED' } });
     expect(validateInformation(
       { status: 'NOT_APPLICABLE', evidence: [] },
@@ -482,7 +484,9 @@ describe('SpfaRequirementCoverageV2', () => {
     expect(() => validateInformation({
       status: remaining.length === 0 ? 'COVERED' : 'PARTIALLY_COVERED',
       origin: 'PATIENT_SPONTANEOUS', coveredTargetRefs: covered,
-      ...(remaining.length === 0 ? {} : { remainingTargetRefs: remaining }),
+      ...(remaining.length === 0
+        ? {}
+        : { remainingTargetRefs: remaining, uncertainTargetRefs: [] }),
       evidence: [patientStatement()],
     })).toThrow(SpfaRequirementSessionResultValidationError);
   });
@@ -542,6 +546,7 @@ describe('SpfaRequirementCoverageV2', () => {
     expect(() => validateInformation({
       status: 'PARTIALLY_COVERED', origin: 'PUBLIC_INFORMATION',
       coveredTargetRefs: [ids.targetA], remainingTargetRefs: [ids.targetB],
+      uncertainTargetRefs: [],
       evidence: [publicEvidence(ids.targetB)],
     })).toThrow(/public evidence must reference a covered target/);
   });
@@ -555,11 +560,12 @@ describe('SpfaActionRequirementOutcomeV2', () => {
     })).toMatchObject({ outcome: { status: 'PERFORMED' } });
     expect(validateAction({
       status: 'PARTIALLY_PERFORMED', performedTargetRefs: [ids.targetA],
-      remainingTargetRefs: [ids.targetB], evidence: [studentAction()],
+      remainingTargetRefs: [ids.targetB], uncertainTargetRefs: [],
+      evidence: [studentAction()],
     })).toMatchObject({ outcome: { status: 'PARTIALLY_PERFORMED' } });
     expect(validateAction({
       status: 'NOT_PERFORMED', remainingTargetRefs: [ids.targetA, ids.targetB],
-      evidence: [studentQuestion()],
+      uncertainTargetRefs: [], evidence: [studentQuestion()],
     })).toMatchObject({ outcome: { status: 'NOT_PERFORMED' } });
     expect(validateAction(
       { status: 'NOT_APPLICABLE', evidence: [] },
@@ -580,8 +586,155 @@ describe('SpfaActionRequirementOutcomeV2', () => {
   it('rejects invalid action target partitions', () => {
     expect(() => validateAction({
       status: 'PARTIALLY_PERFORMED', performedTargetRefs: [ids.targetA],
-      remainingTargetRefs: [ids.targetA, ids.targetB], evidence: [studentAction()],
+      remainingTargetRefs: [ids.targetA, ids.targetB], uncertainTargetRefs: [],
+      evidence: [studentAction()],
     })).toThrow(/overlap/);
+  });
+});
+
+describe('uncertainTargetRefs in incomplete SPFA results', () => {
+  it('requires and preserves an explicit empty uncertainty set', () => {
+    expect(validateInformation({
+      status: 'PARTIALLY_COVERED', origin: 'PATIENT_SPONTANEOUS',
+      coveredTargetRefs: [ids.targetA], remainingTargetRefs: [ids.targetB],
+      uncertainTargetRefs: [], evidence: [patientStatement()],
+    })).toMatchObject({ coverage: { uncertainTargetRefs: [] } });
+    expect(validateInformation({
+      status: 'NOT_COVERED', coveredTargetRefs: [],
+      remainingTargetRefs: [ids.targetA, ids.targetB],
+      uncertainTargetRefs: [], evidence: [studentQuestion()],
+    })).toMatchObject({ coverage: { uncertainTargetRefs: [] } });
+  });
+
+  it('preserves valid uncertainty for partial and not-covered information', () => {
+    expect(validateInformation({
+      status: 'PARTIALLY_COVERED', origin: 'PATIENT_SPONTANEOUS',
+      coveredTargetRefs: [ids.targetA], remainingTargetRefs: [ids.targetB],
+      uncertainTargetRefs: [ids.targetB], evidence: [patientStatement()],
+    })).toMatchObject({ coverage: { uncertainTargetRefs: [ids.targetB] } });
+    expect(validateInformation({
+      status: 'NOT_COVERED', coveredTargetRefs: [],
+      remainingTargetRefs: [ids.targetA, ids.targetB],
+      uncertainTargetRefs: [ids.targetA, ids.targetB], evidence: [],
+    })).toMatchObject({
+      coverage: { uncertainTargetRefs: [ids.targetA, ids.targetB] },
+    });
+    expect(validateInformation({
+      status: 'NOT_COVERED', coveredTargetRefs: [],
+      remainingTargetRefs: [ids.targetA, ids.targetB],
+      uncertainTargetRefs: [ids.targetB], evidence: [],
+    })).toMatchObject({ coverage: { uncertainTargetRefs: [ids.targetB] } });
+  });
+
+  it('preserves valid uncertainty for partial and not-performed actions', () => {
+    expect(validateAction({
+      status: 'PARTIALLY_PERFORMED', performedTargetRefs: [ids.targetA],
+      remainingTargetRefs: [ids.targetB], uncertainTargetRefs: [ids.targetB],
+      evidence: [studentAction()],
+    })).toMatchObject({ outcome: { uncertainTargetRefs: [ids.targetB] } });
+    expect(validateAction({
+      status: 'NOT_PERFORMED', remainingTargetRefs: [ids.targetA, ids.targetB],
+      uncertainTargetRefs: [ids.targetA], evidence: [],
+    })).toMatchObject({ outcome: { uncertainTargetRefs: [ids.targetA] } });
+  });
+
+  it.each([
+    ['outside remaining', [ids.targetA]],
+    ['nonexistent target', [ids.targetC]],
+    ['duplicate target', [ids.targetB, ids.targetB]],
+  ])('rejects an uncertain target that is %s', (_label, uncertainTargetRefs) => {
+    expect(() => validateInformation({
+      status: 'PARTIALLY_COVERED', origin: 'PATIENT_SPONTANEOUS',
+      coveredTargetRefs: [ids.targetA], remainingTargetRefs: [ids.targetB],
+      uncertainTargetRefs, evidence: [patientStatement()],
+    })).toThrow(SpfaRequirementSessionResultValidationError);
+  });
+
+  it('rejects an action uncertainty reference outside its remaining targets', () => {
+    expect(() => validateAction({
+      status: 'PARTIALLY_PERFORMED', performedTargetRefs: [ids.targetA],
+      remainingTargetRefs: [ids.targetB], uncertainTargetRefs: [ids.targetA],
+      evidence: [studentAction()],
+    })).toThrow(SpfaRequirementSessionResultValidationError);
+  });
+
+  it('canonicalizes uncertain targets by the applied requirement target order', () => {
+    const result = validateInformation({
+      status: 'NOT_COVERED', coveredTargetRefs: [],
+      remainingTargetRefs: [ids.targetB, ids.targetA],
+      uncertainTargetRefs: [ids.targetB, ids.targetA], evidence: [],
+    });
+    expect(result).toMatchObject({
+      coverage: { uncertainTargetRefs: [ids.targetA, ids.targetB] },
+    });
+  });
+
+  it.each([
+    [
+      'COVERED',
+      () => validateInformation({
+        status: 'COVERED', origin: 'PATIENT_SPONTANEOUS',
+        coveredTargetRefs: [ids.targetA, ids.targetB],
+        uncertainTargetRefs: [], evidence: [patientStatement()],
+      }),
+    ],
+    [
+      'PERFORMED',
+      () => validateAction({
+        status: 'PERFORMED', performedTargetRefs: [ids.targetA, ids.targetB],
+        uncertainTargetRefs: [], evidence: [studentAction()],
+      }),
+    ],
+    [
+      'information NOT_APPLICABLE',
+      () => validateInformation(
+        { status: 'NOT_APPLICABLE', uncertainTargetRefs: [], evidence: [] },
+        informationRequirement(false),
+      ),
+    ],
+    [
+      'action NOT_APPLICABLE',
+      () => validateAction(
+        { status: 'NOT_APPLICABLE', uncertainTargetRefs: [], evidence: [] },
+        actionRequirement(false),
+      ),
+    ],
+  ])('rejects uncertainTargetRefs on complete state %s', (_label, validate) => {
+    expect(validate).toThrow(/unexpected property/);
+  });
+
+  it.each([
+    [
+      'PARTIALLY_COVERED',
+      () => validateInformation({
+        status: 'PARTIALLY_COVERED', origin: 'PATIENT_SPONTANEOUS',
+        coveredTargetRefs: [ids.targetA], remainingTargetRefs: [ids.targetB],
+        evidence: [patientStatement()],
+      }),
+    ],
+    [
+      'NOT_COVERED',
+      () => validateInformation({
+        status: 'NOT_COVERED', coveredTargetRefs: [],
+        remainingTargetRefs: [ids.targetA, ids.targetB], evidence: [],
+      }),
+    ],
+    [
+      'PARTIALLY_PERFORMED',
+      () => validateAction({
+        status: 'PARTIALLY_PERFORMED', performedTargetRefs: [ids.targetA],
+        remainingTargetRefs: [ids.targetB], evidence: [studentAction()],
+      }),
+    ],
+    [
+      'NOT_PERFORMED',
+      () => validateAction({
+        status: 'NOT_PERFORMED',
+        remainingTargetRefs: [ids.targetA, ids.targetB], evidence: [],
+      }),
+    ],
+  ])('rejects missing uncertainTargetRefs on %s', (_label, validate) => {
+    expect(validate).toThrow(SpfaRequirementSessionResultValidationError);
   });
 });
 

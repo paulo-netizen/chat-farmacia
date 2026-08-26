@@ -1,4 +1,5 @@
 import { createStudentCasePublicData } from '../student-session-dto';
+import { attachSpfaProtocolSetToGeneratedCaseCoreV2 } from './attach-spfa-protocol-set';
 import { createPatientRuntimeViewV2 } from './patient-runtime';
 import type {
   GeneratedSessionServiceContextV2,
@@ -10,8 +11,16 @@ import type {
   SessionPatientClinicalContentV2,
 } from './session-clinical-content-types';
 import { SessionClinicalContentErrorV2 } from './session-clinical-content-types';
-import type { CaseVersionId, PatientRuntimeViewV2 } from './types';
-import { validateCaseVersionId } from './validate-patient-facts';
+import type { SpfaIntegratedGeneratedCaseCoreV2 } from './spfa-protocol-set-types';
+import type {
+  CasePatientFactsDraftV2,
+  CaseVersionId,
+  PatientRuntimeViewV2,
+} from './types';
+import {
+  validateCasePatientFactsDraftV2,
+  validateCaseVersionId,
+} from './validate-patient-facts';
 import { validateEvaluatorViewV2 } from './validate-evaluator-view';
 
 type RecordValue = Record<string, unknown>;
@@ -120,6 +129,7 @@ function generatedRecords(
 ): {
   patientFacts: RecordValue;
   evaluator: RecordValue;
+  spfaProtocolSet: RecordValue;
   persistedRuntime: RecordValue;
 } {
   if (
@@ -137,6 +147,10 @@ function generatedRecords(
   const derived = record(content.derived, 'content.derived');
   const patientFacts = record(source.patientFacts, 'content.sourceOfTruth.patientFacts');
   const evaluator = record(source.evaluator, 'content.sourceOfTruth.evaluator');
+  const spfaProtocolSet = record(
+    source.spfaProtocolSet,
+    'content.sourceOfTruth.spfaProtocolSet',
+  );
   const persistedRuntime = record(derived.patientRuntime, 'content.derived.patientRuntime');
   const summary = record(derived.teachingSummary, 'content.derived.teachingSummary');
   const compliance = record(derived.complianceReport, 'content.derived.complianceReport');
@@ -151,7 +165,7 @@ function generatedRecords(
   identities.forEach(([value, path]) =>
     assertIdentity(value, validated.caseVersionId, path),
   );
-  return { patientFacts, evaluator, persistedRuntime };
+  return { patientFacts, evaluator, spfaProtocolSet, persistedRuntime };
 }
 
 function materiallyEqual(left: unknown, right: unknown): boolean {
@@ -191,6 +205,19 @@ function canonicalRuntime(patientFacts: RecordValue, persisted: RecordValue): Pa
     fail('patient_runtime_validation_failed', 'content.derived.patientRuntime');
   }
   return runtime;
+}
+
+function canonicalPatientFacts(
+  input: RecordValue,
+): CasePatientFactsDraftV2 {
+  try {
+    return validateCasePatientFactsDraftV2(input);
+  } catch {
+    fail(
+      'spfa_runtime_validation_failed',
+      'content.sourceOfTruth.patientFacts',
+    );
+  }
 }
 
 function validatedEvaluator(
@@ -287,6 +314,36 @@ export function resolveSessionEvaluatorClinicalContentV2(
     contentFormat: 'GENERATED_CASE_BUNDLE_V2',
     evaluator: validatedEvaluator(generated.evaluator, runtime),
   };
+}
+
+export function resolveSessionSpfaClinicalContentV2(
+  input: SessionClinicalCaseVersionContentInputV2,
+): SpfaIntegratedGeneratedCaseCoreV2 {
+  const validated = validateInput(input);
+  if (input.contentFormat !== 'GENERATED_CASE_BUNDLE_V2') {
+    fail('spfa_evaluation_not_available', 'contentFormat');
+  }
+
+  const generated = generatedRecords(input, validated);
+  const patientFacts = canonicalPatientFacts(generated.patientFacts);
+  const runtime = canonicalRuntime(generated.patientFacts, generated.persistedRuntime);
+  const evaluator = validatedEvaluator(generated.evaluator, runtime);
+
+  try {
+    return attachSpfaProtocolSetToGeneratedCaseCoreV2(
+      {
+        caseVersionId: validated.caseVersionId,
+        patientFacts,
+        evaluator,
+      },
+      generated.spfaProtocolSet,
+    );
+  } catch {
+    fail(
+      'spfa_runtime_validation_failed',
+      'content.sourceOfTruth.spfaProtocolSet',
+    );
+  }
 }
 
 function copyOptionalArrays(

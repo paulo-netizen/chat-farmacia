@@ -80,12 +80,14 @@ export type SpfaRequirementCoverageV2 =
       origin: SpfaCoverageOriginV2;
       coveredTargetRefs: NonEmptyArray<SpfaRequirementTargetId>;
       remainingTargetRefs: NonEmptyArray<SpfaRequirementTargetId>;
+      uncertainTargetRefs: readonly SpfaRequirementTargetId[];
       evidence: NonEmptyArray<SpfaSessionEvidenceRefV2>;
     }>
   | Readonly<{
       status: 'NOT_COVERED';
       coveredTargetRefs: readonly [];
       remainingTargetRefs: NonEmptyArray<SpfaRequirementTargetId>;
+      uncertainTargetRefs: readonly SpfaRequirementTargetId[];
       evidence: readonly SpfaSessionEvidenceRefV2[];
     }>
   | Readonly<{
@@ -103,11 +105,13 @@ export type SpfaActionRequirementOutcomeV2 =
       status: 'PARTIALLY_PERFORMED';
       performedTargetRefs: NonEmptyArray<SpfaRequirementTargetId>;
       remainingTargetRefs: NonEmptyArray<SpfaRequirementTargetId>;
+      uncertainTargetRefs: readonly SpfaRequirementTargetId[];
       evidence: NonEmptyArray<SpfaSessionEvidenceRefV2>;
     }>
   | Readonly<{
       status: 'NOT_PERFORMED';
       remainingTargetRefs: NonEmptyArray<SpfaRequirementTargetId>;
+      uncertainTargetRefs: readonly SpfaRequirementTargetId[];
       evidence: readonly SpfaSessionEvidenceRefV2[];
     }>
   | Readonly<{

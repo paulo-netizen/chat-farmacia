@@ -2,10 +2,10 @@
 
 ## 1. Estado y alcance
 
-Este documento fija el contrato conceptual de M5-A para describir, aplicar y
-evaluar protocolos SPFA versionados. No contiene todavía catálogos clínicos,
-checklists completos, extracción de evidencia, scoring, prompts, llamadas a IA,
-persistencia ni interfaz.
+Este documento fija el contrato conceptual y registra la implementación
+aceptada de M5 para describir, aplicar, evaluar, puntuar y persistir protocolos
+SPFA versionados. M5 queda `CLOSED / COMPLETE` tras G6. No incorpora todavía
+catálogos clínicos completos, interfaz docente/alumno, feedback M6 ni analytics.
 
 El diseño debe permitir responder, para una sesión ligada a una versión
 inmutable del caso:
@@ -643,12 +643,14 @@ type SpfaRequirementCoverageV2 =
       origin: SpfaCoverageOriginV2;
       coveredTargetRefs: NonEmptyArray<SpfaRequirementTargetId>;
       remainingTargetRefs: NonEmptyArray<SpfaRequirementTargetId>;
+      uncertainTargetRefs: readonly SpfaRequirementTargetId[];
       evidence: NonEmptyArray<SpfaSessionEvidenceRefV2>;
     }>
   | Readonly<{
       status: 'NOT_COVERED';
       coveredTargetRefs: readonly [];
       remainingTargetRefs: NonEmptyArray<SpfaRequirementTargetId>;
+      uncertainTargetRefs: readonly SpfaRequirementTargetId[];
       evidence: readonly SpfaSessionEvidenceRefV2[];
     }>
   | Readonly<{
@@ -658,7 +660,11 @@ type SpfaRequirementCoverageV2 =
 ```
 
 `PARTIALLY_COVERED` identifica exactamente qué targets se satisficieron y cuáles
-faltan. El excerpt es una ayuda de presentación; la autoridad es `messageRef` y
+faltan. En los estados incompletos, `uncertainTargetRefs` es obligatorio —aunque
+esté vacío— y constituye un subconjunto canónico de `remainingTargetRefs`. Así,
+los targets `UNCERTAIN` permanecen distinguibles de los `NOT_SUPPORTED` sin
+persistir un array redundante `unsupportedTargetRefs`; este último se deriva por
+diferencia. El excerpt es una ayuda de presentación; la autoridad es `messageRef` y
 el mensaje inmutable de la sesión. Una implementación podrá añadir una referencia
 estable de turno como metadata, pero no sustituir el ID real por un texto copiado.
 
@@ -712,11 +718,13 @@ type SpfaActionRequirementOutcomeV2 =
       status: 'PARTIALLY_PERFORMED';
       performedTargetRefs: NonEmptyArray<SpfaRequirementTargetId>;
       remainingTargetRefs: NonEmptyArray<SpfaRequirementTargetId>;
+      uncertainTargetRefs: readonly SpfaRequirementTargetId[];
       evidence: NonEmptyArray<SpfaSessionEvidenceRefV2>;
     }>
   | Readonly<{
       status: 'NOT_PERFORMED';
       remainingTargetRefs: NonEmptyArray<SpfaRequirementTargetId>;
+      uncertainTargetRefs: readonly SpfaRequirementTargetId[];
       evidence: readonly SpfaSessionEvidenceRefV2[];
     }>
   | Readonly<{
@@ -728,6 +736,8 @@ type SpfaActionRequirementOutcomeV2 =
 Por ejemplo, conocer un criterio de derivación puede ser información; decidir y
 comunicar una derivación adecuada es una actuación. Pueden estar relacionados,
 pero no comparten estado ni se satisfacen mutuamente de forma implícita.
+`uncertainTargetRefs` aplica la misma semántica de subconjunto obligatorio de
+`remainingTargetRefs` en `PARTIALLY_PERFORMED` y `NOT_PERFORMED`.
 
 ## 11. Integración con `carePath`
 
@@ -977,16 +987,55 @@ clasificación fail-closed de respuestas OpenAI, normalización server-owned y
 validación D3A obligatoria. Este incremento usa providers mockeados y no realiza
 llamadas live.
 
-#### M5-D3C3 — Aceptación live controlada — PENDING
+#### M5-D3C3 — Aceptación live controlada — CLOSED / ACCEPTED
 
-Pendiente validar el adjudicador con escenarios live controlados después de
-cerrar executor y normalización.
+Aceptación live completada el 24 de agosto de 2026 con `gpt-5.6-sol`:
 
-#### M5-D3D — Integración y aceptación — PENDING
+- tres ejecuciones completas e independientes de `LIVE-1`, `LIVE-2` y
+  `LIVE-3`;
+- 9/9 escenarios superados y 30/30 targets correctos;
+- `responseModel = gpt-5.6-sol` confirmado en las nueve llamadas;
+- ninguna variabilidad de verdict entre ejecuciones;
+- cobertura aceptada de `SUPPORTED`, `UNCERTAIN`, `NOT_SUPPORTED`,
+  `PATIENT_STATEMENT`, `PATIENT_CONFIRMATION`, `STUDENT_ACTION`,
+  `SPONTANEOUS`, `ELICITED` y `studentQuestionRef`;
+- resistencia a prompt injection demostrada en los escenarios controlados.
 
-Pendiente integrar la adjudicación validada y demostrar sus fronteras mediante
-pruebas de aceptación, sin confundirla todavía con el resultado final de
-cobertura.
+La frontera server-owned entre los tres verdicts queda fijada así:
+
+- `SUPPORTED`: evidencia semánticamente pertinente y suficiente;
+- `UNCERTAIN`: contenido pertinente pero vago, incompleto, ambiguo,
+  contradictorio o insuficientemente específico para confirmar el target
+  exacto;
+- `NOT_SUPPORTED`: ningún mensaje candidato aporta contenido semánticamente
+  pertinente.
+
+El target cualitativo/cuantitativo de `mixedF` permanece correctamente
+clasificado como `UNCERTAIN`. Esta aceptación demuestra el comportamiento de la
+batería live controlada definida para D3C3; no implica infalibilidad universal
+del modelo. El harness queda condicionado por `RUN_SPFA_SEMANTIC_LIVE=1` y se
+mantiene omitido en la suite normal.
+
+#### M5-D3D — Composición por requisito — CLOSED / COMPLETE
+
+Implementado y validado el compositor puro y determinista que combina la
+baseline D2 canónica con una adjudicación D3A validada para producir un único
+`SpfaRequirementSessionResultV2` por requisito. La evidencia determinista es
+autoridad y no puede degradarse; una adjudicación redundante sobre un target ya
+resuelto se rechaza como input incompatible. La proyección conserva el orden de
+targets definido por la aplicación y pasa siempre por el validator D1 canónico.
+
+La política de composición queda fijada así:
+
+- `SUPPORTED` convierte el target pendiente en positivo;
+- `UNCERTAIN` mantiene el target en `remainingTargetRefs` y lo incorpora además
+  a `uncertainTargetRefs`;
+- `NOT_SUPPORTED` mantiene el target únicamente en `remainingTargetRefs`.
+
+No existe `unsupportedTargetRefs`, porque se deriva de la partición anterior.
+Los requisitos no aplicables se materializan sin adjudicación semántica. D3D no
+incluye todavía evaluación de sesión, scoring, persistencia ni API; esas capas
+permanecen en los incrementos posteriores de M5.
 
 Invariantes de D3: candidato no equivale a evidencia semántica; evidencia
 semántica no equivale a cobertura final; `UNCERTAIN` no equivale a
@@ -994,20 +1043,663 @@ semántica no equivale a cobertura final; `UNCERTAIN` no equivale a
 es metadata D1 y no evidencia factual; no se inventan referencias; y no se
 deduce semántica mediante búsquedas o coincidencias textuales en esta frontera.
 
-### M5-E — Evaluador de sesión SPFA
+### M5-E — Evaluador de sesión SPFA — CLOSED / COMPLETE
 
 Componer aplicaciones, transcript y evidencia para producir cobertura y
 resultados de actuación, sin scoring numérico todavía.
 
-### M5-F — Scoring y omisiones críticas
+#### M5-E1 — Contrato agregado y validación estricta — CLOSED / COMPLETE
+
+`SpfaSessionEvaluationV2` es el agregado server-only, versionado e inmutable de
+una evaluación SPFA completa de sesión. Conserva exclusivamente la identidad de
+sesión y versión de caso, la referencia del catálogo, el fingerprint del
+transcript, las aplicaciones con sus `SpfaRequirementSessionResultV2` y la
+metadata mínima `provider`/`responseModel`/`promptVersion` de las ejecuciones
+semánticas. No es un DTO para estudiante o profesor y no contiene transcript,
+mensajes, bundle, patient facts, evaluator, respuesta raw del provider, score ni
+feedback.
+
+El validator E1 es strict y fail-closed. Reutiliza el validator D1 canónico de
+cada resultado mediante un contexto server-owned separado formado por el
+transcript validado y el `CaseSpfaProtocolSetV2`; ese contexto no se copia al
+agregado. Exige identidad y fingerprint coherentes, exactamente una aplicación
+y un resultado por cada elemento del protocol set, ausencia de duplicados,
+correlación total de cada ejecución semántica y propiedades exactas en todas las
+capas del agregado.
+
+E1 preserva y valida el orden clínico recibido contra el orden de aplicaciones y
+requisitos del protocol set; nunca ordena alfabéticamente ni por IDs opacos. La
+validación del propio protocol set contra el core canónico completo
+`patientFacts`/`evaluator`, y la decisión de qué requisitos necesitan realmente
+una ejecución semántica, permanecen deliberadamente en E2/E3. M5-E continúa
+abierto.
+
+#### M5-E2 — Orquestador puro de sesión — CLOSED / COMPLETE
+
+`evaluateSpfaSessionV2` valida primero el transcript, el core y el protocol set,
+y después recorre secuencialmente aplicaciones y requisitos en el orden clínico
+canónico. Para cada requisito construye el baseline D2 y delega siempre la
+materialización final en el compositor D3D: `NOT_APPLICABLE` y
+`DETERMINISTIC_COMPLETE` producen cero adjudicaciones; `DETERMINISTIC_PARTIAL` y
+`SEMANTIC_REQUIRED` producen exactamente una adjudicación por requisito, aunque
+contengan varios targets.
+
+El adjudicador es una dependencia inyectada y E2 conserva del receipt real solo
+la metadata mínima de cada ejecución semántica. Las llamadas son secuenciales y
+fail-fast: un error detiene los requisitos posteriores y no devuelve resultados
+parciales, no realiza reparaciones, retries ni fallbacks. Antes de devolver el
+agregado, E2 aplica obligatoriamente el validator E1 con el transcript y el
+protocol set server-owned como contexto.
+
+E2 es una frontera pura respecto a infraestructura: no consulta DB, no instancia
+el runtime OpenAI productivo, no persiste, no expone transcript/core protegido y
+no calcula scoring ni feedback. M5-E continúa abierto; resolución desde una
+sesión persistida, fachada productiva, persistencia, API y scoring permanecen en
+incrementos posteriores.
+
+#### M5-E3 — Runtime server-owned de sesión Generated SPFA — CLOSED / COMPLETE
+
+`resolveSessionSpfaEvaluationRuntimeV2` acepta únicamente la identidad
+autenticada server-side y el `sessionId`. Reutiliza el loader clínico existente
+para resolver con ownership `sessions.id = sessionId AND sessions.user_id =
+authenticatedUserId` la versión inmutable fijada por la sesión; nunca selecciona
+otra versión por `case_id` ni acepta core, transcript o referencias clínicas del
+cliente.
+
+La capacidad es exclusiva de `GENERATED_CASE_BUNDLE_V2`. Reconstruye mediante
+los validadores canónicos un `SpfaIntegratedGeneratedCaseCoreV2` formado por
+`patientFacts`, `evaluator` y `spfaProtocolSet`, y rechaza Legacy con la capacidad
+SPFA no disponible en vez de fabricar aplicaciones o requisitos v2. El bundle y
+las filas PostgreSQL crudas no forman parte de la salida.
+
+Los mensajes se leen con una segunda consulta read-only también restringida por
+ownership, en orden `created_at ASC, id ASC`. `messages.id` se obtiene como texto
+decimal para conservar todo el rango de `bigint`; solo se admiten roles
+persistidos `student` y `patient`. Los `Date` del driver se convierten mediante
+`toISOString()` y cualquier string debe cumplir el contrato D1 de timezone
+explícito. El constructor D1 vuelve a canonicalizar el orden, recalcula siempre
+el fingerprint `sha256` con `session-transcript-v2/1` y admite el transcript vacío
+porque `SessionTranscriptSnapshotV2` ya lo permite.
+
+La salida server-only contiene identidad de sesión/caso/versión, status, core y
+transcript, con coherencia estricta entre sus identidades. E3 no ejecuta OpenAI,
+no evalúa, no escribe en DB y no decide freezing, locks, finalización ni
+persistencia; esas políticas continúan en M5-G y los siguientes incrementos de
+M5-E. M5-E permanece abierto.
+
+#### M5-E4 — Runtime OpenAI y fachada server-only de evaluación — CLOSED / COMPLETE
+
+`createOpenAiSpfaSemanticAdjudicationRuntimeV2` adapta directamente el boundary
+inyectable de E2 al executor D3C aceptado. La configuración procede únicamente
+del entorno server-side: exige API key y el modelo canónico exacto
+`gpt-5.6-sol`, sin alias, fallback Terra ni selección desde input de usuario. El
+cliente se construye una vez por runtime, los límites de tokens/timeout son
+server-owned y el receipt validado conserva sin reescritura `responseModel` y
+`promptVersion` observados por D3C.
+
+`evaluateOwnedGeneratedSpfaSessionV2` compone la cadena E3 → E2. Acepta solo
+`authenticatedUserId` y `sessionId`, delega ownership y resolución de
+core/transcript a E3 y devuelve exclusivamente `SpfaSessionEvaluationV2`. El
+runtime semántico se crea de forma lazy en la primera adjudicación solicitada
+por E2: una evaluación completamente determinista no crea cliente ni requiere
+configuración OpenAI; varias adjudicaciones de la misma evaluación reutilizan
+el mismo runtime.
+
+E4 propaga fallos de E3, configuración, provider, D3C y E2 de forma fail-closed,
+sin retry, fallback, reparación ni agregado parcial. No expone API key, core,
+transcript ni configuración, y no introduce persistencia, escrituras DB,
+scoring, cambio de status o API pública. La política transaccional de freezing y
+finalización permanece en M5-G. E4 por sí solo no cerraba M5-E.
+
+#### M5-E5 — Integración completa mockeada — CLOSED / COMPLETE
+
+La aceptación interna E5 ejecuta una única cadena server-side coherente:
+sesión y ownership E3 → fachada E4 → orquestador E2 → baseline D2 → contexto
+D3B → adjudicación semántica controlada → compositor D3D → agregado E1
+validado. El resolver E3, E2 y todas las capas puras D2/D3B/D3D/E1 se ejecutan
+realmente; solo el pool PostgreSQL y el runtime semántico se sustituyen por
+mocks/fakes seguros, sin DB productiva, red ni OpenAI real.
+
+La cobertura integrada confirma sesiones deterministas, mixtas y con varias
+aplicaciones; requisitos de información y actuación; evidencia espontánea y
+elicited; `SUPPORTED`, `UNCERTAIN`, `NOT_SUPPORTED` y `NOT_APPLICABLE`; orden
+canónico; correlación de receipts; una adjudicación por requisito semántico y
+cero adjudicaciones para requisitos deterministas. `UNCERTAIN` permanece en
+`remainingTargetRefs` y `uncertainTargetRefs`, mientras `NOT_SUPPORTED` solo
+permanece en `remainingTargetRefs`.
+
+También quedan comprobados ownership server-side, indistinguibilidad segura de
+sesión inexistente y ajena, rechazo de Legacy, core/transcript incompatibles,
+receipt inválido y fail-fast en requisitos intermedios sin agregado parcial.
+Con el mismo snapshot, core y receipts controlados, las capas no LLM producen un
+resultado idéntico. El agregado final no expone patient facts, evaluator, core,
+transcript, mensajes, prompt, respuesta raw, API key, configuración, score ni
+feedback.
+
+Con E1–E5 completos, M5-E queda cerrado como evaluador server-only en memoria.
+Su modelo productivo continúa fijado a `gpt-5.6-sol`, sin fallback Terra, y las
+pruebas normales permanecen offline. Quedan expresamente fuera de M5-E el
+freezing y la finalización transaccional, persistencia, API/DTO, scoring y
+concurrencia de finalización; pertenecen a M5-F/M5-G.
+
+### M5-F — Scoring y omisiones críticas — CLOSED / COMPLETE
 
 Introducir configuración versionada de pesos, cálculo 0–100, alertas, caps y
 revisión para omisiones críticas, con trazabilidad por requisito.
 
-### M5-G — Integración y aceptación
+#### M5-F1 — Contexto canónico de scoring — CLOSED / COMPLETE
+
+`SpfaScoringContextV2` es la proyección pura y server-owned que correlaciona un
+`SpfaSessionEvaluationV2` con su `CaseSpfaProtocolSetV2`. El builder no necesita
+el transcript y excluye mensajes, evidence/excerpts, contenido clínico,
+metadata OpenAI, score y feedback. Su salida pasa por un validator strict antes
+de quedar disponible para las políticas posteriores de scoring.
+
+Cada requisito conserva `carePathSpfaRef`, protocolo y requisito, tipo
+`INFORMATION_REQUIREMENT`/`ACTION_REQUIREMENT`, aplicabilidad, la
+`effectiveImportance` ya resuelta cuando procede y la `safetyCriticality` del
+protocolo. F1 no traduce importancia o criticidad a pesos, puntos, caps,
+penalizaciones, alertas ni decisiones docentes.
+
+La partición de targets queda materialmente canonizada según el orden clínico de
+la aplicación: targets positivos, restantes y `uncertainTargetRefs`, siendo
+estos últimos un subconjunto de los restantes. Los counts se derivan siempre de
+esas referencias. `UNCERTAIN` se preserva como dato estructural y no se convierte
+en puntuación, revisión ni error. Los requisitos `NOT_APPLICABLE` permanecen en
+la colección con targets y counts vacíos para que la política posterior decida
+el denominador explícitamente.
+
+La colección respeta exactamente el orden de aplicaciones y requisitos del
+protocol set, sin ordenar por IDs, importancia, criticidad o resultado. La
+correlación es fail-closed para catálogo/version, aplicaciones, protocolos,
+requisitos, identidades, fingerprint y particiones de targets; faltantes,
+duplicados o incompatibilidades se rechazan. M5-F continúa abierto: F1 no
+incluye todavía política de pesos, cálculo de score, omisiones críticas,
+persistencia ni DTO/API.
+
+#### M5-F2 — Política versionada de scoring — CLOSED / COMPLETE
+
+`SpfaScoringPolicyV2` fija de forma server-owned y reproducible todas las
+decisiones pedagógicas que el scorer F3 necesitará, pero F2 no calcula todavía
+ningún score. El contrato es independiente de sesión, caso, transcript,
+evidencia y proveedor. Su validator es strict, no aplica defaults ni corrige
+políticas inválidas, y admite futuras instancias versionadas dentro de límites
+numéricos técnicos explícitos.
+
+La instancia canónica v1 queda congelada como
+`spfa-scoring-standard@2026.1` con:
+
+- `CRITICAL = 3`, `RELEVANT = 2`, `OPTIONAL = 1`;
+- crédito parcial `TARGET_RATIO`;
+- `UNCERTAIN = NO_CREDIT_REVIEW`: sin crédito confirmado y con revisión
+  requerida posteriormente, sin colapsarlo en `NOT_SUPPORTED`;
+- alertas ante omisión, cumplimiento parcial o incertidumbre crítica, sin score
+  cap ni penalización numérica adicional;
+- `NOT_APPLICABLE = EXCLUDE_FROM_DENOMINATOR`;
+- ausencia total de requisitos aplicables = `NOT_SCORABLE`;
+- pass/fail = `NONE`;
+- redondeo `HALF_UP` a un decimal aplicado únicamente al score final
+  (`FINAL_SCORE_ONLY`), sin redondeos intermedios.
+
+F2 no introduce scorer, puntos obtenidos, porcentaje 0–100, alertas
+materializadas, `needsReview`, persistencia ni API. M5-F permanece abierto y la
+aplicación de esta política pertenece exclusivamente a F3.
+
+#### M5-F3 — Scorer puro y resultado de sesión — CLOSED / COMPLETE
+
+`scoreSpfaSessionV2` transforma exclusivamente un `SpfaScoringContextV2` F1 y
+una `SpfaScoringPolicyV2` F2 en un `SpfaSessionScoreV2`. Valida ambos inputs,
+mantiene una contribución por requisito en orden clínico y no consulta
+transcript, evidence, datos clínicos, DB, entorno ni proveedor. El resultado
+conserva las identidades de sesión/caso/transcript, catálogo y policy, además de
+contribuciones, alertas críticas, puntos y status global; no incluye pass/fail,
+feedback ni contenido protegido.
+
+Para cada requisito aplicable, los puntos posibles proceden de
+`pointsByImportance`; `COVERED`/`PERFORMED` obtienen crédito completo,
+`PARTIALLY_*` aplica `TARGET_RATIO`, y `NOT_COVERED`/`NOT_PERFORMED` obtiene
+cero. `UNCERTAIN` nunca suma crédito: permanece reflejado en counts y activa
+`needsReview`/`REVIEW_REQUIRED`. Una alerta crítica de omisión o parcial sin
+incertidumbre no se convierte silenciosamente en review. Los requisitos
+`NOT_APPLICABLE` permanecen trazables con cero puntos y fuera del denominador;
+si no hay ningún requisito aplicable, el resultado es `NOT_SCORABLE` con score
+`null`.
+
+Las alertas estables son `CRITICAL_OMISSION`, `CRITICAL_PARTIAL` y
+`CRITICAL_UNCERTAIN`, emitidas en orden de requisito y código semántico. El
+score base es `(rawPoints / possiblePoints) * 100`; contribuciones, raw y
+possible no se redondean. El score final utiliza aritmética racional y una única
+aplicación `HALF_UP` según `FINAL_SCORE_ONLY`, quedando en 0–100. La policy v1
+no aplica cap. Aunque F2 puede validar un cap numérico futuro, F3 lo rechaza
+fail-closed porque todavía no existe contrato para su condición de activación;
+no se inventa esa decisión pedagógica.
+
+`validateSpfaSessionScoreV2` es strict y contextual: reconstruye el resultado
+canónico desde context+policy y rechaza identidades, orden, contribuciones,
+alertas, status, review, números o score incompatibles. F3 no incorpora
+persistencia, API/DTO ni aceptación final F4. M5-F continúa abierto.
+
+#### M5-F4 — Matriz integral de aceptación del scoring — CLOSED / COMPLETE
+
+La aceptación F4 ejecuta offline la cadena real
+`SpfaSessionEvaluationV2` → `buildSpfaScoringContextV2` → policy canónica v1 →
+`scoreSpfaSessionV2` → `validateSpfaSessionScoreV2`, sin mocks de las fronteras
+puras. La matriz cubre pesos 3/2/1, todos los estados de requisitos de
+información y actuación, ratios de targets representativos y varias sesiones
+con cálculo manual independiente.
+
+Queda verificada la diferencia contractual entre `UNCERTAIN` y
+`NOT_SUPPORTED`: ambos pueden recibir el mismo crédito numérico nulo, pero solo
+la incertidumbre aplicable activa `REVIEW_REQUIRED`. La criticidad conserva las
+alertas `CRITICAL_PARTIAL`, `CRITICAL_OMISSION` y `CRITICAL_UNCERTAIN` sin
+inventar causas adicionales de revisión; una alerta crítica sin incertidumbre
+no cambia por sí sola el status a revisión.
+
+Los requisitos `NOT_APPLICABLE` quedan fuera del denominador y una sesión sin
+ningún requisito aplicable produce `NOT_SCORABLE`, con cero puntos y score
+`null`. La policy `spfa-scoring-standard@2026.1` usa `TARGET_RATIO`, no aplica
+cap ni pass/fail, y redondea únicamente el score final a un decimal con
+`HALF_UP`; puntos y contribuciones conservan su precisión previa. Un cap
+numérico sin contrato de activación continúa rechazándose fail-closed.
+
+La matriz también confirma una contribución por requisito en orden clínico,
+identidades y referencias versionadas de extremo a extremo, alertas únicas y
+ordenadas, determinismo e inmutabilidad de inputs. El resultado no contiene
+transcript, evidence, datos del paciente, metadata de proveedor, prompts,
+feedback ni decisiones pedagógicas no aprobadas. Incompatibilidades de
+catálogo, aplicación, requisito, target, contexto, policy o resultado
+manipulado se rechazan sin reparación silenciosa.
+
+M5-F queda cerrado con: F1 como contexto canónico separado de la evaluación
+clínica; F2 como policy completa y versionada; F3 como scorer puro,
+determinista y validado; y F4 como aceptación integral offline. La policy v1
+fija pesos `CRITICAL=3`, `RELEVANT=2`, `OPTIONAL=1`, crédito `TARGET_RATIO`,
+`UNCERTAIN` sin crédito y con revisión, alertas críticas sin cap,
+`NOT_APPLICABLE` excluido, `NOT_SCORABLE` cuando corresponde y redondeo final
+`HALF_UP`, sin pass/fail. Persistencia, finalización, API/DTO y concurrencia no
+forman parte de este cierre y permanecen en M5-G.
+
+### M5-G — Integración y aceptación — CLOSED / COMPLETE
 
 Integrar finalización/persistencia/feedback autorizado y añadir pruebas de
 concurrencia, versionado histórico, seguridad, adversariales y de aceptación.
+
+#### M5-G1 — Lifecycle persistible de evaluación SPFA — CLOSED / COMPLETE
+
+G1 fija exclusivamente los contratos server-owned y la máquina de estados que
+las migraciones y servicios posteriores deberán materializar. No amplía
+`sessions.status`: la sesión continúa usando `active`/`finished`, mientras que
+el registro separado de evaluación v2 usa exactamente `EVALUATING`, `COMPLETED`
+y `FAILED`.
+
+`SpfaEvaluationSnapshotIdentityV2` congela la identidad reproducible del input:
+`sessionId`, `caseVersionId`, catálogo de protocolos, fingerprint canónico del
+transcript y policy de scoring. No incorpora transcript, patient facts,
+evaluator, score ni metadata del proveedor. Desde el primer claim, cualquier
+retry o recovery debe conservar materialmente los cinco elementos; cualquier
+drift se rechaza fail-closed.
+
+Cada claim posee un `SpfaEvaluationAttemptIdV2` opaco con formato
+`spfa_eval_attempt_<uuid-canónico>` y un `attemptCount` positivo y monótono. El
+primer claim usa 1. Recovery de lease expirada y retry autorizado de `FAILED`
+requieren un ID nuevo y exactamente `attemptCount + 1`; G1 no genera todavía el
+UUID. La duración de lease tampoco se hardcodea: será configuración server-owned
+de G3. Una lease está vigente mientras `now < leaseExpiresAt` y se considera
+vencida cuando `now >= leaseExpiresAt`, incluido el instante exacto de expiry.
+Todas las funciones reciben `now` explícito y los timestamps se canonicalizan a
+UTC mediante `Date.toISOString()` desde instantes ISO/RFC3339 con timezone.
+
+La decisión idempotente queda definida así:
+
+- sin registro: `CLAIM_NEW`;
+- `EVALUATING` con lease vigente: `IN_PROGRESS`, sin segundo intento;
+- `EVALUATING` con lease vencida: `RECOVER_EXPIRED`;
+- `FAILED`: `RETRY_FAILED` solo si la policy server-owned lo permite;
+- `COMPLETED`: `RETURN_COMPLETED`, sin volver a evaluar ni sobrescribir.
+
+Las únicas transiciones materiales son primer claim a `EVALUATING`, claim actual
+a `COMPLETED` o `FAILED`, recovery expirada a un nuevo `EVALUATING`, y retry
+autorizado de `FAILED` a un nuevo `EVALUATING`. `COMPLETED` es terminal; solo se
+admite reutilizar material exactamente idéntico como operación idempotente. No
+se permite `FAILED → COMPLETED` directo ni completar/fallar con otro attempt.
+
+`EVALUATING` tiene `startedAt` y `leaseExpiresAt`, sin resultados finales.
+`FAILED` conserva `startedAt`, `failedAt` y uno de los códigos técnicos seguros
+`PROVIDER_FAILURE`, `INVALID_PROVIDER_RESULT`, `EVALUATION_FAILURE`,
+`SNAPSHOT_DRIFT` o `INTERNAL_FAILURE`, sin payload parcial. `COMPLETED` conserva
+`startedAt`, `completedAt` y exige conjuntamente un
+`SpfaSessionEvaluationV2` y un `SpfaSessionScoreV2` validados canónicamente. Sus
+identidades, fingerprint, catálogo y policy deben coincidir con el snapshot. No
+se persisten resultados parciales en estados no terminales.
+
+El primer freeze deberá garantizar dentro de un único boundary transaccional:
+ownership server-side, sesión `active`, versión fijada, transcript canónico y
+fingerprint calculado, serialización de escrituras de mensajes, creación del
+claim y cambio de la sesión a `finished`. En particular, ninguna escritura en
+`public.messages` puede superar una comprobación de `active` y materializarse
+después del snapshot; G2/G3 deberán compartir el lock de sesión o un mecanismo
+equivalente. La transacción de freeze se cerrará antes de ejecutar OpenAI: no se
+mantendrá una transacción DB abierta durante la evaluación remota. Completion o
+failure posteriores deberán comprobar de nuevo attempt propietario y snapshot
+sin drift.
+
+La persistencia futura de G2 deberá poder representar conceptualmente un único
+registro por `sessionId`, con `caseVersionId`, status, identidad completa del
+snapshot, attempt actual y contador, lease, timestamps, código de fallo y los dos
+resultados obligatorios de `COMPLETED`. G1 no decide columnas frente a JSON, no
+crea SQL ni implementa locks. El metadata del lifecycle sin payload es seguro
+para logging técnico; el payload `COMPLETED` continúa siendo server-only y no se
+debe registrar indiscriminadamente.
+
+M5-G permanece abierto. Migración, tabla, SQL, coordinación transaccional,
+persistencia, API/DTO, polling y aceptación con DB pertenecen a G2–G6.
+
+#### M5-G2 — Persistencia PostgreSQL y freeze de mensajes — CLOSED / COMPLETE
+
+G2 materializa, sin ejecutar todavía la evaluación, la tabla server-only
+`public.session_evaluation_records_v2`. Existe como máximo un registro por
+`session_id` y permanece separado de `public.evaluations`, cuyo formato Legacy
+no se modifica. Un guard cross-table toma el lock de la sesión y rechaza que una
+misma sesión tenga simultáneamente evaluación Legacy y lifecycle v2; G3/G5
+seguirán comprobando la capacidad clínica antes de elegir el formato.
+
+El registro normaliza `session_id`, `case_version_id`, status, formato
+`SPFA_SESSION_EVALUATION_V2`, referencias exactas de catálogo y policy,
+fingerprint, attempt, lease y timestamps. Desde `EVALUATING` conserva además el
+`SessionTranscriptSnapshotV2` canónico completo y el snapshot validado de
+`SpfaScoringPolicyV2`, ambos protegidos contra modificación. G1 continúa
+definiendo `snapshotIdentity` mediante sus cinco identidades; los dos snapshots
+JSONB son objetos persistidos server-only necesarios para reproducibilidad y no
+se incorporan a esa identidad ni a DTOs.
+
+Los `CHECK` de DB reproducen las formas `EVALUATING`, `COMPLETED` y `FAILED`, el
+attempt branded, contador positivo dentro del rango safe integer, fingerprint
+`sha256`/`session-transcript-v2/1`, códigos de fallo cerrados y presencia o
+ausencia de lease, timestamps y resultados. `COMPLETED` exige conjuntamente
+evaluation y score JSONB con identidad básica alineada; los validadores TS de G4
+seguirán siendo la autoridad del contrato completo. El snapshot de scoring
+queda persistido porque todavía no existe un catálogo inmutable de policies en
+DB. La tabla solo añade un índice parcial de recovery por lease, además de PK y
+unicidad de sesión.
+
+Las transiciones materiales y la inmutabilidad del snapshot están defendidas
+por trigger. `COMPLETED` es terminal; completion/failure deben pertenecer al
+attempt actual; recovery exige lease expirada, ID nuevo e incremento exacto; y
+retry de `FAILED` deja la autorización server-owned a G3. No existe duración de
+lease hardcodeada ni transacción abierta durante OpenAI.
+
+Toda mutación de `public.messages` (`INSERT`, `UPDATE` o `DELETE`) bloquea con
+`FOR UPDATE` la fila de `public.sessions` y solo se admite mientras la sesión
+está `active`; `session_id` del mensaje es inmutable. De este modo una escritura
+que obtiene primero el lock termina antes del freeze, y una que llega después de
+que G3 haya cambiado la sesión a `finished` falla. El borrado en cascada de una
+sesión ya eliminada conserva su semántica histórica, pero una mutación directa
+de mensajes de una sesión existente y finalizada queda bloqueada.
+
+La tabla tiene RLS activado sin policies, revoca privilegios a `PUBLIC` y, cuando
+existen, a los roles cliente Supabase `anon` y `authenticated`. No se concede
+acceso directo al navegador; el owner/backend y los roles server con bypass RLS
+siguen siendo la frontera operativa. Las funciones de trigger son invoker-rights
+y su ejecución directa se revoca. G2 no altera default privileges ni copia ACL
+de plataforma.
+
+La migración incremental es `0003_v2_spfa_evaluation_persistence.sql`. No
+transforma evaluaciones Legacy, no implementa G3–G6, no llama OpenAI y no expone
+API/DTO. M5-G permanece abierto.
+
+#### M5-G3 — Freeze, claim, recovery y retry transaccionales — CLOSED / COMPLETE
+
+G3 implementa `claimSpfaSessionEvaluationV2` como frontera server-only. Su input
+público contiene exclusivamente `authenticatedUserId` y `sessionId`; attempt,
+lease, versión de caso, transcript, catálogo y policy se resuelven dentro del
+servidor. La lease inicial y las renovadas duran treinta minutos mediante la
+constante localizada `SPFA_EVALUATION_LEASE_MS_V2 = 1800000`. Cada attempt usa
+`spfa_eval_attempt_<uuid-canónico>` generado criptográficamente con
+`crypto.randomUUID()` y validado por el contrato G1.
+
+El primer claim ejecuta una única transacción: bloquea con `FOR UPDATE` la sesión
+owned y su versión fijada, comprueba que no exista lifecycle v2 ni evaluación
+Legacy, valida la capacidad Generated V2/SPFA, lee los mensajes únicamente
+después del lock, construye el `SessionTranscriptSnapshotV2` canónico, fija el
+snapshot de `spfa-scoring-standard@2026.1`, inserta `EVALUATING` con
+`attemptCount = 1` y cambia la sesión de `active` a `finished`. Insert y cambio
+de sesión se confirman o revierten juntos. La transacción termina antes de
+devolver el claim y no contiene evaluación clínica, scoring, OpenAI ni red.
+
+Desde ese primer COMMIT, el `transcript_snapshot` persistido es la única fuente
+de verdad evaluable. `IN_PROGRESS`, recovery de lease vencida, retry de
+`FAILED` y replay de `COMPLETED` no consultan `public.messages` ni reconstruyen
+el transcript. Recovery y retry conservan exactamente snapshot identity,
+transcript y policy, crean un attempt nuevo, incrementan el contador en uno y
+usan un `UPDATE` condicionado por status, attempt y count previos. La policy de
+retry de `FAILED` es server-owned y queda habilitada en este servicio; no existe
+`forceRetry` del cliente.
+
+La sesión se bloquea antes de releer el lifecycle. Así, dos claims iniciales se
+serializan en un único insert, y dos recoveries o retries en un único incremento;
+el segundo worker observa el attempt vigente como `IN_PROGRESS`. Un lifecycle
+existente exige sesión `finished`; una sesión finalizada sin lifecycle se rechaza
+sin inventar snapshot. Legacy devuelve capacidad SPFA no disponible y nunca
+crea registro v2.
+
+Todo registro existente se normaliza desde columnas y JSONB, recalcula el
+fingerprint del transcript, valida el snapshot de policy y contrasta
+session/version/catalog/fingerprint/policy. `COMPLETED` revalida además
+`SpfaSessionEvaluationV2` y `SpfaSessionScoreV2` contra el core, transcript y
+policy históricos antes de devolver el payload server-only. Cualquier drift o
+fila incoherente falla de forma cerrada y nunca se repara silenciosamente.
+
+La cobertura incluye 23 pruebas unitarias/mocked y 6 pruebas opt-in contra
+PostgreSQL 17.10 local desechable: freeze y bloqueo de mensajes posteriores,
+doble claim, recovery concurrente, retry concurrente, rollback atómico y rechazo
+Legacy. La prueba PostgreSQL está desactivada por defecto y requiere la bandera
+explícita `RUN_SPFA_G3_POSTGRES=1` sobre el puerto local reservado por su harness;
+la suite normal no abre conexiones DB.
+
+M5-G permanece abierto. Completion/failure del attempt, servicio completo,
+API/DTO/polling y aceptación final pertenecen a G4–G6.
+
+#### M5-G4 — Evaluación, scoring y finalización condicional — CLOSED / COMPLETE
+
+G4 implementa `finalizeOwnedSpfaSessionEvaluationV2` como coordinador
+server-only con el mismo input mínimo de G3: `authenticatedUserId` y
+`sessionId`. Siempre comienza invocando el claim G3. Un resultado
+`COMPLETED` devuelve el payload persistido ya validado sin reevaluar, puntuar ni
+escribir; `IN_PROGRESS` devuelve exclusivamente metadata mínima del attempt y
+tampoco ejecuta trabajo adicional. Solo `CLAIMED_NEW`, `RECOVERED_EXPIRED` y
+`RETRIED_FAILED` entran en el pipeline evaluativo.
+
+La secuencia material queda separada en tres fases:
+
+1. **Tx A (G3):** ownership, freeze canónico, claim y cambio de la sesión a
+   `finished`, seguidos de `COMMIT`.
+2. **Evaluación en memoria:** resolución server-side de la versión histórica
+   exacta, validación del transcript y policy persistidos, E2 sobre el snapshot,
+   adjudicación semántica lazy con el runtime productivo
+   `gpt-5.6-sol`, construcción del contexto F1 y scoring F3 con la policy
+   histórica.
+3. **Tx B corta:** bloqueo del lifecycle, comprobación del attempt propietario y
+   de la identidad completa del snapshot, y escritura condicional de
+   `COMPLETED` o `FAILED`.
+
+El transcript persistido por G3 es la única fuente de entrevista usada por G4.
+No se consulta `public.messages` después del freeze ni se reconstruye la
+conversación. El core se carga únicamente mediante el `caseVersionId` congelado,
+sin seleccionar latest/current, y se contrasta con el catálogo de protocolos.
+La policy se toma de `scoring_policy_snapshot`, no del catálogo actual, y debe
+coincidir con `snapshotIdentity.scoringPolicyRef`. Antes de completion se
+revalidan `SpfaSessionEvaluationV2`, `SpfaScoringContextV2` y
+`SpfaSessionScoreV2`, además de session, versión, catálogo, fingerprint y policy.
+
+Tx B exige `status = EVALUATING`, `attempt_id`, `attempt_count` y los ocho campos
+normalizados de identidad del snapshot. Un worker reemplazado no puede completar
+ni fallar el attempt nuevo. La expiración temporal de la lease no invalida por
+sí sola al worker: si conserva el mismo attempt propietario puede completar; si
+G3 ya hizo recovery, la mutación queda superseded. `COMPLETED` es idempotente
+solo cuando el payload revalidado es materialmente idéntico. Nunca se mantiene
+un cliente o una transacción DB abiertos durante OpenAI/evaluación/scoring.
+
+Los fallos posteriores a un claim se reducen a los códigos cerrados G1:
+fallo de transporte/provider como `PROVIDER_FAILURE`; refusal, incomplete o
+resultado estructurado inválido como `INVALID_PROVIDER_RESULT`; fallo
+determinista de evaluación/scoring como `EVALUATION_FAILURE`; incompatibilidad
+del snapshot/core/policy como `SNAPSHOT_DRIFT`; y fallo interno no clasificable
+como `INTERNAL_FAILURE`. Tx B de failure limpia lease y resultados parciales. Si
+la propia persistencia de failure falla, el lifecycle puede permanecer
+`EVALUATING` hasta expiry para permitir recovery posterior; no se inventa éxito
+ni se abre una transacción larga de reparación.
+
+La cobertura G4 incluye 30 pruebas unitarias y 5 pruebas opt-in contra
+PostgreSQL 17.10 local desechable, con adjudicador falso y cero llamadas OpenAI:
+dispatch de los cinco resultados G3, fuente congelada, drift, runtime lazy,
+policy histórica, completion/replay, failure/retry, ownership perdido y carga de
+la versión exacta. La prueba PostgreSQL requiere explícitamente
+`RUN_SPFA_G4_POSTGRES=1`; la suite normal no abre conexiones DB.
+
+La lease continúa siendo fija y server-owned. G6 la eleva de cinco a treinta
+minutos porque cada adjudicación semántica admite hasta diez minutos de timeout
+y los requisitos se procesan secuencialmente. Esta duración conservadora evita
+heartbeat en M5 y reduce recovery prematuro con la configuración normal; puede
+existir trabajo duplicado si
+una evaluación supera ese tiempo y otro request recupera el lifecycle, aunque
+la protección por attempt garantiza una única persistencia válida. G5 incorpora
+API/DTO/polling y G6 completa el hardening y aceptación final. Heartbeat no es
+necesario para cerrar M5; queda como posible mejora operativa futura únicamente
+si la telemetría real justificase sustituir la lease fija.
+
+#### M5-G5 — API de finalización/consulta y DTOs seguros — CLOSED / COMPLETE
+
+G5 extiende la ruta server-owned `POST /api/evaluations` sin alterar su contrato
+Legacy. El controller autentica y lee primero un envelope mínimo con
+`sessionId`; después resuelve por ownership la versión exacta de la sesión. Solo
+entonces aplica el parser Legacy existente o, para
+`GENERATED_CASE_BUNDLE_V2`, exige estrictamente el único body
+`{ sessionId: string }`. Un cliente Generated no puede proporcionar score,
+respuestas, transcript, mensajes, modelo, versión, protocolo, policy, attempt,
+lease ni controles de retry. El `authenticatedUserId` procede exclusivamente de
+la autenticación server-side.
+
+El POST Generated delega una sola vez en
+`finalizeOwnedSpfaSessionEvaluationV2`: `COMPLETED` se proyecta con HTTP 200,
+`IN_PROGRESS` con HTTP 202 y `FAILED` con una respuesta genérica retryable. Los
+fallos de provider o resultado provider inválido usan HTTP 503; los fallos
+internos persistidos usan HTTP 500. El navegador nunca recibe el `failureCode`,
+detalle provider ni stack. Repetir POST no aporta un flag de retry: G3/G4 decide
+server-side si devuelve el resultado `COMPLETED`, mantiene `IN_PROGRESS` o
+ejecuta el retry de un `FAILED`.
+
+La misma ruta expone `GET /api/evaluations?sessionId=...` como polling
+autorizado. `getOwnedSpfaEvaluationStatusV2` realiza una única lectura
+parametrizada por `session.id` y `session.user_id`, une la versión histórica y
+el lifecycle y distingue `NOT_STARTED`, `EVALUATING`, `FAILED` y `COMPLETED`.
+Sesión ajena e inexistente comparten el mismo error seguro. GET no bloquea filas,
+no consulta `public.messages`, no escribe, no hace claim, no recupera leases
+expiradas, no puntúa y no ejecuta OpenAI. Recovery y retry solo pueden comenzar
+mediante un nuevo POST.
+
+La lectura valida de forma fail-closed la capability Generated SPFA, el estado
+de sesión/versión, todas las identidades normalizadas, transcript y fingerprint,
+snapshot de policy y lifecycle. Para `COMPLETED` revalida además
+`SpfaSessionEvaluationV2` y `SpfaSessionScoreV2` contra el core, protocolo,
+transcript y policy históricos antes de proyectar. Ningún JSONB raw se devuelve
+directamente.
+
+`StudentSpfaEvaluationDtoV2` está versionado con `schemaVersion: '2.0'` y usa
+allowlist campo por campo. Antes de completion solo expone el estado; `FAILED`
+añade únicamente `retryable: true`. `COMPLETED` contiene exclusivamente `score`
+(`null` permanece `null` para `NOT_SCORABLE`), `scoreStatus` y `needsReview`.
+`REVIEW_REQUIRED` es visible como estado general, sin target, evidencia, excerpt
+ni metadata técnica. No se exponen puntos internos, contribuciones, alertas,
+transcript, patient facts, evaluator, protocolo, response model, prompt version,
+attempt o lease.
+
+`TeacherSpfaEvaluationDtoV2` es una proyección server-only distinta. Puede
+representar identidad histórica, failure code seguro, score completo,
+contribuciones, alertas críticas, metadata semántica y referencias de evidencia
+autorizadas; excluye API keys, prompts completos, respuesta raw del provider,
+patient facts y evaluator raw. G5 no publica una ruta docente porque el
+repositorio todavía no ofrece un boundary de autorización docente inequívoco;
+no se amplían roles ni privilegios por comodidad.
+
+La cobertura G5 incluye DTOs de alumno/profesor, lectura fail-closed y tests HTTP
+de dispatch Legacy/Generated, strict input, estados y códigos, ownership,
+polling read-only, retry server-owned, idempotencia delegada a G4 y ausencia de
+filtraciones. Todos los providers están mockeados: G5 no realiza llamadas OpenAI
+ni requiere cambios de esquema. G6 realiza la aceptación integral posterior;
+UI completa, feedback y M6 permanecen fuera de M5.
+
+#### M5-G6 — Aceptación final y hardening — CLOSED / COMPLETE
+
+G6 reconstruye y acepta la cadena completa: sesión owned → POST y dispatch
+Legacy/Generated → freeze/claim G3 → snapshot persistido → evaluación E →
+scoring F → completion/failure condicional G4 → DTO estudiante → GET polling.
+La auditoría de fuentes confirma una única entrada HTTP Generated y ausencia de
+caminos alternativos que acepten resultado clínico del cliente, reconstruyan la
+evaluación desde `public.messages`, eviten ownership/freeze o escriban resultados
+fuera del runtime de persistencia G2–G4.
+
+El hardening amplía el rechazo HTTP strict a score, model, transcript, messages,
+caseVersionId, fingerprint, protocol, policy, attemptId/count, lease,
+failureCode, retry/force, evaluation y semantic result. Las respuestas de alumno
+continúan siendo allowlists mínimas y los fallos malformados, ownership,
+provider, lifecycle, DB o JSONB corrupto no exponen SQL, stack, prompt,
+transcript, hechos clínicos, provider raw ni secretos. El mapper docente sigue
+siendo server-only: no se publica ruta docente mientras no exista autorización
+docente inequívoca.
+
+La lease server-owned cambia de 5 a 30 minutos
+(`SPFA_EVALUATION_LEASE_MS_V2 = 1800000`). El timeout permitido por una sola
+adjudicación alcanza diez minutos y E2 procesa requisitos secuencialmente; cinco
+minutos podían expirar dentro de una ejecución válida. Treinta minutos ofrece
+margen conservador sin heartbeat ni input cliente. Una expiración puede repetir
+trabajo/coste, pero nunca permite al worker stale completar o fallar el attempt
+nuevo. Recovery conserva exactamente transcript, fingerprint y policy.
+
+La aceptación PostgreSQL 17.10 aplica 0001 → 0002 → 0003 desde bases limpias y
+también sobre fixtures Legacy representativos. Usuarios, casos, sesiones,
+mensajes, evaluaciones, tokens, coste y contenido Legacy permanecen intactos; la
+infraestructura v2 queda disponible sin registro artificial. RLS permanece
+activo con cero policies; `anon` y `authenticated` no pueden SELECT, escribir ni
+ejecutar las funciones trigger, mientras el backend conserva el patrón de
+acceso previsto. La migración no contiene DDL destructivo Legacy, grants
+accidentales ni `CASCADE` peligroso.
+
+Las pruebas PostgreSQL con conexiones reales validan message-before-freeze,
+freeze-before-message, doble claim/finalización, doble recovery/retry, crash
+representado por `EVALUATING`, recovery desde el mismo snapshot, stale
+completion/failure, replay `COMPLETED`, polling read-only incluso con lease
+expirada y ownership indistinguible. La evaluación/provider está simulada y no
+se realiza ninguna llamada OpenAI.
+
+Resultados finales de aceptación G6 (26 de agosto de 2026):
+
+- hardening nuevo G6: 17 regresiones añadidas, todas superadas;
+- PostgreSQL real G3–G5: 18/18 pruebas superadas;
+- G1–G6: 502 PASS / 18 SKIPPED opt-in;
+- M5-E: 155/155 PASS;
+- M5-F: 154/154 PASS;
+- API Legacy + Generated V2: 82/82 PASS;
+- regresión Legacy/evaluación: 159/159 PASS;
+- regresión Generated/security: 489/489 PASS;
+- SPFA: 942 PASS / 21 SKIPPED;
+- suite normal offline: 2193 PASS / 24 SKIPPED;
+- TypeScript y `git diff --check`: PASS.
+
+La evidencia live D3C3 permanece materialmente válida: el prompt/transport
+aceptado no cambió después de sus 9/9 escenarios y 30/30 targets con
+`gpt-5.6-sol`. G6 no repite tests live ni realiza llamadas OpenAI. `UNCERTAIN`
+permanece distinto de `NOT_SUPPORTED` y sin crédito confirmado, con revisión.
+
+Con G1–G6 aceptados:
+
+- **M5-G6 = CLOSED / COMPLETE**;
+- **M5-G = CLOSED / COMPLETE**;
+- **M5 = CLOSED / COMPLETE**.
+
+Quedan deliberadamente fuera de M5 la ruta HTTP docente hasta disponer de un
+boundary de autorización seguro, UI, feedback M6, analytics y mejoras operativas
+posteriores. Ninguna de ellas limita la reproducibilidad, seguridad o cierre del
+pipeline evaluativo M5.
 
 ## 19. Criterios de aceptación de M5-A
 

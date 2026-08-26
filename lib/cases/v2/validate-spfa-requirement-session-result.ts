@@ -298,6 +298,23 @@ function assertExactPartition(
   if (combined.size !== expected.size) fail(path, 'does not cover every applied target');
 }
 
+function parseCanonicalUncertainTargetRefs(
+  value: unknown,
+  path: string,
+  remainingTargetRefs: readonly SpfaRequirementTargetId[],
+  canonicalTargetRefs: readonly SpfaRequirementTargetId[],
+): SpfaRequirementTargetId[] {
+  const uncertainTargetRefs = parseTargetArray(value, path, false);
+  const remaining = new Set<string>(remainingTargetRefs);
+  uncertainTargetRefs.forEach((targetRef, index) => {
+    if (!remaining.has(targetRef)) {
+      fail(`${path}[${index}]`, 'must reference a remaining target');
+    }
+  });
+  const uncertain = new Set<string>(uncertainTargetRefs);
+  return canonicalTargetRefs.filter((targetRef) => uncertain.has(targetRef));
+}
+
 function hasPatientInformationEvidence(
   evidence: readonly SpfaSessionEvidenceRefV2[],
 ): boolean {
@@ -377,6 +394,10 @@ function parseInformationCoverage(
       ? requirement.informationTargets.map((target) => target.targetId)
       : [],
   );
+  const canonicalTargetRefs =
+    requirement.kind === 'INFORMATION_REQUIREMENT'
+      ? requirement.informationTargets.map((target) => target.targetId)
+      : [];
   const isApplicable = requirement.applicability.status === 'APPLICABLE';
 
   if (status === 'NOT_APPLICABLE') {
@@ -410,7 +431,14 @@ function parseInformationCoverage(
   if (status === 'PARTIALLY_COVERED') {
     assertExactKeys(
       source,
-      ['status', 'origin', 'coveredTargetRefs', 'remainingTargetRefs', 'evidence'],
+      [
+        'status',
+        'origin',
+        'coveredTargetRefs',
+        'remainingTargetRefs',
+        'uncertainTargetRefs',
+        'evidence',
+      ],
       path,
     );
     const origin = controlledValue(source.origin, INFORMATION_ORIGINS, `${path}.origin`);
@@ -430,6 +458,12 @@ function parseInformationCoverage(
       targetIds,
       `${path}.remainingTargetRefs`,
     );
+    const uncertainTargetRefs = parseCanonicalUncertainTargetRefs(
+      source.uncertainTargetRefs,
+      `${path}.uncertainTargetRefs`,
+      remainingTargetRefs,
+      canonicalTargetRefs,
+    );
     const evidence = parseEvidenceArray(source.evidence, `${path}.evidence`, context, true);
     assertInformationEvidence(origin, new Set(coveredTargetRefs), evidence, `${path}.evidence`);
     return {
@@ -437,11 +471,22 @@ function parseInformationCoverage(
       origin,
       coveredTargetRefs: coveredTargetRefs as unknown as NonEmptyArray<SpfaRequirementTargetId>,
       remainingTargetRefs: remainingTargetRefs as unknown as NonEmptyArray<SpfaRequirementTargetId>,
+      uncertainTargetRefs,
       evidence: evidence as unknown as NonEmptyArray<SpfaSessionEvidenceRefV2>,
     };
   }
 
-  assertExactKeys(source, ['status', 'coveredTargetRefs', 'remainingTargetRefs', 'evidence'], path);
+  assertExactKeys(
+    source,
+    [
+      'status',
+      'coveredTargetRefs',
+      'remainingTargetRefs',
+      'uncertainTargetRefs',
+      'evidence',
+    ],
+    path,
+  );
   const coveredTargetRefs = parseTargetArray(
     source.coveredTargetRefs,
     `${path}.coveredTargetRefs`,
@@ -454,6 +499,12 @@ function parseInformationCoverage(
     true,
   );
   assertExactPartition([], remainingTargetRefs, targetIds, `${path}.remainingTargetRefs`);
+  const uncertainTargetRefs = parseCanonicalUncertainTargetRefs(
+    source.uncertainTargetRefs,
+    `${path}.uncertainTargetRefs`,
+    remainingTargetRefs,
+    canonicalTargetRefs,
+  );
   const evidence = parseEvidenceArray(source.evidence, `${path}.evidence`, context, false);
   if (
     evidence.some(
@@ -469,6 +520,7 @@ function parseInformationCoverage(
     status,
     coveredTargetRefs: [],
     remainingTargetRefs: remainingTargetRefs as unknown as NonEmptyArray<SpfaRequirementTargetId>,
+    uncertainTargetRefs,
     evidence,
   };
 }
@@ -505,6 +557,10 @@ function parseActionOutcome(
       ? requirement.actionTargets.map((target) => target.targetId)
       : [],
   );
+  const canonicalTargetRefs =
+    requirement.kind === 'ACTION_REQUIREMENT'
+      ? requirement.actionTargets.map((target) => target.targetId)
+      : [];
   const isApplicable = requirement.applicability.status === 'APPLICABLE';
 
   if (status === 'NOT_APPLICABLE') {
@@ -536,7 +592,13 @@ function parseActionOutcome(
   if (status === 'PARTIALLY_PERFORMED') {
     assertExactKeys(
       source,
-      ['status', 'performedTargetRefs', 'remainingTargetRefs', 'evidence'],
+      [
+        'status',
+        'performedTargetRefs',
+        'remainingTargetRefs',
+        'uncertainTargetRefs',
+        'evidence',
+      ],
       path,
     );
     const performedTargetRefs = parseTargetArray(
@@ -555,23 +617,40 @@ function parseActionOutcome(
       targetIds,
       `${path}.remainingTargetRefs`,
     );
+    const uncertainTargetRefs = parseCanonicalUncertainTargetRefs(
+      source.uncertainTargetRefs,
+      `${path}.uncertainTargetRefs`,
+      remainingTargetRefs,
+      canonicalTargetRefs,
+    );
     const evidence = parseEvidenceArray(source.evidence, `${path}.evidence`, context, true);
     assertActionEvidence(evidence, `${path}.evidence`);
     return {
       status,
       performedTargetRefs: performedTargetRefs as unknown as NonEmptyArray<SpfaRequirementTargetId>,
       remainingTargetRefs: remainingTargetRefs as unknown as NonEmptyArray<SpfaRequirementTargetId>,
+      uncertainTargetRefs,
       evidence: evidence as unknown as NonEmptyArray<SpfaSessionEvidenceRefV2>,
     };
   }
 
-  assertExactKeys(source, ['status', 'remainingTargetRefs', 'evidence'], path);
+  assertExactKeys(
+    source,
+    ['status', 'remainingTargetRefs', 'uncertainTargetRefs', 'evidence'],
+    path,
+  );
   const remainingTargetRefs = parseTargetArray(
     source.remainingTargetRefs,
     `${path}.remainingTargetRefs`,
     true,
   );
   assertExactPartition([], remainingTargetRefs, targetIds, `${path}.remainingTargetRefs`);
+  const uncertainTargetRefs = parseCanonicalUncertainTargetRefs(
+    source.uncertainTargetRefs,
+    `${path}.uncertainTargetRefs`,
+    remainingTargetRefs,
+    canonicalTargetRefs,
+  );
   const evidence = parseEvidenceArray(source.evidence, `${path}.evidence`, context, false);
   if (evidence.some((item) => item.source === 'PUBLIC_INFORMATION')) {
     fail(`${path}.evidence`, 'PUBLIC_INFORMATION cannot demonstrate an action outcome');
@@ -579,6 +658,7 @@ function parseActionOutcome(
   return {
     status,
     remainingTargetRefs: remainingTargetRefs as unknown as NonEmptyArray<SpfaRequirementTargetId>,
+    uncertainTargetRefs,
     evidence,
   };
 }

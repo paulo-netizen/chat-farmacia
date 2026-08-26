@@ -3,6 +3,7 @@ import { pool } from '@/lib/db';
 import {
   resolveSessionEvaluatorClinicalContentV2,
   resolveSessionPatientClinicalContentV2,
+  resolveSessionSpfaClinicalContentV2,
 } from './resolve-session-clinical-content';
 import {
   SessionClinicalContentErrorV2,
@@ -12,6 +13,12 @@ import {
 } from './session-clinical-content-types';
 import type { CaseVersionId } from './types';
 import { validateCaseVersionId } from './validate-patient-facts';
+import type { SpfaIntegratedGeneratedCaseCoreV2 } from './spfa-protocol-set-types';
+import type { SessionTranscriptSnapshotV2 } from './spfa-session-evidence-types';
+import {
+  createSessionTranscriptSnapshotV2,
+  SessionTranscriptValidationError,
+} from './spfa-session-transcript';
 
 export type SessionClinicalRuntimeInputV2 = Readonly<{
   authenticatedUserId: number;
@@ -35,12 +42,22 @@ export type SessionEvaluatorClinicalRuntimeV2 = Readonly<{
   clinicalContent: SessionEvaluatorClinicalContentV2;
 }>;
 
+export type SessionSpfaEvaluationRuntimeV2 = Readonly<{
+  sessionId: string;
+  caseId: number;
+  caseVersionId: CaseVersionId;
+  sessionStatus: SessionStatusV2;
+  core: SpfaIntegratedGeneratedCaseCoreV2;
+  transcript: SessionTranscriptSnapshotV2;
+}>;
+
 export type SessionClinicalRuntimeErrorCodeV2 =
   | 'invalid_input'
   | 'session_not_found_or_forbidden'
   | 'session_not_active'
   | 'invalid_session_anchor'
   | 'invalid_case_version_status'
+  | 'invalid_session_transcript'
   | SessionClinicalContentErrorCodeV2;
 
 export class SessionClinicalRuntimeErrorV2 extends Error {
@@ -79,6 +96,13 @@ type ValidatedSessionClinicalAnchorV2 = Readonly<{
   content: unknown;
 }>;
 
+type SessionMessageDatabaseRowV2 = Readonly<{
+  message_id: unknown;
+  message_role: unknown;
+  message_content: unknown;
+  message_created_at: unknown;
+}>;
+
 const SESSION_UUID_PATTERN =
   /^[0-9a-f]{8}-[0-9a-f]{4}-[1-8][0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$/;
 const POSITIVE_BIGINT_TEXT_PATTERN = /^[1-9]\d*$/;
@@ -103,6 +127,20 @@ const SESSION_CLINICAL_ANCHOR_QUERY = `
    AND cv.case_id = s.case_id
   WHERE s.id = $1
     AND s.user_id = $2
+`;
+
+const SESSION_SPFA_MESSAGES_QUERY = `
+  SELECT
+    m.id::text AS message_id,
+    m.role AS message_role,
+    m.content AS message_content,
+    m.created_at AS message_created_at
+  FROM public.messages AS m
+  INNER JOIN public.sessions AS s
+    ON s.id = m.session_id
+  WHERE m.session_id = $1
+    AND s.user_id = $2
+  ORDER BY m.created_at ASC, m.id ASC
 `;
 
 function fail(
@@ -132,6 +170,21 @@ function asRow(value: unknown): SessionClinicalDatabaseRowV2 {
     fail('invalid_session_anchor', 'row');
   }
   return value as SessionClinicalDatabaseRowV2;
+}
+
+function asMessageRow(value: unknown, path: string): SessionMessageDatabaseRowV2 {
+  if (typeof value !== 'object' || value === null || Array.isArray(value)) {
+    fail('invalid_session_transcript', path);
+  }
+  return value as SessionMessageDatabaseRowV2;
+}
+
+function normalizeDatabaseTimestamp(value: unknown, path: string): unknown {
+  if (!(value instanceof Date)) return value;
+  if (Number.isNaN(value.getTime())) {
+    fail('invalid_session_transcript', path);
+  }
+  return value.toISOString();
 }
 
 function parseBigintText(value: unknown, path: string): number {
@@ -297,4 +350,73 @@ export async function resolveSessionEvaluatorClinicalRuntimeV2(
   } catch (error) {
     return mapContentError(error);
   }
+}
+
+export async function resolveSessionSpfaEvaluationRuntimeV2(
+  input: SessionClinicalRuntimeInputV2,
+): Promise<SessionSpfaEvaluationRuntimeV2> {
+  const anchor = await loadSessionClinicalAnchorV2(input);
+
+  let core: SpfaIntegratedGeneratedCaseCoreV2;
+  try {
+    core = resolveSessionSpfaClinicalContentV2({
+      caseId: anchor.caseId,
+      caseVersionId: anchor.caseVersionId,
+      sourceKind: anchor.sourceKind,
+      legacyStatus: anchor.legacyStatus,
+      contentFormat: anchor.contentFormat,
+      content: anchor.content,
+    });
+  } catch (error) {
+    return mapContentError(error);
+  }
+
+  const result = await pool.query(SESSION_SPFA_MESSAGES_QUERY, [
+    anchor.sessionId,
+    input.authenticatedUserId,
+  ]);
+  const messages = result.rows.map((value, index) => {
+    const path = `messages[${index}]`;
+    const row = asMessageRow(value, path);
+    return {
+      messageId: row.message_id,
+      role: row.message_role,
+      content: row.message_content,
+      createdAt: normalizeDatabaseTimestamp(
+        row.message_created_at,
+        `${path}.message_created_at`,
+      ),
+    };
+  });
+
+  let transcript: SessionTranscriptSnapshotV2;
+  try {
+    transcript = createSessionTranscriptSnapshotV2({
+      sessionId: anchor.sessionId,
+      caseVersionId: anchor.caseVersionId,
+      messages,
+    });
+  } catch (error) {
+    if (error instanceof SessionTranscriptValidationError) {
+      fail('invalid_session_transcript', error.path);
+    }
+    throw error;
+  }
+
+  if (
+    core.caseVersionId !== anchor.caseVersionId ||
+    transcript.sessionId !== anchor.sessionId ||
+    transcript.caseVersionId !== anchor.caseVersionId
+  ) {
+    fail('invalid_session_anchor', 'session_spfa_runtime_identity');
+  }
+
+  return {
+    sessionId: anchor.sessionId,
+    caseId: anchor.caseId,
+    caseVersionId: anchor.caseVersionId,
+    sessionStatus: anchor.sessionStatus,
+    core,
+    transcript,
+  };
 }
