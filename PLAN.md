@@ -14,18 +14,18 @@ La fuente canónica del progreso, los porcentajes, los pesos M0–M11 y el check
 - M3 — Generador, auditor y publicación: **PARTIAL**.
 - M4 — Runtime seguro del paciente: **CLOSED**.
 - M5 — Motor de protocolos SPFA: **CLOSED**.
-- M6 — Evaluación farmacéutica/PRM–RNM/adherencia: **NOT STARTED**.
+- M6 — Evaluación farmacéutica/PRM–RNM/adherencia: **PARTIAL**.
 - M7 — Evaluación de comunicación: **NOT STARTED**.
 - M8 — Cuestionario post-caso: **NOT STARTED**.
 - M9 — Resultados y feedback: **NOT STARTED**.
 - M10 — Analítica y revisión docente: **NOT STARTED**.
 - M11 — Hardening y observabilidad final: **NOT STARTED**.
 
-El repositorio dispone de una suite automatizada amplia. El checkpoint funcional de M5 quedó validado con 2193 pruebas superadas, 24 omitidas de forma condicionada y TypeScript correcto.
+El repositorio dispone de una suite automatizada amplia. M6-A quedó validado con 2223 pruebas superadas, 24 omitidas de forma condicionada y TypeScript correcto.
 
 ## Próximo frente funcional
 
-El siguiente milestone funcional es **M6 — Evaluación farmacéutica/PRM–RNM/adherencia**. Debe reutilizar las fronteras server-owned, la evidencia inmutable, el versionado, el scoring y la persistencia establecidos hasta M5, sin reabrir los contratos cerrados salvo una incompatibilidad demostrada.
+El milestone funcional activo es **M6 — Evaluación farmacéutica/PRM–RNM/adherencia**. M6-A ya aporta la referencia clínica farmacéutica canónica; el siguiente incremento debe construir los targets evaluativos sin reabrir los contratos cerrados salvo una incompatibilidad demostrada.
 
 Antes de implementar cada incremento de M6:
 
@@ -92,7 +92,7 @@ M0/M1 y M2/M3 pueden cerrarse en paralelo, pero su deuda pendiente debe resolver
 
 ### M6–M11
 
-- M6: evaluación farmacéutica, PRM/RNM, adherencia e intervención;
+- M6: referencia clínica canónica completada; pendientes targets, evidencia de desempeño, adjudicación, scoring e integración;
 - M7: evaluación de la comunicación farmacéutico-paciente;
 - M8: cuestionario post-caso;
 - M9: resultados globales y feedback;

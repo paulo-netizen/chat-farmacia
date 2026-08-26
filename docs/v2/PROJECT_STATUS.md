@@ -4,9 +4,9 @@
 
 - **Fecha del baseline:** 26 de agosto de 2026.
 - **Commit funcional de referencia:** `b2879cec7824968bcc0b6e3bca80852fa9cf3359` (`Complete M5 SPFA evaluation pipeline`).
-- **Progreso global:** **43.85%**.
+- **Progreso global:** **45.29%**.
 - **M5:** **CLOSED / COMPLETE**.
-- **Suite del checkpoint:** **2193 PASS / 24 SKIPPED**.
+- **Suite actual:** **2223 PASS / 24 SKIPPED**.
 - **TypeScript:** **PASS**.
 
 Este documento es la fuente canónica del estado y del progreso global del proyecto. [`PLAN.md`](../../PLAN.md) conserva el roadmap técnico y el orden de ejecución, sin mantener una segunda tabla de porcentajes.
@@ -29,7 +29,7 @@ Los pesos y porcentajes se expresan como fracciones para el cálculo; por ejempl
 | M3 | Generador, auditor y publicación | PARTIAL | 55% | 11% | 6.05% |
 | M4 | Runtime seguro del paciente | CLOSED | 100% | 10% | 10.00% |
 | M5 | Motor de protocolos SPFA | CLOSED | 100% | 15% | 15.00% |
-| M6 | Evaluación farmacéutica/PRM–RNM/adherencia | NOT STARTED | 0% | 12% | 0.00% |
+| M6 | Evaluación farmacéutica/PRM–RNM/adherencia | PARTIAL | 12% | 12% | 1.44% |
 | M7 | Evaluación de comunicación | NOT STARTED | 0% | 7% | 0.00% |
 | M8 | Cuestionario post-caso | NOT STARTED | 0% | 7% | 0.00% |
 | M9 | Resultados y feedback | NOT STARTED | 0% | 5% | 0.00% |
@@ -100,9 +100,11 @@ El cierre corresponde al commit `b2879cec7824968bcc0b6e3bca80852fa9cf3359`. Véa
 ### M6 — Evaluación farmacéutica/PRM–RNM/adherencia
 
 **Objetivo:** evaluar razonamiento farmacéutico, PRM/RNM, adherencia, barreras e intervención con evidencia.
-**Estado:** **NOT STARTED — 0%**.
+**Estado:** **PARTIAL — 12%**.
 
-Pendiente: contratos evaluativos, reglas clínicas versionadas, scoring e integración con la evaluación global. Véase el [modelo de evaluación](04_EVALUATION_MODEL.md).
+Completado: M6-A, proyección clínica farmacéutica canónica, pura, server-owned y allowlisted desde `EvaluatorViewV2`, con identidad/versiones, multiplicidades, relaciones y validación fail-closed. `EvidenceRule` permanece fuera de esta referencia y no se confunde con evidencia de desempeño del alumno.
+
+Pendiente: targets y evidencia de desempeño M6, adjudicación, reglas clínicas versionadas, scoring, persistencia e integración con la evaluación global. Véase el [modelo de evaluación](04_EVALUATION_MODEL.md).
 
 ### M7 — Evaluación de comunicación
 
@@ -143,7 +145,7 @@ Pendiente: controles operativos, telemetría, privacidad/retención, configuraci
 
 | Punto de la ruta | Progreso global proyectado |
 |---|---:|
-| Actual | 43.85% |
+| Actual | 45.29% |
 | Tras M6 | 55.85% |
 | Tras M7 | 62.85% |
 | Tras M8 | 69.85% |
