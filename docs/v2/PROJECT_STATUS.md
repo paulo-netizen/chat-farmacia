@@ -4,9 +4,9 @@
 
 - **Fecha del baseline:** 27 de agosto de 2026.
 - **Commit funcional de referencia:** `58750a47e57e0b09dc06dba84495f5c0304e8ea0` (`Complete M6-A pharmaceutical clinical reference`).
-- **Progreso global:** **45.77%**.
+- **Progreso global:** **46.73%**.
 - **M5:** **CLOSED / COMPLETE**.
-- **Suite actual:** **2247 PASS / 24 SKIPPED**.
+- **Suite actual:** **2291 PASS / 24 SKIPPED**.
 - **TypeScript:** **PASS**.
 
 Este documento es la fuente canónica del estado y del progreso global del proyecto. [`PLAN.md`](../../PLAN.md) conserva el roadmap técnico y el orden de ejecución, sin mantener una segunda tabla de porcentajes.
@@ -29,13 +29,13 @@ Los pesos y porcentajes se expresan como fracciones para el cálculo; por ejempl
 | M3 | Generador, auditor y publicación | PARTIAL | 55% | 11% | 6.05% |
 | M4 | Runtime seguro del paciente | CLOSED | 100% | 10% | 10.00% |
 | M5 | Motor de protocolos SPFA | CLOSED | 100% | 15% | 15.00% |
-| M6 | Evaluación farmacéutica/PRM–RNM/adherencia | PARTIAL | 16% | 12% | 1.92% |
+| M6 | Evaluación farmacéutica/PRM–RNM/adherencia | PARTIAL | 24% | 12% | 2.88% |
 | M7 | Evaluación de comunicación | NOT STARTED | 0% | 7% | 0.00% |
 | M8 | Cuestionario post-caso | NOT STARTED | 0% | 7% | 0.00% |
 | M9 | Resultados y feedback | NOT STARTED | 0% | 5% | 0.00% |
 | M10 | Analítica y revisión docente | NOT STARTED | 0% | 4% | 0.00% |
 | M11 | Hardening y observabilidad final | NOT STARTED | 0% | 3% | 0.00% |
-| **Total** |  |  |  | **100%** | **45.77%** |
+| **Total** |  |  |  | **100%** | **46.73%** |
 
 ## Regla estable de progreso
 
@@ -100,13 +100,13 @@ El cierre corresponde al commit `b2879cec7824968bcc0b6e3bca80852fa9cf3359`. Véa
 ### M6 — Evaluación farmacéutica/PRM–RNM/adherencia
 
 **Objetivo:** evaluar razonamiento farmacéutico, PRM/RNM, adherencia, barreras e intervención con evidencia.
-**Estado:** **PARTIAL — 16%**.
+**Estado:** **PARTIAL — 24%**.
 
-Completado: M6-A, proyección clínica farmacéutica canónica, pura, server-owned y allowlisted desde `EvaluatorViewV2`, con identidad/versiones, multiplicidades, relaciones y validación fail-closed; M6-B1, identidad opaca y estable server-owned para contenidos esenciales de informe, con contrato identificado versionado y lectura compatible de bundles históricos sin IDs sintéticos. `EvidenceRule` permanece fuera de esta referencia y no se confunde con evidencia de desempeño del alumno.
+Completado: M6-A, proyección clínica farmacéutica canónica, pura, server-owned y allowlisted desde `EvaluatorViewV2`, con identidad/versiones, multiplicidades, relaciones y validación fail-closed; M6-B1, identidad opaca y estable server-owned para contenidos esenciales de informe; M6-B2, targets clínicos atómicos con IDs/fingerprint deterministas, expectativas docentes opcionales `ALL_OF`/`ONE_OF`, universo estructural de evidencia candidata y referencias literales fijadas a sesión, versión, transcript y target set. Los mensajes del paciente solo aportan contexto de adquisición y no demuestran razonamiento del alumno. Los informes históricos siguen siendo válidos, pero no reciben IDs ni targets de contenido sintéticos.
 
-Subdivisión fija de M6-B dentro del milestone: M6-B1 = 4% (CLOSED) y M6-B2 = 8% (PENDING).
+Subdivisión fija de M6-B dentro del milestone: M6-B1 = 4% (CLOSED) y M6-B2 = 8% (CLOSED). **M6-B = CLOSED / COMPLETE**.
 
-Pendiente: M6-B2, targets evaluativos; evidencia de desempeño M6, adjudicación, reglas clínicas versionadas, scoring, persistencia e integración con la evaluación global. Véase el [modelo de evaluación](04_EVALUATION_MODEL.md).
+Pendiente: adjudicación semántica M6-C, reglas clínicas versionadas, scoring, persistencia e integración con la evaluación global. Véase el [modelo de evaluación](04_EVALUATION_MODEL.md).
 
 ### M7 — Evaluación de comunicación
 
@@ -147,7 +147,7 @@ Pendiente: controles operativos, telemetría, privacidad/retención, configuraci
 
 | Punto de la ruta | Progreso global proyectado |
 |---|---:|
-| Actual | 45.77% |
+| Actual | 46.73% |
 | Tras M6 | 55.85% |
 | Tras M7 | 62.85% |
 | Tras M8 | 69.85% |

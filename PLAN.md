@@ -21,11 +21,11 @@ La fuente canónica del progreso, los porcentajes, los pesos M0–M11 y el check
 - M10 — Analítica y revisión docente: **NOT STARTED**.
 - M11 — Hardening y observabilidad final: **NOT STARTED**.
 
-El repositorio dispone de una suite automatizada amplia. M6-A y M6-B1 quedaron validados con 2247 pruebas superadas, 24 omitidas de forma condicionada y TypeScript correcto.
+El repositorio dispone de una suite automatizada amplia. M6-A y M6-B quedaron validados con sus contratos puros, tests automatizados y TypeScript correcto.
 
 ## Próximo frente funcional
 
-El milestone funcional activo es **M6 — Evaluación farmacéutica/PRM–RNM/adherencia**. M6-A aporta la referencia clínica farmacéutica canónica y M6-B1 cierra la identidad versionada de contenidos esenciales de informe; el siguiente incremento es M6-B2, construcción de targets evaluativos, sin reabrir los contratos cerrados salvo una incompatibilidad demostrada.
+El milestone funcional activo es **M6 — Evaluación farmacéutica/PRM–RNM/adherencia**. M6-A aporta la referencia clínica farmacéutica canónica y M6-B cierra la identidad de contenidos de informe, los targets evaluativos atómicos y la frontera estructural de evidencia candidata; el siguiente incremento es M6-C, adjudicación semántica, sin reabrir los contratos cerrados salvo una incompatibilidad demostrada.
 
 Antes de implementar cada incremento de M6:
 
@@ -47,7 +47,7 @@ M2 Editor docente estructurado ── M3 Generador,      │
 
 M4 Runtime seguro del paciente [CLOSED]
 M5 Motor de protocolos SPFA [CLOSED]
-  └─ M6 Evaluación farmacéutica/PRM–RNM/adherencia [PARTIAL — A/B1 CLOSED]
+  └─ M6 Evaluación farmacéutica/PRM–RNM/adherencia [PARTIAL — A/B CLOSED]
        ├─ M7 Evaluación de comunicación
        └─ M8 Cuestionario post-caso
             └─ M9 Resultados y feedback
@@ -92,7 +92,7 @@ M0/M1 y M2/M3 pueden cerrarse en paralelo, pero su deuda pendiente debe resolver
 
 ### M6–M11
 
-- M6: referencia clínica canónica e identidad de contenidos esenciales completadas; pendientes targets (M6-B2), evidencia de desempeño, adjudicación, scoring e integración;
+- M6: referencia clínica, identidad de contenidos esenciales, targets atómicos y contratos de evidencia candidata completados; pendientes adjudicación, scoring, persistencia e integración;
 - M7: evaluación de la comunicación farmacéutico-paciente;
 - M8: cuestionario post-caso;
 - M9: resultados globales y feedback;
