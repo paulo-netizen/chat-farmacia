@@ -7,6 +7,7 @@ import type {
   ProfessionalAction,
   RnmAssessment,
 } from './evaluator-types';
+import { IDENTIFIED_REPORT_REQUIREMENT_CONTRACT_VERSION } from './evaluator-types';
 import type { PharmaceuticalClinicalReferenceV2 } from './pharmaceutical-clinical-reference-types';
 import type { MedicationId, PatientRuntimeViewV2 } from './types';
 import {
@@ -244,7 +245,33 @@ function inspectReferral(value: unknown, path: string): void {
     );
   }
   if (referral.report !== undefined) {
-    exactObject(referral.report, ['status', 'essentialContents'], `${path}.value.report`);
+    const reportPath = `${path}.value.report`;
+    const report = record(referral.report, reportPath);
+    if (Object.prototype.hasOwnProperty.call(report, 'contractVersion')) {
+      exactKeys(
+        report,
+        ['contractVersion', 'status', 'essentialContents'],
+        reportPath,
+      );
+      if (
+        report.contractVersion !==
+        IDENTIFIED_REPORT_REQUIREMENT_CONTRACT_VERSION
+      ) {
+        fail(
+          `${reportPath}.contractVersion`,
+          `must be ${IDENTIFIED_REPORT_REQUIREMENT_CONTRACT_VERSION}`,
+        );
+      }
+      each(
+        report.essentialContents,
+        `${reportPath}.essentialContents`,
+        (item, itemPath) => {
+          exactObject(item, ['contentId', 'content'], itemPath);
+        },
+      );
+    } else {
+      exactKeys(report, ['status', 'essentialContents'], reportPath);
+    }
   }
 }
 

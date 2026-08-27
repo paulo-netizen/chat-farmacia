@@ -21,6 +21,7 @@ import type {
   SpfaTransition,
   TaxonomyTermRef,
 } from './evaluator-types';
+import { reportRequirementSemanticContentsV2 } from './evaluator-types';
 import { buildSpfaRequirementEvidenceBaselineV2 } from './build-spfa-evidence-baseline';
 import type { SpfaRequirementEvidenceBaselineV2 } from './spfa-evidence-baseline-types';
 import type {
@@ -880,7 +881,7 @@ function conclusionMaterial(
             taxonomyMaterial(conclusion.value.destination.classification),
             conclusion.value.reason,
             conclusion.value.report.status,
-            [...conclusion.value.report.essentialContents],
+            [...reportRequirementSemanticContentsV2(conclusion.value.report)],
           ];
   }
 }

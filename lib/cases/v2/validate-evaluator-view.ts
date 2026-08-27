@@ -15,6 +15,7 @@ import type {
   EvaluatorVersionsV2,
   EvaluatorViewV2,
   FollowUpEpisode,
+  IdentifiedReportRequirementV2,
   IncidenceAssessment,
   IncidenceFinding,
   NonEmptyArray,
@@ -26,13 +27,17 @@ import type {
   PrmRnmRelation,
   RnmAssessment,
   ReferralConclusion,
+  ReportEssentialContentId,
+  ReportEssentialContentV2,
   ReportRequirement,
   SpfaConclusion,
   SpfaService,
   SpfaTransition,
   TaxonomyTermRef,
+  VersionedReportRequirementV2,
   VersionRef,
 } from './evaluator-types';
+import { IDENTIFIED_REPORT_REQUIREMENT_CONTRACT_VERSION } from './evaluator-types';
 import type {
   FactId,
   MedicationId,
@@ -156,7 +161,7 @@ function controlledValue<const T extends readonly string[]>(
 
 function opaqueId<T extends string>(
   value: unknown,
-  prefix: 'conclusion' | 'fact' | 'med',
+  prefix: 'conclusion' | 'fact' | 'med' | 'report_content',
   path: string,
 ): T {
   if (typeof value !== 'string') {
@@ -182,6 +187,13 @@ function parseFactId(value: unknown, path: string): FactId {
 
 function parseMedicationId(value: unknown, path: string): MedicationId {
   return opaqueId<MedicationId>(value, 'med', path);
+}
+
+export function validateReportEssentialContentId(
+  value: unknown,
+  path = 'reportEssentialContentId',
+): ReportEssentialContentId {
+  return opaqueId<ReportEssentialContentId>(value, 'report_content', path);
 }
 
 function parseVersionRef(value: unknown, path: string): VersionRef {
@@ -1027,7 +1039,7 @@ function parsePharmaceuticalIntervention(
   };
 }
 
-function parseReportRequirement(
+function parseHistoricalReportRequirement(
   value: unknown,
   path: string,
 ): ReportRequirement {
@@ -1058,6 +1070,82 @@ function parseReportRequirement(
     essentialContents:
       essentialContents as unknown as NonEmptyArray<string>,
   };
+}
+
+function parseIdentifiedReportRequirement(
+  value: unknown,
+  path: string,
+): IdentifiedReportRequirementV2 {
+  const source = asRecord(value, path);
+  assertExactKeys(
+    source,
+    ['contractVersion', 'status', 'essentialContents'],
+    path,
+  );
+  if (
+    source.contractVersion !== IDENTIFIED_REPORT_REQUIREMENT_CONTRACT_VERSION
+  ) {
+    fail(
+      `${path}.contractVersion`,
+      `must be ${IDENTIFIED_REPORT_REQUIREMENT_CONTRACT_VERSION}`,
+    );
+  }
+  const status = controlledValue(
+    source.status,
+    ['not_required', 'appropriate', 'required'] as const,
+    `${path}.status`,
+  );
+  const rawContents = asArray(
+    source.essentialContents,
+    `${path}.essentialContents`,
+  );
+  if (status === 'not_required') {
+    if (rawContents.length !== 0) {
+      fail(`${path}.essentialContents`, 'must be empty when report is not required');
+    }
+    return {
+      contractVersion: IDENTIFIED_REPORT_REQUIREMENT_CONTRACT_VERSION,
+      status,
+      essentialContents: [],
+    };
+  }
+  if (rawContents.length === 0) {
+    fail(`${path}.essentialContents`, 'must not be empty for this report status');
+  }
+  const seenIds = new Set<ReportEssentialContentId>();
+  const essentialContents = rawContents.map((item, index) => {
+    const itemPath = `${path}.essentialContents[${index}]`;
+    const contentSource = asRecord(item, itemPath);
+    assertExactKeys(contentSource, ['contentId', 'content'], itemPath);
+    const contentId = validateReportEssentialContentId(
+      contentSource.contentId,
+      `${itemPath}.contentId`,
+    );
+    if (seenIds.has(contentId)) {
+      fail(`${itemPath}.contentId`, 'must be unique within the report');
+    }
+    seenIds.add(contentId);
+    return {
+      contentId,
+      content: nonEmptyString(contentSource.content, `${itemPath}.content`),
+    };
+  });
+  return {
+    contractVersion: IDENTIFIED_REPORT_REQUIREMENT_CONTRACT_VERSION,
+    status,
+    essentialContents:
+      essentialContents as unknown as NonEmptyArray<ReportEssentialContentV2>,
+  };
+}
+
+function parseReportRequirement(
+  value: unknown,
+  path: string,
+): VersionedReportRequirementV2 {
+  const source = asRecord(value, path);
+  return Object.prototype.hasOwnProperty.call(source, 'contractVersion')
+    ? parseIdentifiedReportRequirement(source, path)
+    : parseHistoricalReportRequirement(source, path);
 }
 
 function parseReferral(value: unknown, path: string): ReferralConclusion {

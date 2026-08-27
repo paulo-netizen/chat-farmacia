@@ -27,6 +27,7 @@ import type {
   FollowUpEpisode,
   IncidenceAssessment,
   IncidenceFinding,
+  NonEmptyArray,
   NonAdherenceTypeConclusion,
   PharmaceuticalIntervention,
   ProfessionalAction,
@@ -34,12 +35,15 @@ import type {
   PrmFinding,
   PrmRnmRelation,
   ReferralConclusion,
+  ReportEssentialContentId,
+  ReportEssentialContentV2,
   RnmAssessment,
   SpfaConclusion,
   SpfaTransition,
   TaxonomyTermRef,
   VersionRef,
 } from './evaluator-types';
+import { IDENTIFIED_REPORT_REQUIREMENT_CONTRACT_VERSION } from './evaluator-types';
 import {
   GenerationAssemblyError,
   type CanonicalGeneratedCaseCoreV2,
@@ -68,7 +72,7 @@ import type {
 import { validateEvaluatorViewV2 } from './validate-evaluator-view';
 import { validateCasePatientFactsDraftV2 } from './validate-patient-facts';
 
-export const GENERATION_ASSEMBLER_VERSION = 'generation-assembly/1' as const;
+export const GENERATION_ASSEMBLER_VERSION = 'generation-assembly/2' as const;
 
 const DISCLOSURE_DOMAINS = new Set<DisclosureDomain>([
   'initial_demand', 'patient_identity', 'caregiver_context', 'health_problems',
@@ -101,6 +105,37 @@ type ConclusionEntry = Readonly<{
   conclusion: AiEvaluatorConclusion<string, unknown>;
   path: string;
 }>;
+
+function allocateReportEssentialContents(
+  contents: NonEmptyArray<string>,
+  context: GenerationAssemblyContextV2,
+  path: string,
+): NonEmptyArray<ReportEssentialContentV2> {
+  const seenIds = new Set<ReportEssentialContentId>();
+  return contents.map((content, index) => {
+    const itemPath = `${path}[${index}]`;
+    let contentId: ReportEssentialContentId;
+    try {
+      contentId = context.allocateReportEssentialContentId();
+    } catch (cause) {
+      assemblyError(
+        'unresolved_mapping',
+        `${itemPath}.contentId`,
+        'server-owned report content ID allocator failed',
+        cause,
+      );
+    }
+    if (seenIds.has(contentId)) {
+      assemblyError(
+        'duplicate_canonical_id',
+        `${itemPath}.contentId`,
+        `report essential content ID ${contentId} was allocated more than once`,
+      );
+    }
+    seenIds.add(contentId);
+    return { contentId, content };
+  }) as unknown as NonEmptyArray<ReportEssentialContentV2>;
+}
 
 function assemblyError(
   code: GenerationAssemblyError['code'],
@@ -1419,12 +1454,21 @@ function assembleEvaluator(
           },
           reason: referralSource.value.reason,
           report: referralSource.value.report.status === 'not_required'
-            ? { status: 'not_required', essentialContents: [] }
+            ? {
+                contractVersion:
+                  IDENTIFIED_REPORT_REQUIREMENT_CONTRACT_VERSION,
+                status: 'not_required',
+                essentialContents: [],
+              }
             : {
+                contractVersion:
+                  IDENTIFIED_REPORT_REQUIREMENT_CONTRACT_VERSION,
                 status: referralSource.value.report.status,
-                essentialContents: [
-                  ...referralSource.value.report.essentialContents,
-                ],
+                essentialContents: allocateReportEssentialContents(
+                  referralSource.value.report.essentialContents,
+                  context,
+                  'evaluator.referral.value.report.essentialContents',
+                ),
               },
         },
       };

@@ -498,7 +498,138 @@ function requireReferral(source: Record<string, any>): void {
   };
 }
 
+const reportContentIdA =
+  'report_content_30000000-0000-4000-8000-000000000001';
+const reportContentIdB =
+  'report_content_30000000-0000-4000-8000-000000000002';
+
+function requireIdentifiedReport(source: Record<string, any>): void {
+  requireReferral(source);
+  source.referral.value.report = {
+    contractVersion: 'identified-report-requirement/1',
+    status: 'required',
+    essentialContents: [
+      { contentId: reportContentIdB, content: 'Segundo contenido' },
+      { contentId: reportContentIdA, content: 'Primer contenido' },
+    ],
+  };
+  synchronizeEvidenceRules(source);
+}
+
 describe('EvaluatorViewV2 case binding and opaque IDs', () => {
+  it('mantiene el contrato histórico string[] sin sintetizar IDs', () => {
+    const source = createEvaluator();
+    requireReferral(source);
+    synchronizeEvidenceRules(source);
+
+    const report = (validate(source).referral.value as any).report;
+    expect(report).toEqual({
+      status: 'appropriate',
+      essentialContents: ['Hallazgos relevantes y medicación implicada.'],
+    });
+    expect(JSON.stringify(report)).not.toContain('contentId');
+  });
+
+  it('valida el contrato identificado y conserva el orden editorial', () => {
+    const source = createEvaluator();
+    requireIdentifiedReport(source);
+
+    const report = (validate(source).referral.value as any).report;
+    expect(report.essentialContents).toEqual([
+      { contentId: reportContentIdB, content: 'Segundo contenido' },
+      { contentId: reportContentIdA, content: 'Primer contenido' },
+    ]);
+  });
+
+  it.each([
+    ['prefijo incorrecto', 'content_30000000-0000-4000-8000-000000000001'],
+    ['UUID malformado', 'report_content_not-a-uuid'],
+    ['UUID uppercase', 'report_content_A0000000-0000-4000-8000-000000000001'],
+  ])('rechaza ReportEssentialContentId con %s', (_case, contentId) => {
+    const source = createEvaluator();
+    requireIdentifiedReport(source);
+    source.referral.value.report.essentialContents[0].contentId = contentId;
+    expect(() => validate(source)).toThrow(/report_content_<uuid>/);
+  });
+
+  it('rechaza ReportEssentialContentId duplicado', () => {
+    const source = createEvaluator();
+    requireIdentifiedReport(source);
+    source.referral.value.report.essentialContents[1].contentId = reportContentIdB;
+    expect(() => validate(source)).toThrow(/must be unique/);
+  });
+
+  it('rechaza contenido identificado vacío', () => {
+    const source = createEvaluator();
+    requireIdentifiedReport(source);
+    source.referral.value.report.essentialContents[0].content = '   ';
+    expect(() => validate(source)).toThrow(/must be a non-empty string/);
+  });
+
+  it('rechaza propiedades extra en contenido identificado', () => {
+    const source = createEvaluator();
+    requireIdentifiedReport(source);
+    source.referral.value.report.essentialContents[0].futureSecret = true;
+    expect(() => validate(source)).toThrow(/unexpected property/);
+  });
+
+  it.each(['required', 'appropriate'])('rechaza %s identificado vacío', (status) => {
+    const source = createEvaluator();
+    requireIdentifiedReport(source);
+    source.referral.value.report = {
+      contractVersion: 'identified-report-requirement/1',
+      status,
+      essentialContents: [],
+    };
+    expect(() => validate(source)).toThrow(/must not be empty/);
+  });
+
+  it('rechaza not_required identificado con contenido', () => {
+    const source = createEvaluator();
+    requireIdentifiedReport(source);
+    source.referral.value.report.status = 'not_required';
+    expect(() => validate(source)).toThrow(/must be empty/);
+  });
+
+  it('acepta not_required identificado únicamente con el tuple vacío', () => {
+    const source = createEvaluator();
+    requireIdentifiedReport(source);
+    source.referral.value.report = {
+      contractVersion: 'identified-report-requirement/1',
+      status: 'not_required',
+      essentialContents: [],
+    };
+    expect((validate(source).referral.value as any).report).toEqual(
+      source.referral.value.report,
+    );
+  });
+
+  it('rechaza una versión identificada desconocida sin reinterpretarla como histórica', () => {
+    const source = createEvaluator();
+    requireIdentifiedReport(source);
+    source.referral.value.report.contractVersion = 'identified-report-requirement/99';
+    expect(() => validate(source)).toThrow(/contractVersion/);
+  });
+
+  it('no infiere la versión nueva por la forma de los elementos', () => {
+    const source = createEvaluator();
+    requireIdentifiedReport(source);
+    delete source.referral.value.report.contractVersion;
+    expect(() => validate(source)).toThrow(/must be a non-empty string/);
+  });
+
+  it('no acepta string[] cuando el discriminante selecciona el contrato identificado', () => {
+    const source = createEvaluator();
+    requireReferral(source);
+    source.referral.value.report = {
+      contractVersion: 'identified-report-requirement/1',
+      status: 'required',
+      essentialContents: ['Contenido histórico'],
+    };
+    synchronizeEvidenceRules(source);
+    expect(() => validate(source)).toThrow(/must be an object/);
+  });
+
   it('acepta evaluator y runtime vinculados a la misma versión', () => {
     expect(validate().caseVersionId).toBe(caseVersionId);
   });

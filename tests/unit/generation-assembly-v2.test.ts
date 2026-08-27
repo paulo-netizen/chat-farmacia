@@ -357,6 +357,7 @@ function ordinal(localKey: string): string {
 }
 
 function createContext(overrides: Partial<GenerationAssemblyContextV2> = {}) {
+  let reportContentSequence = 0;
   const context: GenerationAssemblyContextV2 = {
     caseVersionId: 'casever_90000000-0000-4000-8000-000000000001' as any,
     evaluatorVersions: {
@@ -384,6 +385,10 @@ function createContext(overrides: Partial<GenerationAssemblyContextV2> = {}) {
       (key: string) =>
         `conclusion_40000000-0000-4000-8000-${ordinal(key)}` as any,
     ),
+    allocateReportEssentialContentId: vi.fn(() => {
+      reportContentSequence += 1;
+      return `report_content_50000000-0000-4000-8000-${String(reportContentSequence).padStart(12, '0')}` as any;
+    }),
     resolveTaxonomy: vi.fn((ref: AiTaxonomyConceptRef) => ({
       taxonomyId: taxonomyVersions[ref.catalog].id,
       taxonomyVersion: taxonomyVersions[ref.catalog].version,
@@ -460,6 +465,49 @@ describe('canonical generated case assembly', () => {
     expect(context.allocateFactId).toHaveBeenCalledWith('lf_1');
     expect(context.allocateConclusionId).toHaveBeenCalledTimes(5);
     expect(context.allocateConclusionId).toHaveBeenCalledWith('lc_2');
+  });
+
+  it('asigna IDs server-owned únicos a cada contenido esencial sin alterar su orden', () => {
+    const context = createContext();
+    const core = assembleCanonicalGeneratedCaseV2(
+      validated(createComplexUnknownDraft()),
+      context,
+    );
+    const report = (core.evaluator.referral.value as any).report;
+
+    expect(report).toEqual({
+      contractVersion: 'identified-report-requirement/1',
+      status: 'required',
+      essentialContents: [
+        {
+          contentId: 'report_content_50000000-0000-4000-8000-000000000001',
+          content: 'Uso real',
+        },
+        {
+          contentId: 'report_content_50000000-0000-4000-8000-000000000002',
+          content: 'Riesgo identificado',
+        },
+      ],
+    });
+    expect(context.allocateReportEssentialContentId).toHaveBeenCalledTimes(2);
+    expect(context.allocateReportEssentialContentId).toHaveBeenNthCalledWith(1);
+    expect(context.allocateReportEssentialContentId).toHaveBeenNthCalledWith(2);
+  });
+
+  it('rechaza IDs server-owned duplicados para contenidos esenciales', () => {
+    const context = createContext({
+      allocateReportEssentialContentId: vi.fn(
+        () => 'report_content_50000000-0000-4000-8000-000000000001' as any,
+      ),
+    });
+    expectAssemblyError(
+      () =>
+        assembleCanonicalGeneratedCaseV2(
+          validated(createComplexUnknownDraft()),
+          context,
+        ),
+      'duplicate_canonical_id',
+    );
   });
 
   it('rejects two medication keys allocated to the same canonical ID', () => {

@@ -9,6 +9,7 @@ import type {
 import type {
   EvaluatorVersionsV2,
   EvaluatorViewV2,
+  ReportEssentialContentId,
   TaxonomyTermRef,
 } from './evaluator-types';
 import type {
@@ -35,6 +36,7 @@ export type GenerationAssemblyContextV2 = Readonly<{
   allocateMedicationUseId(localKey: AiMedicationUseKey): MedicationUseId;
   allocateFactId(localKey: AiFactKey): FactId;
   allocateConclusionId(localKey: AiConclusionKey): import('./evaluator-types').ConclusionId;
+  allocateReportEssentialContentId(): ReportEssentialContentId;
 
   resolveTaxonomy(ref: AiTaxonomyConceptRef): TaxonomyTermRef;
   resolveDisclosure(

@@ -580,6 +580,32 @@ describe('PharmaceuticalClinicalReferenceV2', () => {
     expect(report).toEqual({ status: 'not_required', essentialContents: [] });
   });
 
+  it('preserves identified report content IDs, multiplicity and order in a detached projection', () => {
+    const source = evaluatorFixture();
+    source.referral.value.report = {
+      contractVersion: 'identified-report-requirement/1',
+      status: 'required',
+      essentialContents: [
+        {
+          contentId:
+            'report_content_50000000-0000-4000-8000-000000000002',
+          content: 'Medicamentos implicados',
+        },
+        {
+          contentId:
+            'report_content_50000000-0000-4000-8000-000000000001',
+          content: 'Motivo de derivación',
+        },
+      ],
+    };
+
+    const result = build(source);
+    const report = (result.clinicalConclusions.referral.value as any).report;
+    expect(report).toEqual(source.referral.value.report);
+    source.referral.value.report.essentialContents[0].content = 'MUTATED';
+    expect(report.essentialContents[0].content).toBe('Medicamentos implicados');
+  });
+
   it('preserves evaluator, protocol, taxonomy and adherence framework references exactly', () => {
     const source = evaluatorFixture();
     const result = build(source);

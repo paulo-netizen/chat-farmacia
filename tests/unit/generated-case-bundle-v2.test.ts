@@ -396,6 +396,45 @@ describe('GeneratedCaseBundleV2', () => {
     expect(bundle).not.toHaveProperty('reviewFlags');
   });
 
+  it('persists identified report contents while derived summary remains semantic', () => {
+    const core = createIntegratedCore() as any;
+    core.evaluator.referral.value = {
+      status: 'required',
+      urgency: 'non_urgent',
+      destination: { label: 'Medicina de familia' },
+      reason: 'Revisión clínica',
+      report: {
+        contractVersion: 'identified-report-requirement/1',
+        status: 'required',
+        essentialContents: [
+          {
+            contentId:
+              'report_content_50000000-0000-4000-8000-000000000002',
+            content: 'Tratamiento actual',
+          },
+          {
+            contentId:
+              'report_content_50000000-0000-4000-8000-000000000001',
+            content: 'Motivo de derivación',
+          },
+        ],
+      },
+    };
+
+    const bundle = buildGeneratedCaseBundleV2(
+      createBrief(),
+      core,
+      createProvenance(),
+    );
+    expect((bundle.sourceOfTruth.evaluator.referral.value as any).report)
+      .toEqual(core.evaluator.referral.value.report);
+    expect((bundle.derived.teachingSummary.referral as any).report.essentialContents)
+      .toEqual(['Tratamiento actual', 'Motivo de derivación']);
+    expect(JSON.stringify(bundle.derived.teachingSummary)).not.toContain(
+      'report_content_',
+    );
+  });
+
   it('keeps the same caseVersionId throughout canonical and derived data', () => {
     const bundle = buildGeneratedCaseBundleV2(
       createBrief(),

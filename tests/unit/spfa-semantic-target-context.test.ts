@@ -1046,6 +1046,42 @@ describe('ordering, minimality and leak prevention', () => {
 });
 
 describe('semantic target context fingerprint and immutability', () => {
+  it('keeps the historical report fingerprint and ignores new technical content IDs', () => {
+    const historical = core() as any;
+    historical.evaluator.referral.value = {
+      status: 'required',
+      urgency: 'non_urgent',
+      destination: { label: 'Medicina de familia' },
+      reason: 'Revisión clínica',
+      report: {
+        status: 'required',
+        essentialContents: ['Motivo de derivación', 'Tratamiento actual'],
+      },
+    };
+    const identified = clone(historical) as any;
+    identified.evaluator.referral.value.report = {
+      contractVersion: 'identified-report-requirement/1',
+      status: 'required',
+      essentialContents: [
+        {
+          contentId:
+            'report_content_50000000-0000-4000-8000-000000000001',
+          content: 'Motivo de derivación',
+        },
+        {
+          contentId:
+            'report_content_50000000-0000-4000-8000-000000000002',
+          content: 'Tratamiento actual',
+        },
+      ],
+    };
+
+    const historicalContext = build(historical);
+    const identifiedContext = build(identified);
+    expect(identifiedContext.fingerprint).toEqual(historicalContext.fingerprint);
+    expect(JSON.stringify(identifiedContext)).not.toContain('report_content_');
+  });
+
   it('is stable for the same canonical input and an equivalent deep copy', () => {
     const original = core();
     const first = build(original);

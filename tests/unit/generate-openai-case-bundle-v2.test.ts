@@ -323,6 +323,7 @@ function ordinal(localKey: string): string {
 function createContext(
   overrides: Partial<VersionedGenerationAssemblyContextV2> = {},
 ): VersionedGenerationAssemblyContextV2 {
+  let reportContentSequence = 0;
   return {
     caseVersionId: caseVersionId as any,
     disclosurePolicyVersion: 'disclosure-policy/test-1',
@@ -354,6 +355,10 @@ function createContext(
       (key: string) =>
         `conclusion_40000000-0000-4000-8000-${ordinal(key)}` as any,
     ),
+    allocateReportEssentialContentId: vi.fn(() => {
+      reportContentSequence += 1;
+      return `report_content_50000000-0000-4000-8000-${String(reportContentSequence).padStart(12, '0')}` as any;
+    }),
     resolveTaxonomy: vi.fn((ref: AiTaxonomyConceptRef) => ({
       taxonomyId: taxonomyVersions[ref.catalog].id,
       taxonomyVersion: taxonomyVersions[ref.catalog].version,

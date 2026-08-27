@@ -2,11 +2,11 @@
 
 ## Baseline oficial
 
-- **Fecha del baseline:** 26 de agosto de 2026.
-- **Commit funcional de referencia:** `b2879cec7824968bcc0b6e3bca80852fa9cf3359` (`Complete M5 SPFA evaluation pipeline`).
-- **Progreso global:** **45.29%**.
+- **Fecha del baseline:** 27 de agosto de 2026.
+- **Commit funcional de referencia:** `58750a47e57e0b09dc06dba84495f5c0304e8ea0` (`Complete M6-A pharmaceutical clinical reference`).
+- **Progreso global:** **45.77%**.
 - **M5:** **CLOSED / COMPLETE**.
-- **Suite actual:** **2223 PASS / 24 SKIPPED**.
+- **Suite actual:** **2247 PASS / 24 SKIPPED**.
 - **TypeScript:** **PASS**.
 
 Este documento es la fuente canónica del estado y del progreso global del proyecto. [`PLAN.md`](../../PLAN.md) conserva el roadmap técnico y el orden de ejecución, sin mantener una segunda tabla de porcentajes.
@@ -29,13 +29,13 @@ Los pesos y porcentajes se expresan como fracciones para el cálculo; por ejempl
 | M3 | Generador, auditor y publicación | PARTIAL | 55% | 11% | 6.05% |
 | M4 | Runtime seguro del paciente | CLOSED | 100% | 10% | 10.00% |
 | M5 | Motor de protocolos SPFA | CLOSED | 100% | 15% | 15.00% |
-| M6 | Evaluación farmacéutica/PRM–RNM/adherencia | PARTIAL | 12% | 12% | 1.44% |
+| M6 | Evaluación farmacéutica/PRM–RNM/adherencia | PARTIAL | 16% | 12% | 1.92% |
 | M7 | Evaluación de comunicación | NOT STARTED | 0% | 7% | 0.00% |
 | M8 | Cuestionario post-caso | NOT STARTED | 0% | 7% | 0.00% |
 | M9 | Resultados y feedback | NOT STARTED | 0% | 5% | 0.00% |
 | M10 | Analítica y revisión docente | NOT STARTED | 0% | 4% | 0.00% |
 | M11 | Hardening y observabilidad final | NOT STARTED | 0% | 3% | 0.00% |
-| **Total** |  |  |  | **100%** | **43.85%** |
+| **Total** |  |  |  | **100%** | **45.77%** |
 
 ## Regla estable de progreso
 
@@ -100,11 +100,13 @@ El cierre corresponde al commit `b2879cec7824968bcc0b6e3bca80852fa9cf3359`. Véa
 ### M6 — Evaluación farmacéutica/PRM–RNM/adherencia
 
 **Objetivo:** evaluar razonamiento farmacéutico, PRM/RNM, adherencia, barreras e intervención con evidencia.
-**Estado:** **PARTIAL — 12%**.
+**Estado:** **PARTIAL — 16%**.
 
-Completado: M6-A, proyección clínica farmacéutica canónica, pura, server-owned y allowlisted desde `EvaluatorViewV2`, con identidad/versiones, multiplicidades, relaciones y validación fail-closed. `EvidenceRule` permanece fuera de esta referencia y no se confunde con evidencia de desempeño del alumno.
+Completado: M6-A, proyección clínica farmacéutica canónica, pura, server-owned y allowlisted desde `EvaluatorViewV2`, con identidad/versiones, multiplicidades, relaciones y validación fail-closed; M6-B1, identidad opaca y estable server-owned para contenidos esenciales de informe, con contrato identificado versionado y lectura compatible de bundles históricos sin IDs sintéticos. `EvidenceRule` permanece fuera de esta referencia y no se confunde con evidencia de desempeño del alumno.
 
-Pendiente: targets y evidencia de desempeño M6, adjudicación, reglas clínicas versionadas, scoring, persistencia e integración con la evaluación global. Véase el [modelo de evaluación](04_EVALUATION_MODEL.md).
+Subdivisión fija de M6-B dentro del milestone: M6-B1 = 4% (CLOSED) y M6-B2 = 8% (PENDING).
+
+Pendiente: M6-B2, targets evaluativos; evidencia de desempeño M6, adjudicación, reglas clínicas versionadas, scoring, persistencia e integración con la evaluación global. Véase el [modelo de evaluación](04_EVALUATION_MODEL.md).
 
 ### M7 — Evaluación de comunicación
 
@@ -145,7 +147,7 @@ Pendiente: controles operativos, telemetría, privacidad/retención, configuraci
 
 | Punto de la ruta | Progreso global proyectado |
 |---|---:|
-| Actual | 45.29% |
+| Actual | 45.77% |
 | Tras M6 | 55.85% |
 | Tras M7 | 62.85% |
 | Tras M8 | 69.85% |

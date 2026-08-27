@@ -16,6 +16,10 @@ import type {
   SpfaConclusion,
   TaxonomyTermRef,
 } from './evaluator-types';
+import {
+  isIdentifiedReportRequirementV2,
+  reportRequirementSemanticContentsV2,
+} from './evaluator-types';
 import type {
   AddressedConclusionSummary,
   AdherenceAssessmentSummary,
@@ -1029,7 +1033,10 @@ function projectReport(
   if (report.status === 'not_required') {
     return { status: 'not_required', essentialContents: [] };
   }
-  const essentialContents = [...report.essentialContents].sort(ordinalCompare);
+  const semanticContents = reportRequirementSemanticContentsV2(report);
+  const essentialContents = isIdentifiedReportRequirementV2(report)
+    ? [...semanticContents]
+    : [...semanticContents].sort(ordinalCompare);
   if (essentialContents.length === 0) {
     fail('evaluator.referral.value.report.essentialContents', 'must not be empty');
   }

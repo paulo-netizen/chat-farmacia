@@ -800,6 +800,25 @@ describe('OpenAI case generator Structured Outputs transport', () => {
     );
   });
 
+  it('no permite que OpenAI proponga IDs canónicos de contenido esencial', () => {
+    const transport = createComprehensiveTransport();
+    transport.evaluator.referral.value.report = {
+      status: 'required',
+      essentialContents: [
+        {
+          contentId:
+            'report_content_50000000-0000-4000-8000-000000000001',
+          content: 'Motivo de derivación',
+        },
+      ],
+    } as any;
+
+    expectBoundaryError(
+      () => validateOpenAiGeneratedCaseDraftTransportV1(transport),
+      'invalid_openai_transport',
+    );
+  });
+
   it('acepta y valida un caso mínimo sin sustituir la validación 3D-A', () => {
     const transport = createMinimalTransport();
     expect(OpenAiGeneratedCaseDraftTransportSchemaV1.parse(transport)).toEqual(

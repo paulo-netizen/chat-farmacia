@@ -858,6 +858,42 @@ describe('TeachingCaseSummaryV2 medication projection and fail-closed behavior',
     });
   });
 
+  it('proyecta el contenido identificado en orden editorial sin exponer IDs', () => {
+    const evaluator = createEvaluator();
+    requireReferral(evaluator);
+    if (evaluator.referral.value.status !== 'required') {
+      throw new Error('Expected required referral fixture');
+    }
+    evaluator.referral.value.report = {
+      contractVersion: 'identified-report-requirement/1',
+      status: 'appropriate',
+      essentialContents: [
+        {
+          contentId:
+            'report_content_50000000-0000-4000-8000-000000000002',
+          content: 'Tratamiento actual',
+        },
+        {
+          contentId:
+            'report_content_50000000-0000-4000-8000-000000000001',
+          content: 'Motivo de derivación',
+        },
+      ],
+    } as any;
+
+    const referral = buildTeachingCaseSummaryV2(
+      createRuntime(),
+      evaluator,
+    ).referral;
+    expect(referral).toMatchObject({
+      report: {
+        status: 'appropriate',
+        essentialContents: ['Tratamiento actual', 'Motivo de derivación'],
+      },
+    });
+    expect(JSON.stringify(referral)).not.toContain('report_content_');
+  });
+
   it('canoniza strings NFKC-equivalentes conservando sus representaciones originales', () => {
     const buildWithContents = (
       essentialContents: [string, ...string[]],

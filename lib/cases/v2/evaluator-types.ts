@@ -5,9 +5,14 @@ import type {
 } from './types';
 
 declare const conclusionIdBrand: unique symbol;
+declare const reportEssentialContentIdBrand: unique symbol;
 
 export type ConclusionId = string & {
   readonly [conclusionIdBrand]: true;
+};
+
+export type ReportEssentialContentId = string & {
+  readonly [reportEssentialContentIdBrand]: true;
 };
 
 export type VersionRef = {
@@ -276,6 +281,60 @@ export type ReportRequirement =
       essentialContents: NonEmptyArray<string>;
     };
 
+export const IDENTIFIED_REPORT_REQUIREMENT_CONTRACT_VERSION =
+  'identified-report-requirement/1' as const;
+
+export type ReportEssentialContentV2 = Readonly<{
+  contentId: ReportEssentialContentId;
+  content: string;
+}>;
+
+export type IdentifiedReportRequirementV2 =
+  | Readonly<{
+      contractVersion: typeof IDENTIFIED_REPORT_REQUIREMENT_CONTRACT_VERSION;
+      status: 'not_required';
+      essentialContents: readonly [];
+    }>
+  | Readonly<{
+      contractVersion: typeof IDENTIFIED_REPORT_REQUIREMENT_CONTRACT_VERSION;
+      status: 'appropriate' | 'required';
+      essentialContents: NonEmptyArray<ReportEssentialContentV2>;
+    }>;
+
+/**
+ * Absence of contractVersion is the historical string[] contract. The
+ * identified form is selected only by its explicit contract discriminator.
+ */
+export type VersionedReportRequirementV2 =
+  | ReportRequirement
+  | IdentifiedReportRequirementV2;
+
+export function isIdentifiedReportRequirementV2(
+  report: VersionedReportRequirementV2,
+): report is IdentifiedReportRequirementV2 {
+  return 'contractVersion' in report;
+}
+
+export function reportRequirementSemanticContentsV2(
+  report: VersionedReportRequirementV2 | Readonly<{
+    contractVersion?: typeof IDENTIFIED_REPORT_REQUIREMENT_CONTRACT_VERSION;
+    status: 'not_required' | 'appropriate' | 'required';
+    essentialContents: readonly (string | Readonly<{
+      contentId: ReportEssentialContentId;
+      content: string;
+    }>)[];
+  }>,
+): readonly string[] {
+  if ('contractVersion' in report) {
+    const identifiedContents = report.essentialContents as readonly Readonly<{
+      contentId: ReportEssentialContentId;
+      content: string;
+    }>[];
+    return identifiedContents.map((item) => item.content);
+  }
+  return report.essentialContents as readonly string[];
+}
+
 export type ReferralConclusion = EvaluatorConclusion<
   'referral',
   | {
@@ -286,7 +345,7 @@ export type ReferralConclusion = EvaluatorConclusion<
       urgency: ReferralUrgency;
       destination: ReferralDestination;
       reason: string;
-      report: ReportRequirement;
+      report: VersionedReportRequirementV2;
     }
 >;
 

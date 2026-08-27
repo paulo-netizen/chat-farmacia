@@ -313,6 +313,61 @@ describe('generated session clinical content', () => {
     expect(JSON.stringify(result)).not.toMatch(/sourceBrief|teachingSummary|complianceReport|provenance/);
   });
 
+  it('resolves a historical string[] report without synthesizing IDs on read', () => {
+    const input = clone(generatedInput()) as any;
+    input.content.sourceOfTruth.evaluator.referral.value = {
+      status: 'required',
+      urgency: 'non_urgent',
+      destination: { label: 'Medicina de familia' },
+      reason: 'Revisión clínica',
+      report: {
+        status: 'required',
+        essentialContents: ['Motivo de derivación', 'Tratamiento actual'],
+      },
+    };
+
+    const result = resolveSessionEvaluatorClinicalContentV2(input);
+    if (result.contentFormat !== 'GENERATED_CASE_BUNDLE_V2') return;
+    const report = (result.evaluator.referral.value as any).report;
+    expect(report.essentialContents).toEqual([
+      'Motivo de derivación',
+      'Tratamiento actual',
+    ]);
+    expect(JSON.stringify(report)).not.toContain('contentId');
+  });
+
+  it('preserves identified IDs across persisted validation round-trips', () => {
+    const input = clone(generatedInput()) as any;
+    input.content.sourceOfTruth.evaluator.referral.value = {
+      status: 'required',
+      urgency: 'non_urgent',
+      destination: { label: 'Medicina de familia' },
+      reason: 'Revisión clínica',
+      report: {
+        contractVersion: 'identified-report-requirement/1',
+        status: 'required',
+        essentialContents: [
+          {
+            contentId:
+              'report_content_50000000-0000-4000-8000-000000000002',
+            content: 'Tratamiento actual',
+          },
+          {
+            contentId:
+              'report_content_50000000-0000-4000-8000-000000000001',
+            content: 'Motivo de derivación',
+          },
+        ],
+      },
+    };
+
+    const result = resolveSessionEvaluatorClinicalContentV2(clone(input));
+    if (result.contentFormat !== 'GENERATED_CASE_BUNDLE_V2') return;
+    expect((result.evaluator.referral.value as any).report).toEqual(
+      input.content.sourceOfTruth.evaluator.referral.value.report,
+    );
+  });
+
   it.each([
     ['sourceOfTruth.caseVersionId'],
     ['sourceOfTruth.patientFacts.caseVersionId'],
