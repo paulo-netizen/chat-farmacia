@@ -4,9 +4,9 @@
 
 - **Fecha del baseline:** 27 de agosto de 2026.
 - **Commit funcional de referencia:** `b223a7a0b1d29636ba4a4a02b3bcd150cc03724f` (`Complete M6-B pharmaceutical targets and evidence`).
-- **Progreso global:** **47.93%**.
+- **Progreso global:** **48.29%**.
 - **M5:** **CLOSED / COMPLETE**.
-- **Suite actual:** **2347 PASS / 24 SKIPPED**.
+- **Suite actual:** **2400 PASS / 24 SKIPPED**.
 - **TypeScript:** **PASS**.
 
 Este documento es la fuente canónica del estado y del progreso global del proyecto. [`PLAN.md`](../../PLAN.md) conserva el roadmap técnico y el orden de ejecución, sin mantener una segunda tabla de porcentajes.
@@ -29,13 +29,13 @@ Los pesos y porcentajes se expresan como fracciones para el cálculo; por ejempl
 | M3 | Generador, auditor y publicación | PARTIAL | 55% | 11% | 6.05% |
 | M4 | Runtime seguro del paciente | CLOSED | 100% | 10% | 10.00% |
 | M5 | Motor de protocolos SPFA | CLOSED | 100% | 15% | 15.00% |
-| M6 | Evaluación farmacéutica/PRM–RNM/adherencia | PARTIAL | 34% | 12% | 4.08% |
+| M6 | Evaluación farmacéutica/PRM–RNM/adherencia | PARTIAL | 37% | 12% | 4.44% |
 | M7 | Evaluación de comunicación | NOT STARTED | 0% | 7% | 0.00% |
 | M8 | Cuestionario post-caso | NOT STARTED | 0% | 7% | 0.00% |
 | M9 | Resultados y feedback | NOT STARTED | 0% | 5% | 0.00% |
 | M10 | Analítica y revisión docente | NOT STARTED | 0% | 4% | 0.00% |
 | M11 | Hardening y observabilidad final | NOT STARTED | 0% | 3% | 0.00% |
-| **Total** |  |  |  | **100%** | **47.93%** |
+| **Total** |  |  |  | **100%** | **48.29%** |
 
 ## Regla estable de progreso
 
@@ -100,15 +100,17 @@ El cierre corresponde al commit `b2879cec7824968bcc0b6e3bca80852fa9cf3359`. Véa
 ### M6 — Evaluación farmacéutica/PRM–RNM/adherencia
 
 **Objetivo:** evaluar razonamiento farmacéutico, PRM/RNM, adherencia, barreras e intervención con evidencia.
-**Estado:** **PARTIAL — 34%**.
+**Estado:** **PARTIAL — 37%**.
 
-Completado: M6-A, proyección clínica farmacéutica canónica, pura, server-owned y allowlisted desde `EvaluatorViewV2`, con identidad/versiones, multiplicidades, relaciones y validación fail-closed; M6-B1, identidad opaca y estable server-owned para contenidos esenciales de informe; M6-B2, targets clínicos atómicos con IDs/fingerprint deterministas, expectativas docentes opcionales `ALL_OF`/`ONE_OF`, universo estructural de evidencia candidata y referencias literales fijadas a sesión, versión, transcript y target set; M6-C, preparación pura, determinista y fail-closed de un packet mínimo por target, con identidades farmacológicas legibles resueltas desde `PatientRuntimeViewV2`, memberships docentes, candidatos agrupados, contexto de adquisición separado, estados estructurales y fingerprint propio. Los mensajes del paciente solo aportan contexto de adquisición y no demuestran razonamiento del alumno. Los informes históricos siguen siendo válidos, pero no reciben IDs ni targets de contenido sintéticos.
+Completado: M6-A, proyección clínica farmacéutica canónica, pura, server-owned y allowlisted desde `EvaluatorViewV2`, con identidad/versiones, multiplicidades, relaciones y validación fail-closed; M6-B1, identidad opaca y estable server-owned para contenidos esenciales de informe; M6-B2, targets clínicos atómicos con IDs/fingerprint deterministas, expectativas docentes opcionales `ALL_OF`/`ONE_OF`, universo estructural de evidencia candidata y referencias literales fijadas a sesión, versión, transcript y target set; M6-C, preparación pura, determinista y fail-closed de un packet mínimo por target, con identidades farmacológicas legibles resueltas desde `PatientRuntimeViewV2`, memberships docentes, candidatos agrupados, contexto de adquisición separado, estados estructurales y fingerprint propio; M6-D1A, contratos puros de adjudicación por target, batch plan exhaustivo y versionado, requests/fingerprints independientes de provider/model, schemas estrictos, reconstrucción server-owned y validación fail-closed del resultado provider y del envelope global. Los mensajes del paciente solo aportan contexto de adquisición y no demuestran razonamiento del alumno. Los informes históricos siguen siendo válidos, pero no reciben IDs ni targets de contenido sintéticos.
 
 Subdivisión fija de M6-B dentro del milestone: M6-B1 = 4% (CLOSED) y M6-B2 = 8% (CLOSED). **M6-B = CLOSED / COMPLETE**.
 
 M6-C = 10% del milestone. **M6-C = CLOSED / COMPLETE**.
 
-Pendiente: adjudicación semántica y claim lane M6-D, reglas clínicas versionadas, scoring, persistencia e integración con la evaluación global. Véase el [modelo de evaluación](04_EVALUATION_MODEL.md).
+Subdivisión fija de M6-D dentro del milestone: M6-D1A = 3% (CLOSED), M6-D1B = 4% (PENDING), M6-D2 = 4% (PENDING) y M6-D3 = 3% (PENDING). **M6-D = PARTIAL**.
+
+Pendiente: ejecución semántica D1B, claim lane D2, hardening/aceptación D3, reglas clínicas versionadas, scoring, persistencia e integración con la evaluación global. Véase el [modelo de evaluación](04_EVALUATION_MODEL.md).
 
 ### M7 — Evaluación de comunicación
 
@@ -149,7 +151,7 @@ Pendiente: controles operativos, telemetría, privacidad/retención, configuraci
 
 | Punto de la ruta | Progreso global proyectado |
 |---|---:|
-| Actual | 47.93% |
+| Actual | 48.29% |
 | Tras M6 | 55.85% |
 | Tras M7 | 62.85% |
 | Tras M8 | 69.85% |

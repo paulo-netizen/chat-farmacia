@@ -21,11 +21,11 @@ La fuente canónica del progreso, los porcentajes, los pesos M0–M11 y el check
 - M10 — Analítica y revisión docente: **NOT STARTED**.
 - M11 — Hardening y observabilidad final: **NOT STARTED**.
 
-El repositorio dispone de una suite automatizada amplia. M6-A, M6-B y M6-C quedaron validados con sus contratos puros, tests automatizados y TypeScript correcto.
+El repositorio dispone de una suite automatizada amplia. M6-A, M6-B, M6-C y M6-D1A quedaron validados con sus contratos puros, tests automatizados y TypeScript correcto.
 
 ## Próximo frente funcional
 
-El milestone funcional activo es **M6 — Evaluación farmacéutica/PRM–RNM/adherencia**. M6-A aporta la referencia clínica farmacéutica canónica; M6-B cierra la identidad de contenidos de informe, los targets evaluativos atómicos y la frontera estructural de evidencia candidata; M6-C prepara de forma determinista, mínima y allowlisted el contexto de adjudicación fijado a sesión, versión, transcript y target set. El siguiente incremento es M6-D, adjudicación semántica y claim lane según las fronteras ya acordadas, sin reabrir los contratos cerrados salvo una incompatibilidad demostrada.
+El milestone funcional activo es **M6 — Evaluación farmacéutica/PRM–RNM/adherencia**. M6-A aporta la referencia clínica farmacéutica canónica; M6-B cierra la identidad de contenidos de informe, los targets evaluativos atómicos y la frontera estructural de evidencia candidata; M6-C prepara de forma determinista, mínima y allowlisted el contexto de adjudicación fijado a sesión, versión, transcript y target set; M6-D1A aporta los contratos puros de adjudicación, el batch plan canónico, los fingerprints de request y la validación fail-closed offline. El siguiente incremento es M6-D1B, transport/runtime y ejecución semántica de targets, sin reabrir los contratos cerrados salvo una incompatibilidad demostrada.
 
 Antes de implementar cada incremento de M6:
 
@@ -47,7 +47,7 @@ M2 Editor docente estructurado ── M3 Generador,      │
 
 M4 Runtime seguro del paciente [CLOSED]
 M5 Motor de protocolos SPFA [CLOSED]
-  └─ M6 Evaluación farmacéutica/PRM–RNM/adherencia [PARTIAL — A/B/C CLOSED]
+  └─ M6 Evaluación farmacéutica/PRM–RNM/adherencia [PARTIAL — A/B/C/D1A CLOSED]
        ├─ M7 Evaluación de comunicación
        └─ M8 Cuestionario post-caso
             └─ M9 Resultados y feedback
@@ -92,7 +92,7 @@ M0/M1 y M2/M3 pueden cerrarse en paralelo, pero su deuda pendiente debe resolver
 
 ### M6–M11
 
-- M6: referencia clínica, identidad de contenidos esenciales, targets atómicos, contratos de evidencia candidata y preparación determinista del contexto de adjudicación completados; pendientes adjudicación, scoring, persistencia e integración;
+- M6: referencia clínica, identidad de contenidos esenciales, targets atómicos, contratos de evidencia candidata, preparación determinista del contexto y contratos puros/batching/validación offline de D1A completados; pendientes ejecución semántica D1B, claim lane D2, hardening D3, scoring, persistencia e integración;
 - M7: evaluación de la comunicación farmacéutico-paciente;
 - M8: cuestionario post-caso;
 - M9: resultados globales y feedback;
