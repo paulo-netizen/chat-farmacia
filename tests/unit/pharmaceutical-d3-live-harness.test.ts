@@ -20,8 +20,10 @@ import {
   parsePharmaceuticalD3LiveSelectionV1,
   pharmaceuticalD3FixtureV1,
   PHARMACEUTICAL_D3_HISTORICAL_RESULT_V1,
+  PHARMACEUTICAL_D3_HISTORICAL_RESULT_V2,
   PHARMACEUTICAL_D3_LIVE_EXECUTION_ORDER_V1,
   PHARMACEUTICAL_D3_LIVE_MATRIX_V2,
+  PHARMACEUTICAL_D3_LIVE_MATRIX_V3,
   runPharmaceuticalD3AcceptanceV1,
   runPharmaceuticalD3FixtureV1,
   type PharmaceuticalD3LiveFixtureV1,
@@ -106,20 +108,20 @@ function fakeFactory(overrides: Readonly<{
   return { factory, d1Calls, d2Calls };
 }
 
-describe('M6-D3R2 pre-registered matrix', () => {
+describe('M6-D3R4 pre-registered matrix', () => {
   it('freezes the explicit matrix identity, prompt versions and SHA-256 fingerprint', () => {
-    expect(PHARMACEUTICAL_D3_LIVE_MATRIX_V2.matrixVersion).toBe('pharmaceutical-d3-live-matrix/2');
-    expect(PHARMACEUTICAL_D3_LIVE_MATRIX_V2.promptVersions).toEqual({
+    expect(PHARMACEUTICAL_D3_LIVE_MATRIX_V3.matrixVersion).toBe('pharmaceutical-d3-live-matrix/3');
+    expect(PHARMACEUTICAL_D3_LIVE_MATRIX_V3.promptVersions).toEqual({
       d1: 'pharmaceutical-d1-adjudication-prompt/3',
-      d2: 'pharmaceutical-d2-claim-prompt/1',
+      d2: 'pharmaceutical-d2-claim-prompt/2',
     });
-    expect(PHARMACEUTICAL_D3_LIVE_MATRIX_V2.fingerprint).toEqual({
+    expect(PHARMACEUTICAL_D3_LIVE_MATRIX_V3.fingerprint).toEqual({
       algorithm: 'sha256',
-      canonicalization: 'pharmaceutical-d3-live-matrix-v2/1',
-      value: 'd6fe321921abfff8073645e5db398f63b81d5c39abfc8dafc3d2397ea3c38a95',
+      canonicalization: 'pharmaceutical-d3-live-matrix-v3/1',
+      value: '64c55ed55be855933904c875cdbd3e7c3464c8aab5c6c9049e86b161b185950e',
     });
-    expect(Object.isFrozen(PHARMACEUTICAL_D3_LIVE_MATRIX_V2)).toBe(true);
-    expect(Object.isFrozen(PHARMACEUTICAL_D3_LIVE_MATRIX_V2.fixtures[0].expectedCallsPerRun))
+    expect(Object.isFrozen(PHARMACEUTICAL_D3_LIVE_MATRIX_V3)).toBe(true);
+    expect(Object.isFrozen(PHARMACEUTICAL_D3_LIVE_MATRIX_V3.fixtures[0].expectedCallsPerRun))
       .toBe(true);
   });
 
@@ -135,8 +137,35 @@ describe('M6-D3R2 pre-registered matrix', () => {
     expect(Object.isFrozen(PHARMACEUTICAL_D3_HISTORICAL_RESULT_V1)).toBe(true);
   });
 
+  it('preserves the inconclusive matrix /2 identity and historical outcome unchanged', () => {
+    expect(PHARMACEUTICAL_D3_LIVE_MATRIX_V2.matrixVersion)
+      .toBe('pharmaceutical-d3-live-matrix/2');
+    expect(PHARMACEUTICAL_D3_LIVE_MATRIX_V2.promptVersions).toEqual({
+      d1: 'pharmaceutical-d1-adjudication-prompt/3',
+      d2: 'pharmaceutical-d2-claim-prompt/1',
+    });
+    expect(PHARMACEUTICAL_D3_LIVE_MATRIX_V2.fingerprint).toEqual({
+      algorithm: 'sha256',
+      canonicalization: 'pharmaceutical-d3-live-matrix-v2/1',
+      value: 'd6fe321921abfff8073645e5db398f63b81d5c39abfc8dafc3d2397ea3c38a95',
+    });
+    expect(PHARMACEUTICAL_D3_HISTORICAL_RESULT_V2).toEqual({
+      matrixVersion: 'pharmaceutical-d3-live-matrix/2',
+      matrixFingerprint: 'd6fe321921abfff8073645e5db398f63b81d5c39abfc8dafc3d2397ea3c38a95',
+      decision: 'INCONCLUSIVE',
+      fixtureId: 'C3',
+      run: 1,
+      failure: {
+        code: 'INVALID_PROVIDER_RESULT',
+        path: 'providerResult.findings[1].excerpt',
+      },
+    });
+    expect(Object.isFrozen(PHARMACEUTICAL_D3_HISTORICAL_RESULT_V2)).toBe(true);
+    expect(Object.isFrozen(PHARMACEUTICAL_D3_HISTORICAL_RESULT_V2.failure)).toBe(true);
+  });
+
   it('contains exactly the seven pre-registered fixture classes', () => {
-    expect(PHARMACEUTICAL_D3_LIVE_MATRIX_V2.fixtures.map((fixture) => fixture.fixtureId))
+    expect(PHARMACEUTICAL_D3_LIVE_MATRIX_V3.fixtures.map((fixture) => fixture.fixtureId))
       .toEqual(['SMOKE', 'C1', 'C2', 'C3', 'S1', 'S2', 'Z0']);
   });
 
@@ -155,8 +184,8 @@ describe('M6-D3R2 pre-registered matrix', () => {
   });
 
   it('freezes one smoke run, five semantic runs, 100% threshold and no majority vote', () => {
-    expect(PHARMACEUTICAL_D3_LIVE_MATRIX_V2.repetitions).toEqual({ smoke: 1, semantic: 5 });
-    expect(PHARMACEUTICAL_D3_LIVE_MATRIX_V2.threshold).toEqual({
+    expect(PHARMACEUTICAL_D3_LIVE_MATRIX_V3.repetitions).toEqual({ smoke: 1, semantic: 5 });
+    expect(PHARMACEUTICAL_D3_LIVE_MATRIX_V3.threshold).toEqual({
       requiredFraction: 1, majorityVote: false,
     });
     expect(PHARMACEUTICAL_D3_LIVE_EXECUTION_ORDER_V1).toEqual([
@@ -243,13 +272,13 @@ describe('M6-D3R2 pre-registered matrix', () => {
   });
 
   it('documents every structural evidence kind and the opaque-taxonomy limitation', () => {
-    expect(JSON.stringify(PHARMACEUTICAL_D3_LIVE_MATRIX_V2.fixtures)).toContain('student-only evidence');
-    expect(PHARMACEUTICAL_D3_LIVE_MATRIX_V2.limitations.join(' ')).toContain('NEEDS_TEACHER_DECISION');
-    expect(PHARMACEUTICAL_D3_LIVE_MATRIX_V2.limitations.join(' ')).toContain('conceptId');
-    expect(Object.keys(PHARMACEUTICAL_D3_LIVE_MATRIX_V2.evidenceKindDefinitions)).toEqual([
+    expect(JSON.stringify(PHARMACEUTICAL_D3_LIVE_MATRIX_V3.fixtures)).toContain('student-only evidence');
+    expect(PHARMACEUTICAL_D3_LIVE_MATRIX_V3.limitations.join(' ')).toContain('NEEDS_TEACHER_DECISION');
+    expect(PHARMACEUTICAL_D3_LIVE_MATRIX_V3.limitations.join(' ')).toContain('conceptId');
+    expect(Object.keys(PHARMACEUTICAL_D3_LIVE_MATRIX_V3.evidenceKindDefinitions)).toEqual([
       'STUDENT_QUESTION', 'STUDENT_INTERPRETATION', 'STUDENT_DECISION', 'STUDENT_ACTION',
     ]);
-    expect(PHARMACEUTICAL_D3_LIVE_MATRIX_V2.evidenceKindDefinitions.STUDENT_ACTION)
+    expect(PHARMACEUTICAL_D3_LIVE_MATRIX_V3.evidenceKindDefinitions.STUDENT_ACTION)
       .toContain('allowlisted');
   });
 
@@ -417,7 +446,7 @@ describe('M6-D3A acceptance runner hardening', () => {
       pharmaceuticalD3FixtureV1('SMOKE'), 1, fakeFactory().factory,
     );
     const artifact = buildPharmaceuticalD3EvidenceArtifactV1('a'.repeat(40), [summary], 'ACCEPT');
-    expect(artifact).toContain(PHARMACEUTICAL_D3_LIVE_MATRIX_V2.fingerprint.value);
+    expect(artifact).toContain(PHARMACEUTICAL_D3_LIVE_MATRIX_V3.fingerprint.value);
     expect(artifact).toContain('pharmaceutical-d1-adjudication-prompt/3');
     expect(artifact).not.toMatch(/raw provider output|API key/i);
     expect(buildPharmaceuticalD3EvidenceArtifactV1('a'.repeat(40), [summary], 'ACCEPT'))

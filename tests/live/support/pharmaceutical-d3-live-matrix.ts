@@ -26,6 +26,7 @@ import type {
 import {
   PHARMACEUTICAL_D2_CLAIM_POLICY_VERSION_V1,
   PHARMACEUTICAL_D2_CLAIM_PROMPT_VERSION_V1,
+  PHARMACEUTICAL_D2_CLAIM_PROMPT_VERSION_V2,
   PHARMACEUTICAL_D2_SEMANTIC_REQUEST_CONTRACT_VERSION_V1,
   type PharmaceuticalD2ClinicalRefV2,
   type PharmaceuticalD2ClaimFormV2,
@@ -70,6 +71,21 @@ export const PHARMACEUTICAL_D3_LIVE_MATRIX_VERSION_V2 =
   'pharmaceutical-d3-live-matrix/2' as const;
 export const PHARMACEUTICAL_D3_LIVE_MATRIX_FINGERPRINT_V2 =
   'd6fe321921abfff8073645e5db398f63b81d5c39abfc8dafc3d2397ea3c38a95' as const;
+export const PHARMACEUTICAL_D3_HISTORICAL_RESULT_V2 = Object.freeze({
+  matrixVersion: PHARMACEUTICAL_D3_LIVE_MATRIX_VERSION_V2,
+  matrixFingerprint: PHARMACEUTICAL_D3_LIVE_MATRIX_FINGERPRINT_V2,
+  decision: 'INCONCLUSIVE' as const,
+  fixtureId: 'C3' as const,
+  run: 1 as const,
+  failure: Object.freeze({
+    code: 'INVALID_PROVIDER_RESULT' as const,
+    path: 'providerResult.findings[1].excerpt' as const,
+  }),
+});
+export const PHARMACEUTICAL_D3_LIVE_MATRIX_VERSION_V3 =
+  'pharmaceutical-d3-live-matrix/3' as const;
+export const PHARMACEUTICAL_D3_LIVE_MATRIX_FINGERPRINT_V3 =
+  '64c55ed55be855933904c875cdbd3e7c3464c8aab5c6c9049e86b161b185950e' as const;
 export const PHARMACEUTICAL_D3_LIVE_MODEL_V1 = 'gpt-5.6-sol' as const;
 export const PHARMACEUTICAL_D3_LIVE_EXECUTION_ORDER_V1 = Object.freeze([
   'SMOKE', 'C3', 'C2', 'C1', 'S1', 'S2',
@@ -145,6 +161,36 @@ export type PharmaceuticalD3LiveMatrixV2 = Readonly<{
   fingerprint: Readonly<{
     algorithm: 'sha256';
     canonicalization: 'pharmaceutical-d3-live-matrix-v2/1';
+    value: string;
+  }>;
+}>;
+
+export type PharmaceuticalD3LiveMatrixV3 = Readonly<{
+  schemaVersion: '2.0';
+  matrixVersion: typeof PHARMACEUTICAL_D3_LIVE_MATRIX_VERSION_V3;
+  model: typeof PHARMACEUTICAL_D3_LIVE_MODEL_V1;
+  promptVersions: Readonly<{ d1: string; d2: string }>;
+  policyVersions: Readonly<{ d2: string }>;
+  contractVersions: Readonly<{
+    context: 'pharmaceutical-adjudication-context/1';
+    d1Request: 'pharmaceutical-d1-semantic-batch-request/1';
+    d2Request: 'pharmaceutical-d2-semantic-request/1';
+    batchPlan: 'pharmaceutical-d1-batch-plan/1';
+  }>;
+  repetitions: Readonly<{ smoke: 1; semantic: 5 }>;
+  threshold: Readonly<{ requiredFraction: 1; majorityVote: false }>;
+  evidenceKindDefinitions: Readonly<Record<
+    PharmaceuticalStudentEvidenceKindV2,
+    string
+  >>;
+  executionOrder: typeof PHARMACEUTICAL_D3_LIVE_EXECUTION_ORDER_V1;
+  fixtures: readonly PharmaceuticalD3LiveFixtureV1[];
+  invalidatesAcceptance: readonly string[];
+  doesNotInvalidateAcceptance: readonly string[];
+  limitations: readonly string[];
+  fingerprint: Readonly<{
+    algorithm: 'sha256';
+    canonicalization: 'pharmaceutical-d3-live-matrix-v3/1';
     value: string;
   }>;
 }>;
@@ -992,14 +1038,9 @@ const evidenceKindDefinitions = Object.freeze({
   STUDENT_ACTION: 'observable action performed or proposed by the student; valid only when allowlisted by the target candidate',
 } as const satisfies Record<PharmaceuticalStudentEvidenceKindV2, string>);
 
-const matrixCore = {
+const sharedMatrixCore = {
   schemaVersion: '2.0' as const,
-  matrixVersion: PHARMACEUTICAL_D3_LIVE_MATRIX_VERSION_V2,
   model: PHARMACEUTICAL_D3_LIVE_MODEL_V1,
-  promptVersions: {
-    d1: PHARMACEUTICAL_D1_PROMPT_VERSION_V3,
-    d2: PHARMACEUTICAL_D2_CLAIM_PROMPT_VERSION_V1,
-  },
   policyVersions: { d2: PHARMACEUTICAL_D2_CLAIM_POLICY_VERSION_V1 },
   contractVersions: {
     context: 'pharmaceutical-adjudication-context/1' as const,
@@ -1017,16 +1058,21 @@ const matrixCore = {
   limitations,
 };
 
-const computedMatrixFingerprint = sha256(matrixCore);
-if (computedMatrixFingerprint !== PHARMACEUTICAL_D3_LIVE_MATRIX_FINGERPRINT_V2) {
-  throw new Error(
-    'material D3 matrix change requires a new matrix version and live acceptance',
-  );
+const matrixCoreV2 = {
+  ...sharedMatrixCore,
+  matrixVersion: PHARMACEUTICAL_D3_LIVE_MATRIX_VERSION_V2,
+  promptVersions: {
+    d1: PHARMACEUTICAL_D1_PROMPT_VERSION_V3,
+    d2: PHARMACEUTICAL_D2_CLAIM_PROMPT_VERSION_V1,
+  },
+};
+if (sha256(matrixCoreV2) !== PHARMACEUTICAL_D3_LIVE_MATRIX_FINGERPRINT_V2) {
+  throw new Error('historical D3 matrix v2 material changed');
 }
 
 export const PHARMACEUTICAL_D3_LIVE_MATRIX_V2: PharmaceuticalD3LiveMatrixV2 =
   deepFreeze({
-    ...matrixCore,
+    ...matrixCoreV2,
     fingerprint: Object.freeze({
       algorithm: 'sha256',
       canonicalization: 'pharmaceutical-d3-live-matrix-v2/1',
@@ -1034,10 +1080,32 @@ export const PHARMACEUTICAL_D3_LIVE_MATRIX_V2: PharmaceuticalD3LiveMatrixV2 =
     }),
   });
 
+const matrixCoreV3 = {
+  ...sharedMatrixCore,
+  matrixVersion: PHARMACEUTICAL_D3_LIVE_MATRIX_VERSION_V3,
+  promptVersions: {
+    d1: PHARMACEUTICAL_D1_PROMPT_VERSION_V3,
+    d2: PHARMACEUTICAL_D2_CLAIM_PROMPT_VERSION_V2,
+  },
+};
+if (sha256(matrixCoreV3) !== PHARMACEUTICAL_D3_LIVE_MATRIX_FINGERPRINT_V3) {
+  throw new Error('material D3 matrix change requires a new matrix version and live acceptance');
+}
+
+export const PHARMACEUTICAL_D3_LIVE_MATRIX_V3: PharmaceuticalD3LiveMatrixV3 =
+  deepFreeze({
+    ...matrixCoreV3,
+    fingerprint: Object.freeze({
+      algorithm: 'sha256',
+      canonicalization: 'pharmaceutical-d3-live-matrix-v3/1',
+      value: PHARMACEUTICAL_D3_LIVE_MATRIX_FINGERPRINT_V3,
+    }),
+  });
+
 export function pharmaceuticalD3FixtureV1(
   fixtureId: PharmaceuticalD3FixtureIdV1,
 ): PharmaceuticalD3LiveFixtureV1 {
-  const fixture = PHARMACEUTICAL_D3_LIVE_MATRIX_V2.fixtures.find(
+  const fixture = PHARMACEUTICAL_D3_LIVE_MATRIX_V3.fixtures.find(
     (candidate) => candidate.fixtureId === fixtureId,
   );
   if (fixture === undefined) throw new Error(`unknown D3 fixture ${fixtureId}`);
@@ -1045,7 +1113,8 @@ export function pharmaceuticalD3FixtureV1(
 }
 
 export function calculatePharmaceuticalD3CallBudgetV1(
-  matrix: PharmaceuticalD3LiveMatrixV2 = PHARMACEUTICAL_D3_LIVE_MATRIX_V2,
+  matrix: PharmaceuticalD3LiveMatrixV2 | PharmaceuticalD3LiveMatrixV3 =
+    PHARMACEUTICAL_D3_LIVE_MATRIX_V3,
 ): PharmaceuticalD3CallBudgetV1 {
   const byFixture = Object.fromEntries(matrix.fixtures.map((fixture) => {
     const d1 = fixture.expectedCallsPerRun.d1 * fixture.repetitions;
@@ -1455,15 +1524,15 @@ export function buildPharmaceuticalD3EvidenceArtifactV1(
     '# M6-D3 pharmaceutical semantic live acceptance',
     '',
     `- Commit: \`${commitHash}\``,
-    `- Matrix: \`${PHARMACEUTICAL_D3_LIVE_MATRIX_V2.matrixVersion}\``,
-    `- Matrix fingerprint: \`${PHARMACEUTICAL_D3_LIVE_MATRIX_V2.fingerprint.value}\``,
-    `- D1 prompt: \`${PHARMACEUTICAL_D3_LIVE_MATRIX_V2.promptVersions.d1}\``,
-    `- D2 prompt: \`${PHARMACEUTICAL_D3_LIVE_MATRIX_V2.promptVersions.d2}\``,
-    `- D2 policy: \`${PHARMACEUTICAL_D3_LIVE_MATRIX_V2.policyVersions.d2}\``,
-    `- Context contract: \`${PHARMACEUTICAL_D3_LIVE_MATRIX_V2.contractVersions.context}\``,
-    `- D1 request: \`${PHARMACEUTICAL_D3_LIVE_MATRIX_V2.contractVersions.d1Request}\``,
-    `- D2 request: \`${PHARMACEUTICAL_D3_LIVE_MATRIX_V2.contractVersions.d2Request}\``,
-    `- Batch plan: \`${PHARMACEUTICAL_D3_LIVE_MATRIX_V2.contractVersions.batchPlan}\``,
+    `- Matrix: \`${PHARMACEUTICAL_D3_LIVE_MATRIX_V3.matrixVersion}\``,
+    `- Matrix fingerprint: \`${PHARMACEUTICAL_D3_LIVE_MATRIX_V3.fingerprint.value}\``,
+    `- D1 prompt: \`${PHARMACEUTICAL_D3_LIVE_MATRIX_V3.promptVersions.d1}\``,
+    `- D2 prompt: \`${PHARMACEUTICAL_D3_LIVE_MATRIX_V3.promptVersions.d2}\``,
+    `- D2 policy: \`${PHARMACEUTICAL_D3_LIVE_MATRIX_V3.policyVersions.d2}\``,
+    `- Context contract: \`${PHARMACEUTICAL_D3_LIVE_MATRIX_V3.contractVersions.context}\``,
+    `- D1 request: \`${PHARMACEUTICAL_D3_LIVE_MATRIX_V3.contractVersions.d1Request}\``,
+    `- D2 request: \`${PHARMACEUTICAL_D3_LIVE_MATRIX_V3.contractVersions.d2Request}\``,
+    `- Batch plan: \`${PHARMACEUTICAL_D3_LIVE_MATRIX_V3.contractVersions.batchPlan}\``,
     `- Requested model: \`${PHARMACEUTICAL_D3_LIVE_MODEL_V1}\``,
     `- Observed models: ${observedModels.map((model) => `\`${model}\``).join(', ') || 'none'}`,
     `- Decision: **${decision}**`,

@@ -2,18 +2,28 @@
 
 ## 1. Estado y alcance
 
-M6-D3A congeló la primera matriz previa a la aceptación live de las lanes farmacéuticas D1 y D2. M6-D3R2 versiona únicamente la política de precisión de evidencia después del rechazo histórico de esa primera matriz. Ninguno de estos incrementos constituye aceptación del modelo ni ejecuta OpenAI. El modelo `gpt-5.6-sol` permanece **CANDIDATE — LIVE ACCEPTANCE PENDING** hasta M6-D3B.
+M6-D3A congeló la primera matriz previa a la aceptación live de las lanes farmacéuticas D1 y D2. M6-D3R2 versionó la política de precisión de evidencia D1 después del rechazo histórico de esa primera matriz. La ejecución de la matriz `/2` quedó `INCONCLUSIVE` por una salida provider D2 cuyo excerpt no coincidía literalmente con sus offsets bajo un contrato y validator correctos. M6-D3R4 endurece exclusivamente las instrucciones de literalidad y offsets D2 y registra una nueva matriz. Ninguno de estos incrementos constituye aceptación del modelo. `gpt-5.6-sol` permanece **CANDIDATE — LIVE ACCEPTANCE PENDING** hasta M6-D3B.
 
-Histórico inmutable:
+Histórico inmutable `/1`:
 
 - matriz: `pharmaceutical-d3-live-matrix/1`;
 - fingerprint: `cc8d82fb2adcdbd72039053951997e3c54d4fe619c0b566dc936bd8cde4cf1da`;
 - resultado: **REJECT**, en SMOKE run 1 por puntuación terminal fuera de la única opción exacta registrada.
 
-Nueva candidata pendiente de ejecución live:
+Histórico inmutable `/2`:
 
 - matriz: `pharmaceutical-d3-live-matrix/2`;
-- fingerprint: `d6fe321921abfff8073645e5db398f63b81d5c39abfc8dafc3d2397ea3c38a95`.
+- fingerprint: `d6fe321921abfff8073645e5db398f63b81d5c39abfc8dafc3d2397ea3c38a95`;
+- resultado: **INCONCLUSIVE**, en C3 run 1 por `INVALID_PROVIDER_RESULT` en `providerResult.findings[1].excerpt`; los cuatro spans esperados del fixture eran correctos offline y el validator rechazó correctamente la desigualdad literal entre `slice(start,end)` y `excerpt`.
+
+Nueva candidata pendiente de ejecución live:
+
+- matriz: `pharmaceutical-d3-live-matrix/3`;
+- fingerprint: `64c55ed55be855933904c875cdbd3e7c3464c8aab5c6c9049e86b161b185950e`;
+- prompt D1: `pharmaceutical-d1-adjudication-prompt/3`;
+- prompt D2: `pharmaceutical-d2-claim-prompt/2`.
+
+El prompt D2 `/2` exige copiar el excerpt literalmente del mensaje student completo, calcular índices JavaScript UTF-16 `[start,end)` sobre ese original y verificar la igualdad exacta con `slice`. Prohíbe parafraseo, corrección ortográfica, cambios de puntuación, normalización Unicode, trim transformativo y el uso de bytes, code points o grapheme clusters como unidad de offset. El schema y el validator D2 no cambian.
 
 La definición machine-readable, sus fixtures, expectations, allowlists y fingerprint SHA-256 viven en `tests/live/support/pharmaceutical-d3-live-matrix.ts`. El fingerprint no incluye timestamps de ejecución ni datos ambientales.
 
@@ -122,8 +132,9 @@ No invalidan por sí solos: erratas documentales, logging allowlisted no materia
 
 - M6-D3A: **CLOSED / COMPLETE**.
 - M6-D3R2: **CLOSED / COMPLETE**.
+- M6-D3R4: **CLOSED / COMPLETE**.
 - M6-D3B: **READY FOR NEW LIVE ATTEMPT FROM SMOKE**.
 - M6-D3: **PARTIAL**.
 - M6-D: **PARTIAL**.
 
-No se ha ejecutado OpenAI en D3R2 y no se ha cerrado M6-D. La matriz `/1` conserva su rechazo histórico; la `/2` permanece pendiente de aceptación live completa desde SMOKE.
+No se ha ejecutado OpenAI en D3R4 y no se ha cerrado M6-D. La matriz `/1` conserva su `REJECT` histórico, la `/2` su `INCONCLUSIVE` histórico y la `/3` queda pendiente de aceptación live completa desde SMOKE.

@@ -256,7 +256,7 @@ describe('M6-D2B pharmaceutical claim orchestration', () => {
       lane: 'D2',
       provider: 'openai',
       responseModel: 'gpt-5.6-sol-2026-08-01',
-      promptVersion: 'pharmaceutical-d2-claim-prompt/1',
+      promptVersion: 'pharmaceutical-d2-claim-prompt/2',
       policyVersion: 'pharmaceutical-d2-claim-policy/1',
       requestFingerprint: adjudication.findingSet.requestFingerprint,
     });

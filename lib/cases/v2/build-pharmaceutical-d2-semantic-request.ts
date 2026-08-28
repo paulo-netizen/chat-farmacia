@@ -8,7 +8,7 @@ import type {
 import { buildPharmaceuticalD2StudentMessageSetV2 } from './build-pharmaceutical-d2-student-message-set';
 import {
   PHARMACEUTICAL_D2_CLAIM_POLICY_VERSION_V1,
-  PHARMACEUTICAL_D2_CLAIM_PROMPT_VERSION_V1,
+  PHARMACEUTICAL_D2_CLAIM_PROMPT_VERSION_V2,
   PHARMACEUTICAL_D2_SEMANTIC_REQUEST_CONTRACT_VERSION_V1,
   type PharmaceuticalD2AuthorityProjectionV2,
   type PharmaceuticalD2AuthorityTargetV2,
@@ -293,7 +293,7 @@ export function calculatePharmaceuticalD2SemanticRequestFingerprintV1(
 
 export function buildPharmaceuticalD2SemanticRequestV2(
   context: PharmaceuticalAdjudicationContextSetV2,
-  promptVersion: string = PHARMACEUTICAL_D2_CLAIM_PROMPT_VERSION_V1,
+  promptVersion: string = PHARMACEUTICAL_D2_CLAIM_PROMPT_VERSION_V2,
   policyVersion: string = PHARMACEUTICAL_D2_CLAIM_POLICY_VERSION_V1,
 ): PharmaceuticalD2SemanticRequestV2 {
   const core: RequestCore = {
@@ -314,7 +314,7 @@ export function buildPharmaceuticalD2SemanticRequestV2(
 export function validatePharmaceuticalD2SemanticRequestV2(
   input: unknown,
   context: PharmaceuticalAdjudicationContextSetV2,
-  expectedPromptVersion: string = PHARMACEUTICAL_D2_CLAIM_PROMPT_VERSION_V1,
+  expectedPromptVersion: string = PHARMACEUTICAL_D2_CLAIM_PROMPT_VERSION_V2,
   expectedPolicyVersion: string = PHARMACEUTICAL_D2_CLAIM_POLICY_VERSION_V1,
 ): PharmaceuticalD2SemanticRequestV2 {
   const expected = buildPharmaceuticalD2SemanticRequestV2(

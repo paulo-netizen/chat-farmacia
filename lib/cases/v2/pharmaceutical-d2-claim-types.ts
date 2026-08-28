@@ -25,6 +25,8 @@ export const PHARMACEUTICAL_D2_CLAIM_POLICY_VERSION_V1 =
   'pharmaceutical-d2-claim-policy/1' as const;
 export const PHARMACEUTICAL_D2_CLAIM_PROMPT_VERSION_V1 =
   'pharmaceutical-d2-claim-prompt/1' as const;
+export const PHARMACEUTICAL_D2_CLAIM_PROMPT_VERSION_V2 =
+  'pharmaceutical-d2-claim-prompt/2' as const;
 export const PHARMACEUTICAL_D2_STUDENT_MESSAGE_SET_CONTRACT_VERSION_V1 =
   'pharmaceutical-d2-student-message-set/1' as const;
 export const PHARMACEUTICAL_D2_SEMANTIC_REQUEST_CONTRACT_VERSION_V1 =

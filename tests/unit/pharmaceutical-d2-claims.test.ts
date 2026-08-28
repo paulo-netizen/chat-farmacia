@@ -21,7 +21,7 @@ import {
 import type { PharmaceuticalAdjudicationContextSetV2 } from '../../lib/cases/v2/pharmaceutical-adjudication-context-types';
 import {
   PHARMACEUTICAL_D2_CLAIM_POLICY_VERSION_V1,
-  PHARMACEUTICAL_D2_CLAIM_PROMPT_VERSION_V1,
+  PHARMACEUTICAL_D2_CLAIM_PROMPT_VERSION_V2,
 } from '../../lib/cases/v2/pharmaceutical-d2-claim-types';
 import { validatePharmaceuticalD2ProviderResultV1 } from '../../lib/cases/v2/validate-pharmaceutical-d2-provider-result';
 
@@ -294,7 +294,7 @@ describe('M6-D2A semantic request and authority projection', () => {
     const second = buildPharmaceuticalD2SemanticRequestV2(context());
     expect(first).toEqual(second);
     expect(first.policyVersion).toBe(PHARMACEUTICAL_D2_CLAIM_POLICY_VERSION_V1);
-    expect(first.promptVersion).toBe(PHARMACEUTICAL_D2_CLAIM_PROMPT_VERSION_V1);
+    expect(first.promptVersion).toBe(PHARMACEUTICAL_D2_CLAIM_PROMPT_VERSION_V2);
   });
 
   it('projects only allowlisted target authority without student evidence duplication', () => {
@@ -323,7 +323,7 @@ describe('M6-D2A semantic request and authority projection', () => {
 
   it('changes request fingerprint when promptVersion changes', () => {
     const first = buildPharmaceuticalD2SemanticRequestV2(context());
-    const second = buildPharmaceuticalD2SemanticRequestV2(context(), 'pharmaceutical-d2-claim-prompt/2');
+    const second = buildPharmaceuticalD2SemanticRequestV2(context(), 'pharmaceutical-d2-claim-prompt/3');
     expect(second.requestFingerprint.value).not.toBe(first.requestFingerprint.value);
   });
 
@@ -331,7 +331,7 @@ describe('M6-D2A semantic request and authority projection', () => {
     const first = buildPharmaceuticalD2SemanticRequestV2(context());
     const second = buildPharmaceuticalD2SemanticRequestV2(
       context(),
-      PHARMACEUTICAL_D2_CLAIM_PROMPT_VERSION_V1,
+      PHARMACEUTICAL_D2_CLAIM_PROMPT_VERSION_V2,
       'pharmaceutical-d2-claim-policy/2',
     );
     expect(second.requestFingerprint.value).not.toBe(first.requestFingerprint.value);
@@ -462,6 +462,78 @@ describe('M6-D2A strict provider result', () => {
       }),
     ]), request);
     expect(result.findings[0]).toMatchObject({ excerpt: 'PRM', excerptStart: 6, excerptEnd: 9 });
+  });
+
+  it('accepts multiple exact BMP and astral UTF-16 spans in the same student message', () => {
+    const input = context();
+    const message = 'Además concluyo ácido. 🙂 Recomiendo actuar.';
+    for (const target of input.targets) {
+      for (const candidate of target.studentCandidates) {
+        if (candidate.messageRef === '3') {
+          (candidate as any).untrustedContent = message;
+        }
+      }
+    }
+    const request = buildPharmaceuticalD2SemanticRequestV2(refreshContextFingerprint(input));
+    const conclusion = 'concluyo ácido.';
+    const recommendation = 'Recomiendo actuar.';
+    const conclusionStart = message.indexOf(conclusion);
+    const recommendationStart = message.indexOf(recommendation);
+    const recommendationPrefix = message.slice(0, recommendationStart);
+
+    expect(conclusionStart).toBe(7);
+    expect(Buffer.byteLength(message.slice(0, conclusionStart), 'utf8')).toBeGreaterThan(
+      conclusionStart,
+    );
+    expect(recommendationPrefix.length).toBe([...recommendationPrefix].length + 1);
+
+    const result = validatePharmaceuticalD2ProviderResultV1(providerResult([
+      providerFinding({
+        messageRef: '3',
+        excerpt: conclusion,
+        excerptStart: conclusionStart,
+        excerptEnd: conclusionStart + conclusion.length,
+        domain: 'ADHERENCE',
+        claimForm: 'CONCLUSION',
+      }),
+      providerFinding({
+        messageRef: '3',
+        excerpt: recommendation,
+        excerptStart: recommendationStart,
+        excerptEnd: recommendationStart + recommendation.length,
+        domain: 'PROFESSIONAL_RESPONSE',
+        claimForm: 'RECOMMENDATION',
+      }),
+    ]), request);
+
+    expect(result.findings).toHaveLength(2);
+    expect(result.findings.map((finding) => finding.excerpt)).toEqual([
+      conclusion,
+      recommendation,
+    ]);
+  });
+
+  it('rejects punctuation-normalized text when offsets select the original literal span', () => {
+    const input = context();
+    const message = 'Además concluyo ácido.';
+    for (const target of input.targets) {
+      for (const candidate of target.studentCandidates) {
+        if (candidate.messageRef === '3') {
+          (candidate as any).untrustedContent = message;
+        }
+      }
+    }
+    const request = buildPharmaceuticalD2SemanticRequestV2(refreshContextFingerprint(input));
+    const literal = 'concluyo ácido.';
+    const start = message.indexOf(literal);
+    expect(() => validatePharmaceuticalD2ProviderResultV1(providerResult([
+      providerFinding({
+        messageRef: '3',
+        excerpt: 'concluyo ácido',
+        excerptStart: start,
+        excerptEnd: start + literal.length,
+      }),
+    ]), request)).toThrow(/literal/);
   });
 
   it.each([
