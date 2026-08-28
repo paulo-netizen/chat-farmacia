@@ -29,7 +29,7 @@ const PROVIDER_FINDING_SCHEMA = z.object({
   relatedClinicalRefs: z.array(CLINICAL_REF_SCHEMA),
 }).strict();
 
-const PROVIDER_RESULT_SCHEMA = z.object({
+export const PHARMACEUTICAL_D2_PROVIDER_RESULT_SCHEMA_V1 = z.object({
   schemaVersion: z.literal('2.0'),
   contractVersion: z.literal(PHARMACEUTICAL_D2_PROVIDER_RESULT_CONTRACT_VERSION_V1),
   findings: z.array(PROVIDER_FINDING_SCHEMA),
@@ -97,7 +97,7 @@ export function validatePharmaceuticalD2ProviderResultV1(
   input: unknown,
   request: PharmaceuticalD2SemanticRequestV2,
 ): PharmaceuticalD2ProviderResultV1 {
-  const parsed = PROVIDER_RESULT_SCHEMA.safeParse(input);
+  const parsed = PHARMACEUTICAL_D2_PROVIDER_RESULT_SCHEMA_V1.safeParse(input);
   if (!parsed.success) {
     const issue = parsed.error.issues[0];
     const issuePath = ['providerResult', ...issue.path]

@@ -21,11 +21,11 @@ La fuente canónica del progreso, los porcentajes, los pesos M0–M11 y el check
 - M10 — Analítica y revisión docente: **NOT STARTED**.
 - M11 — Hardening y observabilidad final: **NOT STARTED**.
 
-El repositorio dispone de una suite automatizada amplia. M6-A, M6-B, M6-C, M6-D1 y M6-D2A quedaron validados con contratos estrictos, tests automatizados y TypeScript correcto.
+El repositorio dispone de una suite automatizada amplia. M6-A, M6-B, M6-C, M6-D1 y M6-D2 quedaron validados con contratos estrictos, tests automatizados y TypeScript correcto.
 
 ## Próximo frente funcional
 
-El milestone funcional activo es **M6 — Evaluación farmacéutica/PRM–RNM/adherencia**. M6-A aporta la referencia clínica farmacéutica canónica; M6-B cierra la identidad de contenidos de informe, los targets evaluativos atómicos y la frontera estructural de evidencia candidata; M6-C prepara de forma determinista, mínima y allowlisted el contexto de adjudicación fijado a sesión, versión, transcript y target set; M6-D1A aporta los contratos puros, batch plan, fingerprints y validación fail-closed; M6-D1B conecta esos contratos con prompt versionado, Structured Outputs, runtime OpenAI server-owned allowlisted y orquestación secuencial sin retries ni aceptación parcial; M6-D2A añade la unión canónica de mensajes del alumno, autoridad mínima, contratos de claims no representados, offsets literales, IDs server-owned y validación fail-closed sin conocimiento externo. `gpt-5.6-sol` permanece como candidato pendiente de la aceptación live M6-D3. El siguiente incremento es M6-D2B, sin reabrir D1 ni D2A salvo incompatibilidad demostrada.
+El milestone funcional activo es **M6 — Evaluación farmacéutica/PRM–RNM/adherencia**. M6-A aporta la referencia clínica farmacéutica canónica; M6-B cierra la identidad de contenidos de informe, los targets evaluativos atómicos y la frontera estructural de evidencia candidata; M6-C prepara de forma determinista, mínima y allowlisted el contexto de adjudicación fijado a sesión, versión, transcript y target set; M6-D1A aporta los contratos puros, batch plan, fingerprints y validación fail-closed; M6-D1B conecta esos contratos con prompt versionado, Structured Outputs, runtime OpenAI server-owned allowlisted y orquestación secuencial sin retries ni aceptación parcial; M6-D2A añade la unión canónica de mensajes del alumno, autoridad mínima, contratos de claims no representados, offsets literales, IDs server-owned y validación fail-closed sin conocimiento externo; M6-D2B conecta esa frontera con prompt/policy versionados, transport estricto, runtime OpenAI candidato server-owned y una única ejecución fail-fast, conservando `UNSUPPORTED` como ausencia de sustento en la autoridad suministrada y no como juicio clínico externo. `gpt-5.6-sol` permanece como candidato pendiente de la aceptación live M6-D3. El siguiente incremento es M6-D3, sin reabrir D1 ni D2 salvo incompatibilidad demostrada.
 
 Antes de implementar cada incremento de M6:
 
@@ -47,7 +47,7 @@ M2 Editor docente estructurado ── M3 Generador,      │
 
 M4 Runtime seguro del paciente [CLOSED]
 M5 Motor de protocolos SPFA [CLOSED]
-  └─ M6 Evaluación farmacéutica/PRM–RNM/adherencia [PARTIAL — A/B/C/D1A CLOSED]
+  └─ M6 Evaluación farmacéutica/PRM–RNM/adherencia [PARTIAL — A/B/C/D1/D2 CLOSED]
        ├─ M7 Evaluación de comunicación
        └─ M8 Cuestionario post-caso
             └─ M9 Resultados y feedback
