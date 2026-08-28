@@ -1,10 +1,10 @@
 import { zodTextFormat } from 'openai/helpers/zod';
 
 import type { PharmaceuticalD1SemanticBatchRequestV2 } from './pharmaceutical-d1-adjudication-types';
-import { PHARMACEUTICAL_D1_PROMPT_VERSION_V1 } from './pharmaceutical-d1-adjudication-types';
+import { PHARMACEUTICAL_D1_PROMPT_VERSION_V2 } from './pharmaceutical-d1-adjudication-types';
 import { PHARMACEUTICAL_D1_PROVIDER_BATCH_RESULT_SCHEMA_V1 } from './validate-pharmaceutical-d1-provider-result';
 
-export const PHARMACEUTICAL_D1_SEMANTIC_INSTRUCTIONS_V1 = `
+export const PHARMACEUTICAL_D1_SEMANTIC_INSTRUCTIONS_V2 = `
 Eres un adjudicador semántico de desempeño farmacéutico observable en una entrevista.
 
 FUNCIÓN ÚNICA
@@ -32,7 +32,10 @@ VERDICTS
 
 EVIDENCIA
 - Cita exclusivamente messageRef y evidenceKind permitidos dentro de studentCandidates del mismo target.
-- excerpt debe ser un substring literal, exacto y no vacío del untrustedContent de ese mensaje student.
+- excerpt debe ser el span literal, exacto, no vacío y mínimo suficiente del untrustedContent para demostrar, contradecir o sustentar incertidumbre del target.
+- No incluyas texto irrelevante adyacente cuando una cláusula menor sea evidencia suficiente.
+- evidenceKind no es una clasificación clínica libre: elígelo exclusivamente entre los candidateEvidenceKinds allowlisted para ese messageRef y target; no lo inventes.
+- Si varios evidenceKind son compatibles estructuralmente, elige el que describa la función observable de la evidencia: STUDENT_QUESTION explora u obtiene información; STUDENT_INTERPRETATION expresa una interpretación o conclusión; STUDENT_DECISION adopta una decisión; STUDENT_ACTION realiza o propone una actuación observable.
 - No cites mensajes patient, no parafrasees y no normalices el texto citado.
 `.trim();
 
@@ -47,7 +50,7 @@ export type OpenAiPharmaceuticalD1SemanticTransportRequestV1 = Readonly<{
 }>;
 
 export type OpenAiPharmaceuticalD1SemanticParamsV1 = Readonly<{
-  instructions: typeof PHARMACEUTICAL_D1_SEMANTIC_INSTRUCTIONS_V1;
+  instructions: typeof PHARMACEUTICAL_D1_SEMANTIC_INSTRUCTIONS_V2;
   input: string;
   text: Readonly<{
     format: typeof OPENAI_PHARMACEUTICAL_D1_TEXT_FORMAT_V1;
@@ -57,7 +60,7 @@ export type OpenAiPharmaceuticalD1SemanticParamsV1 = Readonly<{
 export function buildOpenAiPharmaceuticalD1SemanticParamsV1(
   request: PharmaceuticalD1SemanticBatchRequestV2,
 ): OpenAiPharmaceuticalD1SemanticParamsV1 {
-  if (request.promptVersion !== PHARMACEUTICAL_D1_PROMPT_VERSION_V1) {
+  if (request.promptVersion !== PHARMACEUTICAL_D1_PROMPT_VERSION_V2) {
     throw new TypeError(
       'semanticRequest.promptVersion must match the server-owned D1 prompt version',
     );
@@ -67,7 +70,7 @@ export function buildOpenAiPharmaceuticalD1SemanticParamsV1(
     semanticRequest: structuredClone(request),
   };
   return Object.freeze({
-    instructions: PHARMACEUTICAL_D1_SEMANTIC_INSTRUCTIONS_V1,
+    instructions: PHARMACEUTICAL_D1_SEMANTIC_INSTRUCTIONS_V2,
     input: JSON.stringify(transportRequest),
     text: Object.freeze({ format: OPENAI_PHARMACEUTICAL_D1_TEXT_FORMAT_V1 }),
   });

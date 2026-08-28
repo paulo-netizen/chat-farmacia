@@ -3,10 +3,10 @@
 ## Baseline oficial
 
 - **Fecha del baseline:** 28 de agosto de 2026.
-- **Commit funcional de referencia:** `671c08822cadc8fe066c6597fd322ffc2a26d398` (`Complete M6-D2A pharmaceutical claim contracts`).
-- **Progreso global:** **49.25%**.
+- **Commit funcional de referencia:** `3bae1167fef0f584a79a432edbcbc0a5e4a52ac6` (`Complete M6-D2 pharmaceutical claim adjudication`).
+- **Progreso global:** **49.37%**.
 - **M5:** **CLOSED / COMPLETE**.
-- **Suite actual:** **2588 PASS / 24 SKIPPED**.
+- **Suite actual:** **2620 PASS / 25 SKIPPED**.
 - **TypeScript:** **PASS**.
 
 Este documento es la fuente canónica del estado y del progreso global del proyecto. [`PLAN.md`](../../PLAN.md) conserva el roadmap técnico y el orden de ejecución, sin mantener una segunda tabla de porcentajes.
@@ -29,13 +29,13 @@ Los pesos y porcentajes se expresan como fracciones para el cálculo; por ejempl
 | M3 | Generador, auditor y publicación | PARTIAL | 55% | 11% | 6.05% |
 | M4 | Runtime seguro del paciente | CLOSED | 100% | 10% | 10.00% |
 | M5 | Motor de protocolos SPFA | CLOSED | 100% | 15% | 15.00% |
-| M6 | Evaluación farmacéutica/PRM–RNM/adherencia | PARTIAL | 45% | 12% | 5.40% |
+| M6 | Evaluación farmacéutica/PRM–RNM/adherencia | PARTIAL | 46% | 12% | 5.52% |
 | M7 | Evaluación de comunicación | NOT STARTED | 0% | 7% | 0.00% |
 | M8 | Cuestionario post-caso | NOT STARTED | 0% | 7% | 0.00% |
 | M9 | Resultados y feedback | NOT STARTED | 0% | 5% | 0.00% |
 | M10 | Analítica y revisión docente | NOT STARTED | 0% | 4% | 0.00% |
 | M11 | Hardening y observabilidad final | NOT STARTED | 0% | 3% | 0.00% |
-| **Total** |  |  |  | **100%** | **49.25%** |
+| **Total** |  |  |  | **100%** | **49.37%** |
 
 ## Regla estable de progreso
 
@@ -100,17 +100,17 @@ El cierre corresponde al commit `b2879cec7824968bcc0b6e3bca80852fa9cf3359`. Véa
 ### M6 — Evaluación farmacéutica/PRM–RNM/adherencia
 
 **Objetivo:** evaluar razonamiento farmacéutico, PRM/RNM, adherencia, barreras e intervención con evidencia.
-**Estado:** **PARTIAL — 45%**.
+**Estado:** **PARTIAL — 46%**.
 
-Completado: M6-A, proyección clínica farmacéutica canónica, pura, server-owned y allowlisted desde `EvaluatorViewV2`, con identidad/versiones, multiplicidades, relaciones y validación fail-closed; M6-B1, identidad opaca y estable server-owned para contenidos esenciales de informe; M6-B2, targets clínicos atómicos con IDs/fingerprint deterministas, expectativas docentes opcionales `ALL_OF`/`ONE_OF`, universo estructural de evidencia candidata y referencias literales fijadas a sesión, versión, transcript y target set; M6-C, preparación pura, determinista y fail-closed de un packet mínimo por target, con identidades farmacológicas legibles resueltas desde `PatientRuntimeViewV2`, memberships docentes, candidatos agrupados, contexto de adquisición separado, estados estructurales y fingerprint propio; M6-D1A, contratos puros de adjudicación por target, batch plan exhaustivo y versionado, requests/fingerprints independientes de provider/model, schemas estrictos, reconstrucción server-owned y validación fail-closed del resultado provider y del envelope global; M6-D1B, prompt productivo versionado, transport Structured Outputs 1:1 con D1A, modelo candidato `gpt-5.6-sol` allowlisted server-side, runtime OpenAI sin fallback ni retries y orquestación secuencial fail-fast con IDs server-owned y cero llamadas para shells estructurales; M6-D2A, unión canónica y deduplicada de todos los mensajes student de los packets M6-C, proyección mínima de autoridad, contratos estrictos `CONTRADICTORY`/`UNSUPPORTED`, offsets literales reproducibles, `claimId` y fingerprints server-owned, orden canónico y bloqueo estructural de duplicación D1 demostrable; M6-D2B, instrucciones/policy versionadas y alineadas, Structured Outputs 1:1 con D2A, modelo candidato `gpt-5.6-sol` allowlisted server-side, runtime sin fallback ni retries y orquestación de una sola llamada por sesión con cero llamadas para conjuntos student vacíos, metadatos seguros y reconstrucción server-owned. Los mensajes del paciente solo aportan contexto de adquisición y no entran en el claim lane. `UNSUPPORTED` significa únicamente no sustentado por la autoridad suministrada y queda como señal futura de revisión, nunca como falsedad, safety o penalización automática. Los informes históricos siguen siendo válidos, pero no reciben IDs ni targets de contenido sintéticos.
+Completado: M6-A, proyección clínica farmacéutica canónica, pura, server-owned y allowlisted desde `EvaluatorViewV2`, con identidad/versiones, multiplicidades, relaciones y validación fail-closed; M6-B1, identidad opaca y estable server-owned para contenidos esenciales de informe; M6-B2, targets clínicos atómicos con IDs/fingerprint deterministas, expectativas docentes opcionales `ALL_OF`/`ONE_OF`, universo estructural de evidencia candidata y referencias literales fijadas a sesión, versión, transcript y target set; M6-C, preparación pura, determinista y fail-closed de un packet mínimo por target, con identidades farmacológicas legibles resueltas desde `PatientRuntimeViewV2`, memberships docentes, candidatos agrupados, contexto de adquisición separado, estados estructurales y fingerprint propio; M6-D1A, contratos puros de adjudicación por target, batch plan exhaustivo y versionado, requests/fingerprints independientes de provider/model, schemas estrictos, reconstrucción server-owned y validación fail-closed del resultado provider y del envelope global; M6-D1B, prompt productivo versionado, transport Structured Outputs 1:1 con D1A, modelo candidato `gpt-5.6-sol` allowlisted server-side, runtime OpenAI sin fallback ni retries y orquestación secuencial fail-fast con IDs server-owned y cero llamadas para shells estructurales; M6-D2A, unión canónica y deduplicada de todos los mensajes student de los packets M6-C, proyección mínima de autoridad, contratos estrictos `CONTRADICTORY`/`UNSUPPORTED`, offsets literales reproducibles, `claimId` y fingerprints server-owned, orden canónico y bloqueo estructural de duplicación D1 demostrable; M6-D2B, instrucciones/policy versionadas y alineadas, Structured Outputs 1:1 con D2A, modelo candidato server-owned y una única ejecución fail-fast; M6-D3A, matriz pre-registrada `pharmaceutical-d3-live-matrix/1`, fixtures/expectations/allowlists congelados, prompt D1 `/2`, presupuesto derivado de 82 calls, runner fail-fast, summaries seguros y live skip-by-default. Los mensajes del paciente solo aportan contexto de adquisición y no entran en el claim lane. `UNSUPPORTED` significa únicamente no sustentado por la autoridad suministrada y queda como señal futura de revisión, nunca como falsedad, safety o penalización automática. Los informes históricos siguen siendo válidos, pero no reciben IDs ni targets de contenido sintéticos.
 
 Subdivisión fija de M6-B dentro del milestone: M6-B1 = 4% (CLOSED) y M6-B2 = 8% (CLOSED). **M6-B = CLOSED / COMPLETE**.
 
 M6-C = 10% del milestone. **M6-C = CLOSED / COMPLETE**.
 
-Subdivisión fija de M6-D dentro del milestone: M6-D1A = 3% (CLOSED), M6-D1B = 4% (CLOSED), M6-D2A = 2% (CLOSED), M6-D2B = 2% (CLOSED) y M6-D3 = 3% (PENDING). **M6-D1 = CLOSED / COMPLETE. M6-D2 = CLOSED / COMPLETE. M6-D = PARTIAL**.
+Subdivisión fija de M6-D dentro del milestone: M6-D1A = 3% (CLOSED), M6-D1B = 4% (CLOSED), M6-D2A = 2% (CLOSED), M6-D2B = 2% (CLOSED), M6-D3A = 1% (CLOSED) y M6-D3B = 2% (PENDING). **M6-D1 = CLOSED / COMPLETE. M6-D2 = CLOSED / COMPLETE. M6-D3 = PARTIAL. M6-D = PARTIAL**.
 
-Pendiente: hardening/aceptación live D3, reglas clínicas versionadas, scoring, persistencia e integración con la evaluación global. `gpt-5.6-sol` sigue siendo candidato y no se considera aceptado productivamente hasta D3. Véase el [modelo de evaluación](04_EVALUATION_MODEL.md).
+Pendiente: aceptación live M6-D3B, reglas clínicas versionadas, scoring, persistencia e integración con la evaluación global. `gpt-5.6-sol` sigue siendo candidato y no se considera aceptado productivamente. Véanse el [modelo de evaluación](04_EVALUATION_MODEL.md) y la [matriz live pre-registrada](18_PHARMACEUTICAL_SEMANTIC_LIVE_ACCEPTANCE.md).
 
 ### M7 — Evaluación de comunicación
 
