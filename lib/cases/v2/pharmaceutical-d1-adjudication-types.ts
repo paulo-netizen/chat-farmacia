@@ -22,6 +22,8 @@ export const PHARMACEUTICAL_D1_PROMPT_VERSION_V1 =
   'pharmaceutical-d1-adjudication-prompt/1' as const;
 export const PHARMACEUTICAL_D1_PROMPT_VERSION_V2 =
   'pharmaceutical-d1-adjudication-prompt/2' as const;
+export const PHARMACEUTICAL_D1_PROMPT_VERSION_V3 =
+  'pharmaceutical-d1-adjudication-prompt/3' as const;
 
 export const PHARMACEUTICAL_D1_SEMANTIC_REQUEST_CONTRACT_VERSION_V1 =
   'pharmaceutical-d1-semantic-batch-request/1' as const;

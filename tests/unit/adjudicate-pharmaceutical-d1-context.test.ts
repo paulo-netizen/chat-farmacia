@@ -265,7 +265,7 @@ describe('M6-D1B pharmaceutical semantic orchestration', () => {
       lane: 'D1',
       provider: 'openai',
       responseModel: 'gpt-5.6-sol-observed',
-      promptVersion: 'pharmaceutical-d1-adjudication-prompt/2',
+      promptVersion: 'pharmaceutical-d1-adjudication-prompt/3',
       includedTargetRefs: [targetId(1)],
     });
     expect(result.executions[0].requestFingerprint.value).toMatch(/^[0-9a-f]{64}$/);

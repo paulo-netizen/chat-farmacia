@@ -8,7 +8,7 @@ import {
   type PharmaceuticalD1SemanticBatchV1,
 } from './pharmaceutical-d1-batch-types';
 import {
-  PHARMACEUTICAL_D1_PROMPT_VERSION_V2,
+  PHARMACEUTICAL_D1_PROMPT_VERSION_V3,
   PHARMACEUTICAL_D1_SEMANTIC_REQUEST_CONTRACT_VERSION_V1,
   type PharmaceuticalD1SemanticBatchRequestV2,
   type PharmaceuticalD1SemanticRequestFingerprintV1,
@@ -105,7 +105,7 @@ function buildRequestFromBatch(
 
 export function buildPharmaceuticalD1SemanticBatchRequestsV2(
   context: PharmaceuticalAdjudicationContextSetV2,
-  promptVersion: string = PHARMACEUTICAL_D1_PROMPT_VERSION_V2,
+  promptVersion: string = PHARMACEUTICAL_D1_PROMPT_VERSION_V3,
 ): readonly PharmaceuticalD1SemanticBatchRequestV2[] {
   return buildPharmaceuticalD1BatchPlanV1(context).semanticBatches.map((batch) =>
     buildRequestFromBatch(context, batch, promptVersion),
@@ -115,7 +115,7 @@ export function buildPharmaceuticalD1SemanticBatchRequestsV2(
 export function buildPharmaceuticalD1SemanticBatchRequestV2(
   context: PharmaceuticalAdjudicationContextSetV2,
   batchDomain: PharmaceuticalD1BatchDomainV1,
-  promptVersion: string = PHARMACEUTICAL_D1_PROMPT_VERSION_V2,
+  promptVersion: string = PHARMACEUTICAL_D1_PROMPT_VERSION_V3,
 ): PharmaceuticalD1SemanticBatchRequestV2 {
   const batch = buildPharmaceuticalD1BatchPlanV1(context).semanticBatches.find(
     (candidate) => candidate.batchDomain === batchDomain,
@@ -129,7 +129,7 @@ export function buildPharmaceuticalD1SemanticBatchRequestV2(
 export function validatePharmaceuticalD1SemanticBatchRequestV2(
   input: unknown,
   context: PharmaceuticalAdjudicationContextSetV2,
-  expectedPromptVersion: string = PHARMACEUTICAL_D1_PROMPT_VERSION_V2,
+  expectedPromptVersion: string = PHARMACEUTICAL_D1_PROMPT_VERSION_V3,
 ): PharmaceuticalD1SemanticBatchRequestV2 {
   const source = record(input, 'pharmaceuticalD1SemanticRequest');
   const batchDomain = source.batchDomain;

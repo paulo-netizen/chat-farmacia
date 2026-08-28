@@ -218,7 +218,7 @@ describe('M6-D1 semantic request identity', () => {
     const changedPrompt = buildPharmaceuticalD1SemanticBatchRequestV2(
       firstContext,
       'PRM',
-      'pharmaceutical-d1-adjudication-prompt/3',
+      'pharmaceutical-d1-adjudication-prompt/4',
     );
     const changedContent = buildPharmaceuticalD1SemanticBatchRequestV2(contentChanged, 'PRM');
     const { requestFingerprint: _requestFingerprint, ...baseCore } = base;
@@ -276,7 +276,7 @@ describe('M6-D1 semantic request identity', () => {
     expect(request.targets[0]).toEqual(hostile);
     expect(request.targets[0].targetRef).toBe(targetId(1));
     expect(request.batchDomain).toBe('REFERRAL_REPORT');
-    expect(request.promptVersion).toBe('pharmaceutical-d1-adjudication-prompt/2');
+    expect(request.promptVersion).toBe('pharmaceutical-d1-adjudication-prompt/3');
   });
 
   it('strictly rejects request changes and unknown properties against server-owned context', () => {

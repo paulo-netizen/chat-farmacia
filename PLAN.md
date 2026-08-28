@@ -21,11 +21,11 @@ La fuente canónica del progreso, los porcentajes, los pesos M0–M11 y el check
 - M10 — Analítica y revisión docente: **NOT STARTED**.
 - M11 — Hardening y observabilidad final: **NOT STARTED**.
 
-El repositorio dispone de una suite automatizada amplia. M6-A, M6-B, M6-C, M6-D1, M6-D2 y la preparación offline M6-D3A quedaron validados con contratos estrictos, tests automatizados y TypeScript correcto.
+El repositorio dispone de una suite automatizada amplia. M6-A, M6-B, M6-C, M6-D1, M6-D2, la preparación offline M6-D3A y la política versionada M6-D3R2 quedaron validados con contratos estrictos, tests automatizados y TypeScript correcto.
 
 ## Próximo frente funcional
 
-El milestone funcional activo es **M6 — Evaluación farmacéutica/PRM–RNM/adherencia**. M6-A aporta la referencia clínica farmacéutica canónica; M6-B cierra la identidad de contenidos de informe, los targets evaluativos atómicos y la frontera estructural de evidencia candidata; M6-C prepara de forma determinista, mínima y allowlisted el contexto de adjudicación fijado a sesión, versión, transcript y target set; M6-D1A aporta los contratos puros, batch plan, fingerprints y validación fail-closed; M6-D1B conecta esos contratos con prompt versionado, Structured Outputs, runtime OpenAI server-owned allowlisted y orquestación secuencial sin retries ni aceptación parcial; M6-D2A añade la unión canónica de mensajes del alumno, autoridad mínima, contratos de claims no representados, offsets literales, IDs server-owned y validación fail-closed sin conocimiento externo; M6-D2B conecta esa frontera con prompt/policy versionados, transport estricto, runtime OpenAI candidato server-owned y una única ejecución fail-fast, conservando `UNSUPPORTED` como ausencia de sustento en la autoridad suministrada y no como juicio clínico externo; M6-D3A congela la matriz, fixtures, expectations, allowlists, presupuesto y harness seguro previos al live, y versiona D1 a `pharmaceutical-d1-adjudication-prompt/2`. `gpt-5.6-sol` permanece como candidato pendiente de M6-D3B. El siguiente incremento es exclusivamente M6-D3B.
+El milestone funcional activo es **M6 — Evaluación farmacéutica/PRM–RNM/adherencia**. M6-A aporta la referencia clínica farmacéutica canónica; M6-B cierra la identidad de contenidos de informe, los targets evaluativos atómicos y la frontera estructural de evidencia candidata; M6-C prepara de forma determinista, mínima y allowlisted el contexto de adjudicación fijado a sesión, versión, transcript y target set; M6-D1A aporta los contratos puros, batch plan, fingerprints y validación fail-closed; M6-D1B conecta esos contratos con prompt versionado, Structured Outputs, runtime OpenAI server-owned allowlisted y orquestación secuencial sin retries ni aceptación parcial; M6-D2A añade la unión canónica de mensajes del alumno, autoridad mínima, contratos de claims no representados, offsets literales, IDs server-owned y validación fail-closed sin conocimiento externo; M6-D2B conecta esa frontera con prompt/policy versionados, transport estricto, runtime OpenAI candidato server-owned y una única ejecución fail-fast, conservando `UNSUPPORTED` como ausencia de sustento en la autoridad suministrada y no como juicio clínico externo; M6-D3A congeló la matriz `/1`, cuyo intento live permanece históricamente `REJECT`; M6-D3R2 versiona D1 a `pharmaceutical-d1-adjudication-prompt/3` y crea la matriz `/2` con múltiples spans exactos materialmente equivalentes, sin normalización. `gpt-5.6-sol` permanece como candidato. El siguiente incremento es exclusivamente un nuevo M6-D3B completo desde SMOKE.
 
 Antes de implementar cada incremento de M6:
 
@@ -47,7 +47,7 @@ M2 Editor docente estructurado ── M3 Generador,      │
 
 M4 Runtime seguro del paciente [CLOSED]
 M5 Motor de protocolos SPFA [CLOSED]
-  └─ M6 Evaluación farmacéutica/PRM–RNM/adherencia [PARTIAL — A/B/C/D1/D2/D3A CLOSED]
+  └─ M6 Evaluación farmacéutica/PRM–RNM/adherencia [PARTIAL — A/B/C/D1/D2/D3A/D3R2 CLOSED]
        ├─ M7 Evaluación de comunicación
        └─ M8 Cuestionario post-caso
             └─ M9 Resultados y feedback
@@ -92,7 +92,7 @@ M0/M1 y M2/M3 pueden cerrarse en paralelo, pero su deuda pendiente debe resolver
 
 ### M6–M11
 
-- M6: referencia clínica, identidad de contenidos esenciales, targets atómicos, contratos de evidencia candidata, preparación determinista del contexto, lanes D1/D2 completas y hardening/matriz D3A pre-registrada; pendientes aceptación live D3B, scoring, persistencia e integración;
+- M6: referencia clínica, identidad de contenidos esenciales, targets atómicos, contratos de evidencia candidata, preparación determinista del contexto, lanes D1/D2 completas, hardening D3A y política/matriz `/2` de D3R2; pendientes nueva aceptación live D3B desde SMOKE, scoring, persistencia e integración;
 - M7: evaluación de la comunicación farmacéutico-paciente;
 - M8: cuestionario post-caso;
 - M9: resultados globales y feedback;

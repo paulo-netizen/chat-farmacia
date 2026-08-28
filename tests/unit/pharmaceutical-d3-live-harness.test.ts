@@ -19,8 +19,9 @@ import {
   isPharmaceuticalD3LiveEnabledV1,
   parsePharmaceuticalD3LiveSelectionV1,
   pharmaceuticalD3FixtureV1,
+  PHARMACEUTICAL_D3_HISTORICAL_RESULT_V1,
   PHARMACEUTICAL_D3_LIVE_EXECUTION_ORDER_V1,
-  PHARMACEUTICAL_D3_LIVE_MATRIX_V1,
+  PHARMACEUTICAL_D3_LIVE_MATRIX_V2,
   runPharmaceuticalD3AcceptanceV1,
   runPharmaceuticalD3FixtureV1,
   type PharmaceuticalD3LiveFixtureV1,
@@ -105,25 +106,37 @@ function fakeFactory(overrides: Readonly<{
   return { factory, d1Calls, d2Calls };
 }
 
-describe('M6-D3A pre-registered matrix', () => {
+describe('M6-D3R2 pre-registered matrix', () => {
   it('freezes the explicit matrix identity, prompt versions and SHA-256 fingerprint', () => {
-    expect(PHARMACEUTICAL_D3_LIVE_MATRIX_V1.matrixVersion).toBe('pharmaceutical-d3-live-matrix/1');
-    expect(PHARMACEUTICAL_D3_LIVE_MATRIX_V1.promptVersions).toEqual({
-      d1: 'pharmaceutical-d1-adjudication-prompt/2',
+    expect(PHARMACEUTICAL_D3_LIVE_MATRIX_V2.matrixVersion).toBe('pharmaceutical-d3-live-matrix/2');
+    expect(PHARMACEUTICAL_D3_LIVE_MATRIX_V2.promptVersions).toEqual({
+      d1: 'pharmaceutical-d1-adjudication-prompt/3',
       d2: 'pharmaceutical-d2-claim-prompt/1',
     });
-    expect(PHARMACEUTICAL_D3_LIVE_MATRIX_V1.fingerprint).toEqual({
+    expect(PHARMACEUTICAL_D3_LIVE_MATRIX_V2.fingerprint).toEqual({
       algorithm: 'sha256',
-      canonicalization: 'pharmaceutical-d3-live-matrix-v1/1',
-      value: 'cc8d82fb2adcdbd72039053951997e3c54d4fe619c0b566dc936bd8cde4cf1da',
+      canonicalization: 'pharmaceutical-d3-live-matrix-v2/1',
+      value: 'd6fe321921abfff8073645e5db398f63b81d5c39abfc8dafc3d2397ea3c38a95',
     });
-    expect(Object.isFrozen(PHARMACEUTICAL_D3_LIVE_MATRIX_V1)).toBe(true);
-    expect(Object.isFrozen(PHARMACEUTICAL_D3_LIVE_MATRIX_V1.fixtures[0].expectedCallsPerRun))
+    expect(Object.isFrozen(PHARMACEUTICAL_D3_LIVE_MATRIX_V2)).toBe(true);
+    expect(Object.isFrozen(PHARMACEUTICAL_D3_LIVE_MATRIX_V2.fixtures[0].expectedCallsPerRun))
       .toBe(true);
   });
 
+  it('preserves the rejected matrix /1 identity and historical outcome unchanged', () => {
+    expect(PHARMACEUTICAL_D3_HISTORICAL_RESULT_V1).toEqual({
+      matrixVersion: 'pharmaceutical-d3-live-matrix/1',
+      matrixFingerprint: 'cc8d82fb2adcdbd72039053951997e3c54d4fe619c0b566dc936bd8cde4cf1da',
+      decision: 'REJECT',
+      fixtureId: 'SMOKE',
+      run: 1,
+      failure: 'D1 evidence excerpt retained terminal punctuation outside the exact allowlist',
+    });
+    expect(Object.isFrozen(PHARMACEUTICAL_D3_HISTORICAL_RESULT_V1)).toBe(true);
+  });
+
   it('contains exactly the seven pre-registered fixture classes', () => {
-    expect(PHARMACEUTICAL_D3_LIVE_MATRIX_V1.fixtures.map((fixture) => fixture.fixtureId))
+    expect(PHARMACEUTICAL_D3_LIVE_MATRIX_V2.fixtures.map((fixture) => fixture.fixtureId))
       .toEqual(['SMOKE', 'C1', 'C2', 'C3', 'S1', 'S2', 'Z0']);
   });
 
@@ -142,8 +155,8 @@ describe('M6-D3A pre-registered matrix', () => {
   });
 
   it('freezes one smoke run, five semantic runs, 100% threshold and no majority vote', () => {
-    expect(PHARMACEUTICAL_D3_LIVE_MATRIX_V1.repetitions).toEqual({ smoke: 1, semantic: 5 });
-    expect(PHARMACEUTICAL_D3_LIVE_MATRIX_V1.threshold).toEqual({
+    expect(PHARMACEUTICAL_D3_LIVE_MATRIX_V2.repetitions).toEqual({ smoke: 1, semantic: 5 });
+    expect(PHARMACEUTICAL_D3_LIVE_MATRIX_V2.threshold).toEqual({
       requiredFraction: 1, majorityVote: false,
     });
     expect(PHARMACEUTICAL_D3_LIVE_EXECUTION_ORDER_V1).toEqual([
@@ -151,11 +164,11 @@ describe('M6-D3A pre-registered matrix', () => {
     ]);
   });
 
-  it('pre-registers minimal literal allowlists and multiple-valid evidence without patient refs', () => {
+  it('pre-registers exact clause allowlists and multiple-valid evidence without patient refs', () => {
     const c1 = pharmaceuticalD3FixtureV1('C1');
     expect(c1.expectedD1.every((target) => target.allowedEvidenceOptions.length >= 1)).toBe(true);
     expect(c1.expectedD1.find((target) => target.aspect === 'PRM_STATUS')?.allowedEvidenceOptions)
-      .toHaveLength(2);
+      .toHaveLength(4);
     for (const target of c1.expectedD1) {
       for (const evidence of target.allowedEvidenceOptions) {
         const candidate = c1.context.targets
@@ -168,14 +181,75 @@ describe('M6-D3A pre-registered matrix', () => {
     }
   });
 
+  it('accepts exact declarative clauses with or without terminal punctuation', async () => {
+    const smoke = pharmaceuticalD3FixtureV1('SMOKE');
+    const expected = smoke.expectedD1[0];
+    expect(expected.allowedEvidenceOptions.map((item) => item.excerpt)).toEqual([
+      'Confirmo que hay PRM',
+      'Confirmo que hay PRM.',
+    ]);
+
+    for (const excerpt of ['Confirmo que hay PRM', 'Confirmo que hay PRM.']) {
+      const fake = fakeFactory({
+        d1Result: (fixture, request) => {
+          const value = d1ProviderResult(fixture, request);
+          const result = value.results[0] as any;
+          result.supportingEvidence = [{ ...result.supportingEvidence[0], excerpt }];
+          return value;
+        },
+      });
+      const summary = await runPharmaceuticalD3FixtureV1(smoke, 1, fake.factory);
+      expect(summary.decision).toBe('ACCEPT');
+    }
+  });
+
+  it('rejects adjacent irrelevant discourse while preserving exact comparison', async () => {
+    const extraDiscourse = 'Confirmo que hay PRM. Muchas gracias, seguimos.';
+    const smoke = pharmaceuticalD3FixtureV1('SMOKE');
+    expect(smoke.expectedD1[0].allowedEvidenceOptions.map((item) => item.excerpt))
+      .not.toContain(extraDiscourse);
+    const nonLiteral = fakeFactory({
+      d1Result: (fixture, request) => {
+        const value = d1ProviderResult(fixture, request);
+        const result = value.results[0] as any;
+        result.supportingEvidence = [{ ...result.supportingEvidence[0], excerpt: extraDiscourse }];
+        return value;
+      },
+    });
+    expect((await runPharmaceuticalD3FixtureV1(smoke, 1, nonLiteral.factory)).decision)
+      .not.toBe('ACCEPT');
+
+    const c1 = pharmaceuticalD3FixtureV1('C1');
+    const literalButOverbroad = fakeFactory({
+      d1Result: (fixture, request) => {
+        const value = d1ProviderResult(fixture, request);
+        const result = value.results[0] as any;
+        const messageRef = result.supportingEvidence[0].messageRef;
+        const candidate = request.targets[0].studentCandidates.find(
+          (item) => item.messageRef === messageRef,
+        )!;
+        result.supportingEvidence = [{
+          ...result.supportingEvidence[0],
+          excerpt: candidate.untrustedContent,
+        }];
+        return value;
+      },
+    });
+    const summary = await runPharmaceuticalD3FixtureV1(c1, 1, literalButOverbroad.factory);
+    expect(summary).toMatchObject({
+      decision: 'REJECT',
+      failure: { code: 'EXPECTATION_MISMATCH', path: 'd1.adjudications[0].evidence' },
+    });
+  });
+
   it('documents every structural evidence kind and the opaque-taxonomy limitation', () => {
-    expect(JSON.stringify(PHARMACEUTICAL_D3_LIVE_MATRIX_V1.fixtures)).toContain('student-only evidence');
-    expect(PHARMACEUTICAL_D3_LIVE_MATRIX_V1.limitations.join(' ')).toContain('NEEDS_TEACHER_DECISION');
-    expect(PHARMACEUTICAL_D3_LIVE_MATRIX_V1.limitations.join(' ')).toContain('conceptId');
-    expect(Object.keys(PHARMACEUTICAL_D3_LIVE_MATRIX_V1.evidenceKindDefinitions)).toEqual([
+    expect(JSON.stringify(PHARMACEUTICAL_D3_LIVE_MATRIX_V2.fixtures)).toContain('student-only evidence');
+    expect(PHARMACEUTICAL_D3_LIVE_MATRIX_V2.limitations.join(' ')).toContain('NEEDS_TEACHER_DECISION');
+    expect(PHARMACEUTICAL_D3_LIVE_MATRIX_V2.limitations.join(' ')).toContain('conceptId');
+    expect(Object.keys(PHARMACEUTICAL_D3_LIVE_MATRIX_V2.evidenceKindDefinitions)).toEqual([
       'STUDENT_QUESTION', 'STUDENT_INTERPRETATION', 'STUDENT_DECISION', 'STUDENT_ACTION',
     ]);
-    expect(PHARMACEUTICAL_D3_LIVE_MATRIX_V1.evidenceKindDefinitions.STUDENT_ACTION)
+    expect(PHARMACEUTICAL_D3_LIVE_MATRIX_V2.evidenceKindDefinitions.STUDENT_ACTION)
       .toContain('allowlisted');
   });
 
@@ -343,8 +417,8 @@ describe('M6-D3A acceptance runner hardening', () => {
       pharmaceuticalD3FixtureV1('SMOKE'), 1, fakeFactory().factory,
     );
     const artifact = buildPharmaceuticalD3EvidenceArtifactV1('a'.repeat(40), [summary], 'ACCEPT');
-    expect(artifact).toContain(PHARMACEUTICAL_D3_LIVE_MATRIX_V1.fingerprint.value);
-    expect(artifact).toContain('pharmaceutical-d1-adjudication-prompt/2');
+    expect(artifact).toContain(PHARMACEUTICAL_D3_LIVE_MATRIX_V2.fingerprint.value);
+    expect(artifact).toContain('pharmaceutical-d1-adjudication-prompt/3');
     expect(artifact).not.toMatch(/raw provider output|API key/i);
     expect(buildPharmaceuticalD3EvidenceArtifactV1('a'.repeat(40), [summary], 'ACCEPT'))
       .toBe(artifact);

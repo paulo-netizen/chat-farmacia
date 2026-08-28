@@ -1,10 +1,10 @@
 import { zodTextFormat } from 'openai/helpers/zod';
 
 import type { PharmaceuticalD1SemanticBatchRequestV2 } from './pharmaceutical-d1-adjudication-types';
-import { PHARMACEUTICAL_D1_PROMPT_VERSION_V2 } from './pharmaceutical-d1-adjudication-types';
+import { PHARMACEUTICAL_D1_PROMPT_VERSION_V3 } from './pharmaceutical-d1-adjudication-types';
 import { PHARMACEUTICAL_D1_PROVIDER_BATCH_RESULT_SCHEMA_V1 } from './validate-pharmaceutical-d1-provider-result';
 
-export const PHARMACEUTICAL_D1_SEMANTIC_INSTRUCTIONS_V2 = `
+export const PHARMACEUTICAL_D1_SEMANTIC_INSTRUCTIONS_V3 = `
 Eres un adjudicador semántico de desempeño farmacéutico observable en una entrevista.
 
 FUNCIÓN ÚNICA
@@ -32,8 +32,9 @@ VERDICTS
 
 EVIDENCIA
 - Cita exclusivamente messageRef y evidenceKind permitidos dentro de studentCandidates del mismo target.
-- excerpt debe ser el span literal, exacto, no vacío y mínimo suficiente del untrustedContent para demostrar, contradecir o sustentar incertidumbre del target.
-- No incluyas texto irrelevante adyacente cuando una cláusula menor sea evidencia suficiente.
+- excerpt debe ser una cláusula literal, exacta, no vacía y clínicamente pertinente del untrustedContent para demostrar, contradecir o sustentar incertidumbre del target.
+- Puede conservar la puntuación terminal directamente unida a esa cláusula cuando forme parte de su representación literal.
+- Excluye otras cláusulas y cualquier discurso adyacente irrelevante; no elijas mecánicamente el substring más corto si deja de expresar por sí mismo la evidencia pertinente.
 - evidenceKind no es una clasificación clínica libre: elígelo exclusivamente entre los candidateEvidenceKinds allowlisted para ese messageRef y target; no lo inventes.
 - Si varios evidenceKind son compatibles estructuralmente, elige el que describa la función observable de la evidencia: STUDENT_QUESTION explora u obtiene información; STUDENT_INTERPRETATION expresa una interpretación o conclusión; STUDENT_DECISION adopta una decisión; STUDENT_ACTION realiza o propone una actuación observable.
 - No cites mensajes patient, no parafrasees y no normalices el texto citado.
@@ -50,7 +51,7 @@ export type OpenAiPharmaceuticalD1SemanticTransportRequestV1 = Readonly<{
 }>;
 
 export type OpenAiPharmaceuticalD1SemanticParamsV1 = Readonly<{
-  instructions: typeof PHARMACEUTICAL_D1_SEMANTIC_INSTRUCTIONS_V2;
+  instructions: typeof PHARMACEUTICAL_D1_SEMANTIC_INSTRUCTIONS_V3;
   input: string;
   text: Readonly<{
     format: typeof OPENAI_PHARMACEUTICAL_D1_TEXT_FORMAT_V1;
@@ -60,7 +61,7 @@ export type OpenAiPharmaceuticalD1SemanticParamsV1 = Readonly<{
 export function buildOpenAiPharmaceuticalD1SemanticParamsV1(
   request: PharmaceuticalD1SemanticBatchRequestV2,
 ): OpenAiPharmaceuticalD1SemanticParamsV1 {
-  if (request.promptVersion !== PHARMACEUTICAL_D1_PROMPT_VERSION_V2) {
+  if (request.promptVersion !== PHARMACEUTICAL_D1_PROMPT_VERSION_V3) {
     throw new TypeError(
       'semanticRequest.promptVersion must match the server-owned D1 prompt version',
     );
@@ -70,7 +71,7 @@ export function buildOpenAiPharmaceuticalD1SemanticParamsV1(
     semanticRequest: structuredClone(request),
   };
   return Object.freeze({
-    instructions: PHARMACEUTICAL_D1_SEMANTIC_INSTRUCTIONS_V2,
+    instructions: PHARMACEUTICAL_D1_SEMANTIC_INSTRUCTIONS_V3,
     input: JSON.stringify(transportRequest),
     text: Object.freeze({ format: OPENAI_PHARMACEUTICAL_D1_TEXT_FORMAT_V1 }),
   });

@@ -10,7 +10,7 @@ import { pharmaceuticalD1BatchDomainForAspectV1 } from '../../../lib/cases/v2/bu
 import { buildPharmaceuticalEvaluationTargetSetV2 } from '../../../lib/cases/v2/build-pharmaceutical-evaluation-target-set';
 import { buildPharmaceuticalSessionEvidenceCandidatesV2 } from '../../../lib/cases/v2/build-pharmaceutical-session-evidence-candidates';
 import {
-  PHARMACEUTICAL_D1_PROMPT_VERSION_V2,
+  PHARMACEUTICAL_D1_PROMPT_VERSION_V3,
   type PharmaceuticalD1CanonicalStudentEvidenceRefV2,
   type PharmaceuticalD1ProviderTargetResultV1,
   type PharmaceuticalTargetSemanticAdjudicationSetV2,
@@ -58,6 +58,18 @@ export const PHARMACEUTICAL_D3_LIVE_MATRIX_VERSION_V1 =
   'pharmaceutical-d3-live-matrix/1' as const;
 export const PHARMACEUTICAL_D3_LIVE_MATRIX_FINGERPRINT_V1 =
   'cc8d82fb2adcdbd72039053951997e3c54d4fe619c0b566dc936bd8cde4cf1da' as const;
+export const PHARMACEUTICAL_D3_HISTORICAL_RESULT_V1 = Object.freeze({
+  matrixVersion: PHARMACEUTICAL_D3_LIVE_MATRIX_VERSION_V1,
+  matrixFingerprint: PHARMACEUTICAL_D3_LIVE_MATRIX_FINGERPRINT_V1,
+  decision: 'REJECT' as const,
+  fixtureId: 'SMOKE' as const,
+  run: 1 as const,
+  failure: 'D1 evidence excerpt retained terminal punctuation outside the exact allowlist' as const,
+});
+export const PHARMACEUTICAL_D3_LIVE_MATRIX_VERSION_V2 =
+  'pharmaceutical-d3-live-matrix/2' as const;
+export const PHARMACEUTICAL_D3_LIVE_MATRIX_FINGERPRINT_V2 =
+  'd6fe321921abfff8073645e5db398f63b81d5c39abfc8dafc3d2397ea3c38a95' as const;
 export const PHARMACEUTICAL_D3_LIVE_MODEL_V1 = 'gpt-5.6-sol' as const;
 export const PHARMACEUTICAL_D3_LIVE_EXECUTION_ORDER_V1 = Object.freeze([
   'SMOKE', 'C3', 'C2', 'C1', 'S1', 'S2',
@@ -107,9 +119,9 @@ export type PharmaceuticalD3LiveFixtureV1 = Readonly<{
   criticalBoundaries: readonly string[];
 }>;
 
-export type PharmaceuticalD3LiveMatrixV1 = Readonly<{
+export type PharmaceuticalD3LiveMatrixV2 = Readonly<{
   schemaVersion: '2.0';
-  matrixVersion: typeof PHARMACEUTICAL_D3_LIVE_MATRIX_VERSION_V1;
+  matrixVersion: typeof PHARMACEUTICAL_D3_LIVE_MATRIX_VERSION_V2;
   model: typeof PHARMACEUTICAL_D3_LIVE_MODEL_V1;
   promptVersions: Readonly<{ d1: string; d2: string }>;
   policyVersions: Readonly<{ d2: string }>;
@@ -132,7 +144,7 @@ export type PharmaceuticalD3LiveMatrixV1 = Readonly<{
   limitations: readonly string[];
   fingerprint: Readonly<{
     algorithm: 'sha256';
-    canonicalization: 'pharmaceutical-d3-live-matrix-v1/1';
+    canonicalization: 'pharmaceutical-d3-live-matrix-v2/1';
     value: string;
   }>;
 }>;
@@ -556,6 +568,28 @@ function evidenceOption(
   };
 }
 
+function exactDeclarativeClauseEvidenceOptions(
+  context: PharmaceuticalAdjudicationContextSetV2,
+  aspect: PharmaceuticalEvaluationTargetAspectV2,
+  messageRef: string,
+  clauses: readonly string[],
+  evidenceKind: PharmaceuticalStudentEvidenceKindV2,
+): PharmaceuticalD3AllowedEvidenceOptionV1[] {
+  const candidate = candidateForMessage(targetByAspect(context, aspect), messageRef);
+  const variants = new Set<string>();
+  for (const clause of clauses) {
+    variants.add(clause);
+    if (clause.endsWith('.')) {
+      variants.add(clause.slice(0, -1));
+    } else if (candidate.untrustedContent.includes(`${clause}.`)) {
+      variants.add(`${clause}.`);
+    }
+  }
+  return [...variants].map((excerpt) =>
+    evidenceOption(context, aspect, messageRef, excerpt, evidenceKind),
+  );
+}
+
 function d1Expectation(
   context: PharmaceuticalAdjudicationContextSetV2,
   aspect: PharmaceuticalEvaluationTargetAspectV2,
@@ -616,15 +650,27 @@ function c1Fixture(): PharmaceuticalD3LiveFixtureV1 {
       clinicalRef: { kind: 'CONCLUSION', conclusionRef: 'conclusion_d3000000-0000-4000-8000-000000000001' as never },
       expectedValue: target.expected,
     });
-    const options = [evidenceOption(context, target.aspect, messageRef, excerpt, kind)];
+    const options = exactDeclarativeClauseEvidenceOptions(
+      context,
+      target.aspect,
+      messageRef,
+      [excerpt],
+      kind,
+    );
     if (target.aspect === 'PRM_STATUS') {
-      options.push(evidenceOption(context, target.aspect, '8', excerpt, kind));
+      options.push(...exactDeclarativeClauseEvidenceOptions(
+        context,
+        target.aspect,
+        '8',
+        [excerpt],
+        kind,
+      ));
     }
     return d1Expectation(context, target.aspect, 'CORRECTLY_DEMONSTRATED', options);
   });
   return {
     fixtureId: 'C1',
-    purpose: 'breadth, semantic equivalence, acquisition, minimal spans and hostile data',
+    purpose: 'breadth, semantic equivalence, acquisition, exact clause spans and hostile data',
     repetitions: 5,
     context,
     enabledLanes: { d1: true, d2: true },
@@ -633,7 +679,7 @@ function c1Fixture(): PharmaceuticalD3LiveFixtureV1 {
     expectedD2: [],
     criticalBoundaries: [
       'all current D1 aspects', 'semantic equivalence', 'student-only evidence',
-      'minimal literal span', 'multiple valid evidence', 'injection resistance',
+      'exact allowlisted clause spans', 'multiple valid evidence', 'injection resistance',
     ],
   };
 }
@@ -666,22 +712,42 @@ function c2Fixture(): PharmaceuticalD3LiveFixtureV1 {
         evidenceOption(context, 'PRM_CLASSIFICATION', '1', 'Clasifico el PRM como PRM-OPUESTO', 'STUDENT_INTERPRETATION'),
       ]),
       d1Expectation(context, 'PRM_MEDICATION_SCOPE', 'INCORRECT_OR_CONTRADICTED', [
-        evidenceOption(context, 'PRM_MEDICATION_SCOPE', '1', 'lo vinculo al Medicamento B', 'STUDENT_INTERPRETATION'),
+        ...exactDeclarativeClauseEvidenceOptions(
+          context, 'PRM_MEDICATION_SCOPE', '1',
+          ['lo vinculo al Medicamento B'], 'STUDENT_INTERPRETATION',
+        ),
       ]),
       d1Expectation(context, 'RNM_CLASSIFICATION', 'INCORRECT_OR_CONTRADICTED', [
         evidenceOption(context, 'RNM_CLASSIFICATION', '2', 'Clasifico el RNM como RNM-OPUESTO', 'STUDENT_INTERPRETATION'),
       ]),
       d1Expectation(context, 'RNM_MEDICATION_SCOPE', 'INCORRECT_OR_CONTRADICTED', [
-        evidenceOption(context, 'RNM_MEDICATION_SCOPE', '2', 'lo vinculo al Medicamento A', 'STUDENT_INTERPRETATION'),
+        ...exactDeclarativeClauseEvidenceOptions(
+          context, 'RNM_MEDICATION_SCOPE', '2',
+          ['lo vinculo al Medicamento A'], 'STUDENT_INTERPRETATION',
+        ),
       ]),
       d1Expectation(context, 'ADHERENCE_STATUS', 'UNCERTAIN', [
-        evidenceOption(context, 'ADHERENCE_STATUS', '3', 'La adherencia parece problemática, pero no puedo determinar el estado', 'STUDENT_INTERPRETATION'),
+        ...exactDeclarativeClauseEvidenceOptions(
+          context, 'ADHERENCE_STATUS', '3',
+          ['La adherencia parece problemática, pero no puedo determinar el estado'],
+          'STUDENT_INTERPRETATION',
+        ),
       ]),
       d1Expectation(context, 'ADHERENCE_TYPE', 'INCORRECT_OR_CONTRADICTED', [
-        evidenceOption(context, 'ADHERENCE_TYPE', '4', 'la falta de adherencia es intentional', 'STUDENT_INTERPRETATION'),
+        ...exactDeclarativeClauseEvidenceOptions(
+          context, 'ADHERENCE_TYPE', '4',
+          [
+            'la falta de adherencia es intentional',
+            'Concluyo que la falta de adherencia es intentional',
+          ],
+          'STUDENT_INTERPRETATION',
+        ),
       ]),
       d1Expectation(context, 'REFERRAL_URGENCY', 'INCORRECT_OR_CONTRADICTED', [
-        evidenceOption(context, 'REFERRAL_URGENCY', '5', 'La derivación debe ser non_urgent', 'STUDENT_DECISION'),
+        ...exactDeclarativeClauseEvidenceOptions(
+          context, 'REFERRAL_URGENCY', '5',
+          ['La derivación debe ser non_urgent'], 'STUDENT_DECISION',
+        ),
       ]),
       d1Expectation(context, 'REPORT_STATUS', 'NOT_DEMONSTRATED'),
     ],
@@ -810,7 +876,10 @@ function smokeFixture(): PharmaceuticalD3LiveFixtureV1 {
     enabledLanes: { d1: true, d2: true },
     expectedCallsPerRun: { d1: 1, d2: 1 },
     expectedD1: [d1Expectation(context, 'PRM_STATUS', 'CORRECTLY_DEMONSTRATED', [
-      evidenceOption(context, 'PRM_STATUS', '1', 'Confirmo que hay PRM', 'STUDENT_INTERPRETATION'),
+      ...exactDeclarativeClauseEvidenceOptions(
+        context, 'PRM_STATUS', '1',
+        ['Confirmo que hay PRM'], 'STUDENT_INTERPRETATION',
+      ),
     ])],
     expectedD2: [],
     criticalBoundaries: ['provider connectivity', 'strict schema', 'response model identity'],
@@ -840,7 +909,14 @@ function s1Fixture(): PharmaceuticalD3LiveFixtureV1 {
       d1Expectation(context, 'ADHERENCE_TYPE', 'NOT_DEMONSTRATED'),
       d1Expectation(context, 'BARRIER_CATEGORY', 'NOT_DEMONSTRATED'),
       d1Expectation(context, 'PROFESSIONAL_ACTION_CATEGORY', 'CORRECTLY_DEMONSTRATED', [
-        evidenceOption(context, 'PROFESSIONAL_ACTION_CATEGORY', '3', 'actuación profesional de referral', 'STUDENT_ACTION'),
+        ...exactDeclarativeClauseEvidenceOptions(
+          context, 'PROFESSIONAL_ACTION_CATEGORY', '3',
+          [
+            'actuación profesional de referral',
+            'Realizo la actuación profesional de referral',
+          ],
+          'STUDENT_ACTION',
+        ),
       ]),
     ],
     expectedD2: [],
@@ -864,7 +940,10 @@ function s2Fixture(): PharmaceuticalD3LiveFixtureV1 {
     enabledLanes: { d1: true, d2: true },
     expectedCallsPerRun: { d1: 1, d2: 1 },
     expectedD1: [d1Expectation(context, 'REFERRAL_NEED', 'INCORRECT_OR_CONTRADICTED', [
-      evidenceOption(context, 'REFERRAL_NEED', '1', 'Hay que derivarlo', 'STUDENT_DECISION'),
+      ...exactDeclarativeClauseEvidenceOptions(
+        context, 'REFERRAL_NEED', '1',
+        ['Hay que derivarlo'], 'STUDENT_DECISION',
+      ),
     ])],
     expectedD2: [],
     criticalBoundaries: ['not-required referral contradiction', 'D1/D2 non-duplication'],
@@ -915,10 +994,10 @@ const evidenceKindDefinitions = Object.freeze({
 
 const matrixCore = {
   schemaVersion: '2.0' as const,
-  matrixVersion: PHARMACEUTICAL_D3_LIVE_MATRIX_VERSION_V1,
+  matrixVersion: PHARMACEUTICAL_D3_LIVE_MATRIX_VERSION_V2,
   model: PHARMACEUTICAL_D3_LIVE_MODEL_V1,
   promptVersions: {
-    d1: PHARMACEUTICAL_D1_PROMPT_VERSION_V2,
+    d1: PHARMACEUTICAL_D1_PROMPT_VERSION_V3,
     d2: PHARMACEUTICAL_D2_CLAIM_PROMPT_VERSION_V1,
   },
   policyVersions: { d2: PHARMACEUTICAL_D2_CLAIM_POLICY_VERSION_V1 },
@@ -939,26 +1018,26 @@ const matrixCore = {
 };
 
 const computedMatrixFingerprint = sha256(matrixCore);
-if (computedMatrixFingerprint !== PHARMACEUTICAL_D3_LIVE_MATRIX_FINGERPRINT_V1) {
+if (computedMatrixFingerprint !== PHARMACEUTICAL_D3_LIVE_MATRIX_FINGERPRINT_V2) {
   throw new Error(
     'material D3 matrix change requires a new matrix version and live acceptance',
   );
 }
 
-export const PHARMACEUTICAL_D3_LIVE_MATRIX_V1: PharmaceuticalD3LiveMatrixV1 =
+export const PHARMACEUTICAL_D3_LIVE_MATRIX_V2: PharmaceuticalD3LiveMatrixV2 =
   deepFreeze({
     ...matrixCore,
     fingerprint: Object.freeze({
       algorithm: 'sha256',
-      canonicalization: 'pharmaceutical-d3-live-matrix-v1/1',
-      value: PHARMACEUTICAL_D3_LIVE_MATRIX_FINGERPRINT_V1,
+      canonicalization: 'pharmaceutical-d3-live-matrix-v2/1',
+      value: PHARMACEUTICAL_D3_LIVE_MATRIX_FINGERPRINT_V2,
     }),
   });
 
 export function pharmaceuticalD3FixtureV1(
   fixtureId: PharmaceuticalD3FixtureIdV1,
 ): PharmaceuticalD3LiveFixtureV1 {
-  const fixture = PHARMACEUTICAL_D3_LIVE_MATRIX_V1.fixtures.find(
+  const fixture = PHARMACEUTICAL_D3_LIVE_MATRIX_V2.fixtures.find(
     (candidate) => candidate.fixtureId === fixtureId,
   );
   if (fixture === undefined) throw new Error(`unknown D3 fixture ${fixtureId}`);
@@ -966,7 +1045,7 @@ export function pharmaceuticalD3FixtureV1(
 }
 
 export function calculatePharmaceuticalD3CallBudgetV1(
-  matrix: PharmaceuticalD3LiveMatrixV1 = PHARMACEUTICAL_D3_LIVE_MATRIX_V1,
+  matrix: PharmaceuticalD3LiveMatrixV2 = PHARMACEUTICAL_D3_LIVE_MATRIX_V2,
 ): PharmaceuticalD3CallBudgetV1 {
   const byFixture = Object.fromEntries(matrix.fixtures.map((fixture) => {
     const d1 = fixture.expectedCallsPerRun.d1 * fixture.repetitions;
@@ -1376,15 +1455,15 @@ export function buildPharmaceuticalD3EvidenceArtifactV1(
     '# M6-D3 pharmaceutical semantic live acceptance',
     '',
     `- Commit: \`${commitHash}\``,
-    `- Matrix: \`${PHARMACEUTICAL_D3_LIVE_MATRIX_V1.matrixVersion}\``,
-    `- Matrix fingerprint: \`${PHARMACEUTICAL_D3_LIVE_MATRIX_V1.fingerprint.value}\``,
-    `- D1 prompt: \`${PHARMACEUTICAL_D3_LIVE_MATRIX_V1.promptVersions.d1}\``,
-    `- D2 prompt: \`${PHARMACEUTICAL_D3_LIVE_MATRIX_V1.promptVersions.d2}\``,
-    `- D2 policy: \`${PHARMACEUTICAL_D3_LIVE_MATRIX_V1.policyVersions.d2}\``,
-    `- Context contract: \`${PHARMACEUTICAL_D3_LIVE_MATRIX_V1.contractVersions.context}\``,
-    `- D1 request: \`${PHARMACEUTICAL_D3_LIVE_MATRIX_V1.contractVersions.d1Request}\``,
-    `- D2 request: \`${PHARMACEUTICAL_D3_LIVE_MATRIX_V1.contractVersions.d2Request}\``,
-    `- Batch plan: \`${PHARMACEUTICAL_D3_LIVE_MATRIX_V1.contractVersions.batchPlan}\``,
+    `- Matrix: \`${PHARMACEUTICAL_D3_LIVE_MATRIX_V2.matrixVersion}\``,
+    `- Matrix fingerprint: \`${PHARMACEUTICAL_D3_LIVE_MATRIX_V2.fingerprint.value}\``,
+    `- D1 prompt: \`${PHARMACEUTICAL_D3_LIVE_MATRIX_V2.promptVersions.d1}\``,
+    `- D2 prompt: \`${PHARMACEUTICAL_D3_LIVE_MATRIX_V2.promptVersions.d2}\``,
+    `- D2 policy: \`${PHARMACEUTICAL_D3_LIVE_MATRIX_V2.policyVersions.d2}\``,
+    `- Context contract: \`${PHARMACEUTICAL_D3_LIVE_MATRIX_V2.contractVersions.context}\``,
+    `- D1 request: \`${PHARMACEUTICAL_D3_LIVE_MATRIX_V2.contractVersions.d1Request}\``,
+    `- D2 request: \`${PHARMACEUTICAL_D3_LIVE_MATRIX_V2.contractVersions.d2Request}\``,
+    `- Batch plan: \`${PHARMACEUTICAL_D3_LIVE_MATRIX_V2.contractVersions.batchPlan}\``,
     `- Requested model: \`${PHARMACEUTICAL_D3_LIVE_MODEL_V1}\``,
     `- Observed models: ${observedModels.map((model) => `\`${model}\``).join(', ') || 'none'}`,
     `- Decision: **${decision}**`,
