@@ -141,7 +141,7 @@ function emptyContext(): PharmaceuticalAdjudicationContextSetV2 {
 function result(findings: readonly unknown[] = []) {
   return {
     schemaVersion: '2.0',
-    contractVersion: 'pharmaceutical-d2-provider-result/1',
+    contractVersion: 'pharmaceutical-d2-provider-result/2',
     findings,
   };
 }
@@ -150,8 +150,7 @@ function finding(overrides: Record<string, unknown> = {}) {
   return {
     messageRef: '3',
     excerpt: actionMessage,
-    excerptStart: 0,
-    excerptEnd: actionMessage.length,
+    occurrenceIndex: 0,
     domain: 'PROFESSIONAL_RESPONSE',
     findingType: 'UNSUPPORTED',
     claimForm: 'RECOMMENDATION',
@@ -223,8 +222,7 @@ describe('M6-D2B pharmaceutical claim orchestration', () => {
       claimForm,
       excerpt,
       messageRef,
-      excerptStart: 0,
-      excerptEnd: excerpt.length,
+      occurrenceIndex: 0,
       domain,
       relatedClinicalRefs: [],
     })]));
@@ -256,7 +254,7 @@ describe('M6-D2B pharmaceutical claim orchestration', () => {
       lane: 'D2',
       provider: 'openai',
       responseModel: 'gpt-5.6-sol-2026-08-01',
-      promptVersion: 'pharmaceutical-d2-claim-prompt/2',
+      promptVersion: 'pharmaceutical-d2-claim-prompt/3',
       policyVersion: 'pharmaceutical-d2-claim-policy/1',
       requestFingerprint: adjudication.findingSet.requestFingerprint,
     });
@@ -265,8 +263,8 @@ describe('M6-D2B pharmaceutical claim orchestration', () => {
 
   it('creates deterministic server-owned claim IDs and restores canonical order', async () => {
     const early = finding({
-      messageRef: '1', excerpt: barrierMessage, excerptStart: 0,
-      excerptEnd: barrierMessage.length, domain: 'ADHERENCE', claimForm: 'CONCLUSION', relatedClinicalRefs: [],
+      messageRef: '1', excerpt: barrierMessage, occurrenceIndex: 0,
+      domain: 'ADHERENCE', claimForm: 'CONCLUSION', relatedClinicalRefs: [],
     });
     const late = finding();
     const first = await adjudicatePharmaceuticalD2ClaimsV2(
@@ -294,12 +292,12 @@ describe('M6-D2B pharmaceutical claim orchestration', () => {
   it('keeps additional barrier, RNM and therapeutic alternative claims eligible only as supplied findings', async () => {
     const findings = [
       finding({
-        messageRef: '1', excerpt: barrierMessage, excerptStart: 0,
-        excerptEnd: barrierMessage.length, domain: 'ADHERENCE', claimForm: 'CONCLUSION', relatedClinicalRefs: [],
+        messageRef: '1', excerpt: barrierMessage, occurrenceIndex: 0,
+        domain: 'ADHERENCE', claimForm: 'CONCLUSION', relatedClinicalRefs: [],
       }),
       finding({
-        messageRef: '10', excerpt: rnmMessage, excerptStart: 0,
-        excerptEnd: rnmMessage.length, domain: 'RNM_RELATION', claimForm: 'ASSERTION', relatedClinicalRefs: [],
+        messageRef: '10', excerpt: rnmMessage, occurrenceIndex: 0,
+        domain: 'RNM_RELATION', claimForm: 'ASSERTION', relatedClinicalRefs: [],
       }),
       finding(),
     ];
@@ -346,7 +344,7 @@ describe('M6-D2B adversarial D2A authority validation', () => {
     ['unknown message', (value) => { value.findings[0].messageRef = '999'; }],
     ['patient message', (value) => { value.findings[0].messageRef = '4'; }],
     ['bad excerpt', (value) => { value.findings[0].excerpt = 'invented'; }],
-    ['bad offsets', (value) => { value.findings[0].excerptStart = 1; }],
+    ['bad occurrence', (value) => { value.findings[0].occurrenceIndex = 99; }],
     ['unknown domain', (value) => { value.findings[0].domain = 'SAFETY'; }],
     ['unknown findingType', (value) => { value.findings[0].findingType = 'INCORRECT'; }],
     ['QUESTION claimForm', (value) => { value.findings[0].claimForm = 'QUESTION'; }],
@@ -366,6 +364,38 @@ describe('M6-D2B adversarial D2A authority validation', () => {
     await expect(adjudicatePharmaceuticalD2ClaimsV2(
       context(), runtime(provider).runtime, allocator(),
     )).rejects.toBeInstanceOf(PharmaceuticalD2SemanticAdjudicationErrorV2);
+  });
+
+  it('retains only allowlisted span-resolution metadata on the public D2 error', async () => {
+    let thrown: unknown;
+    try {
+      await adjudicatePharmaceuticalD2ClaimsV2(
+        context(),
+        runtime(result([finding({ occurrenceIndex: 9 })])).runtime,
+        allocator(),
+      );
+    } catch (cause) {
+      thrown = cause;
+    }
+    expect(thrown).toMatchObject({
+      code: 'INVALID_PROVIDER_RESULT',
+      stage: 'PROVIDER_RESULT_VALIDATION',
+      path: 'providerResult.findings[0].occurrenceIndex',
+      metadata: {
+        findingCount: 1,
+        findingIndex: 0,
+        excerptLength: actionMessage.length,
+        occurrenceIndex: 9,
+        exactOccurrenceCount: 1,
+        boundsValid: false,
+        resolutionStage: 'OCCURRENCE_SELECTION',
+        contractVersion: 'pharmaceutical-d2-provider-result/2',
+        promptVersion: 'pharmaceutical-d2-claim-prompt/3',
+      },
+    });
+    const serialized = JSON.stringify((thrown as any).metadata);
+    expect(serialized).not.toContain(actionMessage);
+    expect(serialized).not.toMatch(/messageRef|untrustedContent|requestFingerprint|contextFingerprint|sha256/i);
   });
 
   it('rejects a contradiction already structurally represented by a D1 target', async () => {

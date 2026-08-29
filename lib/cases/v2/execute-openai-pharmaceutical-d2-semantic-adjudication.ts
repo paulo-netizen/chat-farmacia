@@ -18,7 +18,7 @@ import {
   OPENAI_PHARMACEUTICAL_D2_CANDIDATE_MODEL,
   type PharmaceuticalD2SemanticProviderReceiptV2,
 } from './pharmaceutical-d2-semantic-runtime';
-import { PHARMACEUTICAL_D2_PROVIDER_RESULT_SCHEMA_V1 } from './validate-pharmaceutical-d2-provider-result';
+import { PHARMACEUTICAL_D2_PROVIDER_RESULT_SCHEMA_V2 } from './validate-pharmaceutical-d2-provider-result';
 
 export const OPENAI_PHARMACEUTICAL_D2_EXECUTION_LIMITS = Object.freeze({
   maxOutputTokens: 100_000,
@@ -207,7 +207,7 @@ export async function executeOpenAiPharmaceuticalD2SemanticClaimsV1(
     providerFailure('response.output_parsed', 'provider returned no parsed output');
   }
 
-  const parsed = PHARMACEUTICAL_D2_PROVIDER_RESULT_SCHEMA_V1.safeParse(
+  const parsed = PHARMACEUTICAL_D2_PROVIDER_RESULT_SCHEMA_V2.safeParse(
     response.output_parsed,
   );
   if (!parsed.success) {

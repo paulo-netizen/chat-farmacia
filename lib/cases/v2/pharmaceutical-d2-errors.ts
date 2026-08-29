@@ -13,6 +13,18 @@ export type PharmaceuticalD2SemanticAdjudicationErrorStageV2 =
   | 'EXECUTION_METADATA'
   | 'GLOBAL_VALIDATION';
 
+export type PharmaceuticalD2SafeErrorMetadataV2 = Readonly<{
+  findingCount?: number;
+  findingIndex?: number;
+  excerptLength?: number;
+  occurrenceIndex?: number;
+  exactOccurrenceCount?: number;
+  boundsValid?: boolean;
+  resolutionStage?: string;
+  contractVersion?: string;
+  promptVersion?: string;
+}>;
+
 export class PharmaceuticalD2SemanticAdjudicationErrorV2 extends Error {
   constructor(
     public readonly code: PharmaceuticalD2SemanticAdjudicationErrorCodeV2,
@@ -20,6 +32,7 @@ export class PharmaceuticalD2SemanticAdjudicationErrorV2 extends Error {
     public readonly path: string,
     message: string,
     cause?: unknown,
+    public readonly metadata?: PharmaceuticalD2SafeErrorMetadataV2,
   ) {
     super(`${code} at ${stage}.${path}: ${message}`);
     this.name = 'PharmaceuticalD2SemanticAdjudicationErrorV2';
@@ -40,6 +53,7 @@ export function pharmaceuticalD2SemanticErrorV2(
   path: string,
   message: string,
   cause?: unknown,
+  metadata?: PharmaceuticalD2SafeErrorMetadataV2,
 ): PharmaceuticalD2SemanticAdjudicationErrorV2 {
   return new PharmaceuticalD2SemanticAdjudicationErrorV2(
     code,
@@ -47,5 +61,6 @@ export function pharmaceuticalD2SemanticErrorV2(
     path,
     message,
     cause,
+    metadata === undefined ? undefined : Object.freeze({ ...metadata }),
   );
 }

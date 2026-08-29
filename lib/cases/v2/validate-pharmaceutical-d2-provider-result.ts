@@ -5,11 +5,19 @@ import {
 } from './build-pharmaceutical-d2-semantic-request';
 import {
   PHARMACEUTICAL_D2_PROVIDER_RESULT_CONTRACT_VERSION_V1,
+  PHARMACEUTICAL_D2_PROVIDER_RESULT_CONTRACT_VERSION_V2,
   type PharmaceuticalD2ClinicalRefV2,
   type PharmaceuticalD2ProviderFindingV1,
   type PharmaceuticalD2ProviderResultV1,
+  type PharmaceuticalD2ResolvedProviderFindingV2,
+  type PharmaceuticalD2ResolvedProviderResultV2,
   type PharmaceuticalD2SemanticRequestV2,
 } from './pharmaceutical-d2-claim-types';
+import type { PharmaceuticalD2SafeErrorMetadataV2 } from './pharmaceutical-d2-errors';
+import {
+  PharmaceuticalD2SpanResolutionErrorV2,
+  resolvePharmaceuticalD2LiteralSpanV2,
+} from './resolve-pharmaceutical-d2-literal-span';
 
 const CLINICAL_REF_SCHEMA = z.discriminatedUnion('kind', [
   z.object({ kind: z.literal('CONCLUSION'), conclusionRef: z.string() }).strict(),
@@ -35,15 +43,43 @@ export const PHARMACEUTICAL_D2_PROVIDER_RESULT_SCHEMA_V1 = z.object({
   findings: z.array(PROVIDER_FINDING_SCHEMA),
 }).strict();
 
+const PROVIDER_FINDING_SCHEMA_V2 = z.object({
+  messageRef: z.string(),
+  excerpt: z.string().min(1),
+  occurrenceIndex: z.number().int().nonnegative(),
+  domain: z.enum(['PRM', 'RNM_RELATION', 'ADHERENCE', 'PROFESSIONAL_RESPONSE', 'REFERRAL_REPORT']),
+  findingType: z.enum(['CONTRADICTORY', 'UNSUPPORTED']),
+  claimForm: z.enum(['ASSERTION', 'CONCLUSION', 'RECOMMENDATION']),
+  relatedClinicalRefs: z.array(CLINICAL_REF_SCHEMA),
+}).strict();
+
+export const PHARMACEUTICAL_D2_PROVIDER_RESULT_SCHEMA_V2 = z.object({
+  schemaVersion: z.literal('2.0'),
+  contractVersion: z.literal(PHARMACEUTICAL_D2_PROVIDER_RESULT_CONTRACT_VERSION_V2),
+  findings: z.array(PROVIDER_FINDING_SCHEMA_V2),
+}).strict();
+
 export class PharmaceuticalD2ProviderResultValidationError extends Error {
-  constructor(public readonly path: string, message: string) {
+  constructor(
+    public readonly path: string,
+    message: string,
+    public readonly metadata?: PharmaceuticalD2SafeErrorMetadataV2,
+  ) {
     super(`${path}: ${message}`);
     this.name = 'PharmaceuticalD2ProviderResultValidationError';
   }
 }
 
-function fail(path: string, message: string): never {
-  throw new PharmaceuticalD2ProviderResultValidationError(path, message);
+function fail(
+  path: string,
+  message: string,
+  metadata?: PharmaceuticalD2SafeErrorMetadataV2,
+): never {
+  throw new PharmaceuticalD2ProviderResultValidationError(
+    path,
+    message,
+    metadata === undefined ? undefined : Object.freeze({ ...metadata }),
+  );
 }
 
 function canonicalRefs(
@@ -66,7 +102,9 @@ function canonicalRefs(
     .map(([, ref]) => ref);
 }
 
-function materialKey(finding: PharmaceuticalD2ProviderFindingV1): string {
+function materialKey(
+  finding: PharmaceuticalD2ProviderFindingV1 | PharmaceuticalD2ResolvedProviderFindingV2,
+): string {
   return JSON.stringify([
     finding.messageRef,
     finding.excerptStart,
@@ -79,7 +117,7 @@ function materialKey(finding: PharmaceuticalD2ProviderFindingV1): string {
 }
 
 function isStructurallyCoveredD1Contradiction(
-  finding: PharmaceuticalD2ProviderFindingV1,
+  finding: PharmaceuticalD2ProviderFindingV1 | PharmaceuticalD2ResolvedProviderFindingV2,
   request: PharmaceuticalD2SemanticRequestV2,
 ): boolean {
   if (finding.findingType !== 'CONTRADICTORY' || finding.relatedClinicalRefs.length !== 1) {
@@ -91,6 +129,26 @@ function isStructurallyCoveredD1Contradiction(
     target.primaryClinicalRef !== undefined &&
     pharmaceuticalD2ClinicalRefKey(target.primaryClinicalRef) === findingRefKey,
   );
+}
+
+function safeParseMetadata(
+  input: unknown,
+  issuePath: readonly (string | number)[],
+  request: PharmaceuticalD2SemanticRequestV2,
+): PharmaceuticalD2SafeErrorMetadataV2 {
+  const source = typeof input === 'object' && input !== null && !Array.isArray(input)
+    ? input as Record<string, unknown>
+    : undefined;
+  const findings = Array.isArray(source?.findings) ? source.findings : undefined;
+  const findingIndex = issuePath[0] === 'findings' && typeof issuePath[1] === 'number'
+    ? issuePath[1]
+    : undefined;
+  return {
+    ...(findings === undefined ? {} : { findingCount: findings.length }),
+    ...(findingIndex === undefined ? {} : { findingIndex }),
+    contractVersion: PHARMACEUTICAL_D2_PROVIDER_RESULT_CONTRACT_VERSION_V2,
+    promptVersion: request.promptVersion,
+  };
 }
 
 export function validatePharmaceuticalD2ProviderResultV1(
@@ -154,6 +212,97 @@ export function validatePharmaceuticalD2ProviderResultV1(
   return {
     schemaVersion: '2.0',
     contractVersion: PHARMACEUTICAL_D2_PROVIDER_RESULT_CONTRACT_VERSION_V1,
+    findings,
+  };
+}
+
+export function validatePharmaceuticalD2ProviderResultV2(
+  input: unknown,
+  request: PharmaceuticalD2SemanticRequestV2,
+): PharmaceuticalD2ResolvedProviderResultV2 {
+  const parsed = PHARMACEUTICAL_D2_PROVIDER_RESULT_SCHEMA_V2.safeParse(input);
+  if (!parsed.success) {
+    const issue = parsed.error.issues[0];
+    const issuePath = ['providerResult', ...issue.path]
+      .join('.')
+      .replace(/\.([0-9]+)(?=\.|$)/g, '[$1]');
+    fail(issuePath, issue.message, safeParseMetadata(input, issue.path, request));
+  }
+
+  const messages = new Map(
+    request.studentMessages.messages.map((message) => [message.messageRef, message] as const),
+  );
+  const allowedRefKeys = new Set(
+    request.authorityProjection.allowedClinicalRefs.map(pharmaceuticalD2ClinicalRefKey),
+  );
+  const seenFindings = new Set<string>();
+  const findingCount = parsed.data.findings.length;
+  const findings = parsed.data.findings.map(
+    (source, index): PharmaceuticalD2ResolvedProviderFindingV2 => {
+      const path = `providerResult.findings[${index}]`;
+      const commonMetadata = {
+        findingCount,
+        findingIndex: index,
+        contractVersion: PHARMACEUTICAL_D2_PROVIDER_RESULT_CONTRACT_VERSION_V2,
+        promptVersion: request.promptVersion,
+      } as const;
+      const message = messages.get(source.messageRef as never);
+      if (message === undefined) {
+        fail(
+          `${path}.messageRef`,
+          'must reference a canonical student message',
+          commonMetadata,
+        );
+      }
+      let resolvedSpan: Readonly<{ excerptStart: number; excerptEnd: number }>;
+      try {
+        resolvedSpan = resolvePharmaceuticalD2LiteralSpanV2(
+          message.untrustedContent,
+          source.excerpt,
+          source.occurrenceIndex,
+        );
+      } catch (cause) {
+        if (cause instanceof PharmaceuticalD2SpanResolutionErrorV2) {
+          fail(`${path}.${cause.path}`, cause.message, {
+            ...commonMetadata,
+            ...cause.metadata,
+          });
+        }
+        throw cause;
+      }
+      const finding: PharmaceuticalD2ResolvedProviderFindingV2 = {
+        messageRef: source.messageRef as never,
+        excerpt: source.excerpt,
+        excerptStart: resolvedSpan.excerptStart,
+        excerptEnd: resolvedSpan.excerptEnd,
+        domain: source.domain,
+        findingType: source.findingType,
+        claimForm: source.claimForm,
+        relatedClinicalRefs: canonicalRefs(
+          source.relatedClinicalRefs,
+          allowedRefKeys,
+          `${path}.relatedClinicalRefs`,
+        ),
+      };
+      if (isStructurallyCoveredD1Contradiction(finding, request)) {
+        fail(
+          path,
+          'duplicates a contradiction structurally represented by an existing D1 target',
+          commonMetadata,
+        );
+      }
+      const key = materialKey(finding);
+      if (seenFindings.has(key)) {
+        fail(path, 'duplicates another provider finding', commonMetadata);
+      }
+      seenFindings.add(key);
+      return finding;
+    },
+  );
+
+  return {
+    schemaVersion: '2.0',
+    contractVersion: PHARMACEUTICAL_D2_PROVIDER_RESULT_CONTRACT_VERSION_V2,
     findings,
   };
 }

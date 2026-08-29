@@ -2,10 +2,13 @@ import { zodTextFormat } from 'openai/helpers/zod';
 
 import {
   PHARMACEUTICAL_D2_CLAIM_POLICY_VERSION_V1,
-  PHARMACEUTICAL_D2_CLAIM_PROMPT_VERSION_V2,
+  PHARMACEUTICAL_D2_CLAIM_PROMPT_VERSION_V3,
   type PharmaceuticalD2SemanticRequestV2,
 } from './pharmaceutical-d2-claim-types';
-import { PHARMACEUTICAL_D2_PROVIDER_RESULT_SCHEMA_V1 } from './validate-pharmaceutical-d2-provider-result';
+import {
+  PHARMACEUTICAL_D2_PROVIDER_RESULT_SCHEMA_V1,
+  PHARMACEUTICAL_D2_PROVIDER_RESULT_SCHEMA_V2,
+} from './validate-pharmaceutical-d2-provider-result';
 
 export const PHARMACEUTICAL_D2_SEMANTIC_INSTRUCTIONS_V1 = `
 Eres un detector semántico de afirmaciones clínicas explícitas del alumno que quedan fuera de la representación completa de los targets farmacéuticos D1 suministrados.
@@ -103,9 +106,37 @@ EVIDENCIA Y OUTPUT
 - No devuelvas claimId, semanticExecutionRef, provider/model metadata, requestFingerprint ni campos adicionales.
 `.trim();
 
+export const PHARMACEUTICAL_D2_SEMANTIC_INSTRUCTIONS_V3 =
+  PHARMACEUTICAL_D2_SEMANTIC_INSTRUCTIONS_V2.replace(
+    `EVIDENCIA Y OUTPUT
+- Cada finding cita un único messageRef student y excerpt debe copiarse literalmente del mensaje student original completo.
+- No parafrasees, no corrijas ortografía, no modifiques puntuación, no normalices Unicode y no apliques trim transformativo al excerpt.
+- excerptStart y excerptEnd son índices JavaScript UTF-16 [start,end), calculados sobre el mensaje original íntegro.
+- Cuenta unidades de código UTF-16; NO bytes UTF-8, Unicode code points ni grapheme clusters.
+- Debe cumplirse exactamente message.untrustedContent.slice(excerptStart,excerptEnd) === excerpt.
+- Si no puedes producir un span coherente, no inventes offsets ni excerpt.
+- No repares offsets ni busques otra ocurrencia del texto.
+- No emitas findings duplicados.
+- No devuelvas claimId, semanticExecutionRef, provider/model metadata, requestFingerprint ni campos adicionales.`,
+    `EVIDENCIA Y OUTPUT
+- Cada finding cita un único messageRef student y excerpt debe copiarse literalmente del mensaje student original completo.
+- No parafrasees, no corrijas ortografía, no modifiques puntuación, no normalices Unicode y no apliques trim transformativo al excerpt.
+- occurrenceIndex selecciona la ocurrencia exacta zero-based de excerpt entre todas sus coincidencias literales en el mensaje original, enumeradas de izquierda a derecha.
+- Si el mismo excerpt aparece varias veces, selecciona la ocurrencia que contiene la afirmación clínicamente pertinente; no inventes una ocurrencia.
+- No calcules ni devuelvas excerptStart o excerptEnd: el servidor resolverá los offsets JavaScript UTF-16 [start,end) de forma determinista.
+- Si no puedes copiar un excerpt literal y seleccionar una ocurrencia coherente, no inventes excerpt ni occurrenceIndex.
+- No emitas findings duplicados.
+- No devuelvas claimId, semanticExecutionRef, provider/model metadata, requestFingerprint ni campos adicionales.`,
+  );
+
 export const OPENAI_PHARMACEUTICAL_D2_TEXT_FORMAT_V1 = zodTextFormat(
   PHARMACEUTICAL_D2_PROVIDER_RESULT_SCHEMA_V1,
   'chatusal_pharmaceutical_d2_claims_v1',
+);
+
+export const OPENAI_PHARMACEUTICAL_D2_TEXT_FORMAT_V2 = zodTextFormat(
+  PHARMACEUTICAL_D2_PROVIDER_RESULT_SCHEMA_V2,
+  'chatusal_pharmaceutical_d2_claims_v2',
 );
 
 export type OpenAiPharmaceuticalD2SemanticTransportRequestV1 = Readonly<{
@@ -114,17 +145,17 @@ export type OpenAiPharmaceuticalD2SemanticTransportRequestV1 = Readonly<{
 }>;
 
 export type OpenAiPharmaceuticalD2SemanticParamsV1 = Readonly<{
-  instructions: typeof PHARMACEUTICAL_D2_SEMANTIC_INSTRUCTIONS_V2;
+  instructions: typeof PHARMACEUTICAL_D2_SEMANTIC_INSTRUCTIONS_V3;
   input: string;
   text: Readonly<{
-    format: typeof OPENAI_PHARMACEUTICAL_D2_TEXT_FORMAT_V1;
+    format: typeof OPENAI_PHARMACEUTICAL_D2_TEXT_FORMAT_V2;
   }>;
 }>;
 
 export function buildOpenAiPharmaceuticalD2SemanticParamsV1(
   request: PharmaceuticalD2SemanticRequestV2,
 ): OpenAiPharmaceuticalD2SemanticParamsV1 {
-  if (request.promptVersion !== PHARMACEUTICAL_D2_CLAIM_PROMPT_VERSION_V2) {
+  if (request.promptVersion !== PHARMACEUTICAL_D2_CLAIM_PROMPT_VERSION_V3) {
     throw new TypeError(
       'semanticRequest.promptVersion must match the server-owned D2 prompt version',
     );
@@ -139,8 +170,8 @@ export function buildOpenAiPharmaceuticalD2SemanticParamsV1(
     semanticRequest: structuredClone(request),
   };
   return Object.freeze({
-    instructions: PHARMACEUTICAL_D2_SEMANTIC_INSTRUCTIONS_V2,
+    instructions: PHARMACEUTICAL_D2_SEMANTIC_INSTRUCTIONS_V3,
     input: JSON.stringify(transportRequest),
-    text: Object.freeze({ format: OPENAI_PHARMACEUTICAL_D2_TEXT_FORMAT_V1 }),
+    text: Object.freeze({ format: OPENAI_PHARMACEUTICAL_D2_TEXT_FORMAT_V2 }),
   });
 }

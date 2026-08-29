@@ -16,8 +16,8 @@ import type { PharmaceuticalAdjudicationContextSetV2 } from '../../lib/cases/v2/
 import { PharmaceuticalD2SemanticAdjudicationErrorV2 } from '../../lib/cases/v2/pharmaceutical-d2-errors';
 import {
   buildOpenAiPharmaceuticalD2SemanticParamsV1,
-  OPENAI_PHARMACEUTICAL_D2_TEXT_FORMAT_V1,
-  PHARMACEUTICAL_D2_SEMANTIC_INSTRUCTIONS_V2,
+  OPENAI_PHARMACEUTICAL_D2_TEXT_FORMAT_V2,
+  PHARMACEUTICAL_D2_SEMANTIC_INSTRUCTIONS_V3,
 } from '../../lib/cases/v2/pharmaceutical-d2-prompt';
 import { OPENAI_PHARMACEUTICAL_D2_CANDIDATE_MODEL } from '../../lib/cases/v2/pharmaceutical-d2-semantic-runtime';
 
@@ -114,7 +114,7 @@ function request(input = context()) {
 function providerResult(findings: readonly unknown[] = []) {
   return {
     schemaVersion: '2.0',
-    contractVersion: 'pharmaceutical-d2-provider-result/1',
+    contractVersion: 'pharmaceutical-d2-provider-result/2',
     findings,
   };
 }
@@ -123,8 +123,7 @@ function providerFinding() {
   return {
     messageRef: '1',
     excerpt: message,
-    excerptStart: 0,
-    excerptEnd: message.length,
+    occurrenceIndex: 0,
     domain: 'PROFESSIONAL_RESPONSE',
     findingType: 'UNSUPPORTED',
     claimForm: 'RECOMMENDATION',
@@ -173,7 +172,7 @@ describe('M6-D2B server-owned semantic prompt and transport', () => {
     'NO emitas un finding D2 adicional',
     'No devuelvas rationale',
   ])('states the required server-owned principle: %s', (text) => {
-    expect(PHARMACEUTICAL_D2_SEMANTIC_INSTRUCTIONS_V2).toContain(text);
+    expect(PHARMACEUTICAL_D2_SEMANTIC_INSTRUCTIONS_V3).toContain(text);
   });
 
   it.each([
@@ -184,18 +183,18 @@ describe('M6-D2B server-owned semantic prompt and transport', () => {
     ['Le recomiendo suspender el medicamento.', 'RECOMMENDATION'],
     ['Podría plantearse suspenderlo, pero habría que confirmarlo.', 'no finding'],
   ])('materializes the speech-act example %s', (example, expected) => {
-    expect(PHARMACEUTICAL_D2_SEMANTIC_INSTRUCTIONS_V2).toContain(example);
-    expect(PHARMACEUTICAL_D2_SEMANTIC_INSTRUCTIONS_V2).toContain(expected);
+    expect(PHARMACEUTICAL_D2_SEMANTIC_INSTRUCTIONS_V3).toContain(example);
+    expect(PHARMACEUTICAL_D2_SEMANTIC_INSTRUCTIONS_V3).toContain(expected);
   });
 
   it('defines UNSUPPORTED only as absent supplied authority, not external clinical judgment', () => {
-    expect(PHARMACEUTICAL_D2_SEMANTIC_INSTRUCTIONS_V2).toContain(
+    expect(PHARMACEUTICAL_D2_SEMANTIC_INSTRUCTIONS_V3).toContain(
       'no está sustentada por authorityProjection',
     );
-    expect(PHARMACEUTICAL_D2_SEMANTIC_INSTRUCTIONS_V2).toContain(
+    expect(PHARMACEUTICAL_D2_SEMANTIC_INSTRUCTIONS_V3).toContain(
       'UNSUPPORTED NO significa clínicamente falsa',
     );
-    expect(PHARMACEUTICAL_D2_SEMANTIC_INSTRUCTIONS_V2).toContain(
+    expect(PHARMACEUTICAL_D2_SEMANTIC_INSTRUCTIONS_V3).toContain(
       'como máximo puede ser UNSUPPORTED',
     );
   });
@@ -207,12 +206,14 @@ describe('M6-D2B server-owned semantic prompt and transport', () => {
     'no modifiques puntuación',
     'no normalices Unicode',
     'no apliques trim transformativo',
-    'índices JavaScript UTF-16 [start,end)',
-    'NO bytes UTF-8, Unicode code points ni grapheme clusters',
-    'message.untrustedContent.slice(excerptStart,excerptEnd) === excerpt',
-    'no inventes offsets ni excerpt',
+    'occurrenceIndex',
+    'zero-based',
+    'coincidencias literales',
+    'izquierda a derecha',
+    'el servidor resolverá los offsets JavaScript UTF-16',
+    'no inventes excerpt ni occurrenceIndex',
   ])('states the literal-span invariant: %s', (text) => {
-    expect(PHARMACEUTICAL_D2_SEMANTIC_INSTRUCTIONS_V2).toContain(text);
+    expect(PHARMACEUTICAL_D2_SEMANTIC_INSTRUCTIONS_V3).toContain(text);
   });
 
   it('keeps hostile student, medication and report strings in data, never instructions', () => {
@@ -242,12 +243,16 @@ describe('M6-D2B server-owned semantic prompt and transport', () => {
   });
 
   it('uses the strict D2A schema and makes every object strict', () => {
-    const format = OPENAI_PHARMACEUTICAL_D2_TEXT_FORMAT_V1 as unknown as {
+    const format = OPENAI_PHARMACEUTICAL_D2_TEXT_FORMAT_V2 as unknown as {
       strict: boolean;
       schema: unknown;
     };
     expect(format.strict).toBe(true);
-    expect(JSON.stringify(format.schema)).toContain('pharmaceutical-d2-provider-result/1');
+    const serialized = JSON.stringify(format.schema);
+    expect(serialized).toContain('pharmaceutical-d2-provider-result/2');
+    expect(serialized).toContain('occurrenceIndex');
+    expect(serialized).not.toContain('excerptStart');
+    expect(serialized).not.toContain('excerptEnd');
     const visit = (value: unknown): void => {
       if (Array.isArray(value)) return value.forEach(visit);
       if (typeof value !== 'object' || value === null) return;
@@ -260,7 +265,7 @@ describe('M6-D2B server-owned semantic prompt and transport', () => {
 
   it('rejects non-canonical prompt or policy identity before provider execution', () => {
     expect(() => buildOpenAiPharmaceuticalD2SemanticParamsV1({
-      ...request(), promptVersion: 'pharmaceutical-d2-claim-prompt/3',
+      ...request(), promptVersion: 'pharmaceutical-d2-claim-prompt/4',
     })).toThrow(/promptVersion/);
     expect(() => buildOpenAiPharmaceuticalD2SemanticParamsV1({
       ...request(), policyVersion: 'pharmaceutical-d2-claim-policy/2',

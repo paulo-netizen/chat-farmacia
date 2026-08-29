@@ -5,11 +5,12 @@ import {
 } from './build-pharmaceutical-d2-claim-findings';
 import { buildPharmaceuticalD2SemanticRequestV2 } from './build-pharmaceutical-d2-semantic-request';
 import {
-  PHARMACEUTICAL_D2_PROVIDER_RESULT_CONTRACT_VERSION_V1,
-  type PharmaceuticalD2ProviderResultV1,
+  PHARMACEUTICAL_D2_PROVIDER_RESULT_CONTRACT_VERSION_V2,
+  type PharmaceuticalD2ProviderResultV2,
   type PharmaceuticalD2SemanticRequestV2,
 } from './pharmaceutical-d2-claim-types';
 import {
+  type PharmaceuticalD2SafeErrorMetadataV2,
   PharmaceuticalD2SemanticAdjudicationErrorV2,
   pharmaceuticalD2SemanticErrorV2,
 } from './pharmaceutical-d2-errors';
@@ -21,7 +22,7 @@ import type {
   PharmaceuticalD2SemanticRuntimeV2,
 } from './pharmaceutical-d2-semantic-runtime';
 import { parsePharmaceuticalSemanticExecutionIdV2 } from './validate-pharmaceutical-d1-adjudication';
-import { validatePharmaceuticalD2ProviderResultV1 } from './validate-pharmaceutical-d2-provider-result';
+import { validatePharmaceuticalD2ProviderResultV2 } from './validate-pharmaceutical-d2-provider-result';
 
 function runtimeReceipt(input: unknown): PharmaceuticalD2SemanticProviderReceiptV2 {
   const path = 'runtimeReceipt';
@@ -92,6 +93,24 @@ function providerValidationPath(cause: unknown): string {
     : 'providerResult';
 }
 
+function providerValidationMetadata(
+  cause: unknown,
+): PharmaceuticalD2SafeErrorMetadataV2 | undefined {
+  if (
+    typeof cause !== 'object' ||
+    cause === null ||
+    !('metadata' in cause) ||
+    typeof cause.metadata !== 'object' ||
+    cause.metadata === null ||
+    Array.isArray(cause.metadata)
+  ) {
+    return undefined;
+  }
+  return Object.freeze({
+    ...(cause.metadata as PharmaceuticalD2SafeErrorMetadataV2),
+  });
+}
+
 function executionMetadata(
   request: PharmaceuticalD2SemanticRequestV2,
   receipt: PharmaceuticalD2SemanticProviderReceiptV2,
@@ -123,10 +142,10 @@ function executionMetadata(
   });
 }
 
-function emptyProviderResult(): PharmaceuticalD2ProviderResultV1 {
+function emptyProviderResult(): PharmaceuticalD2ProviderResultV2 {
   return {
     schemaVersion: '2.0',
-    contractVersion: PHARMACEUTICAL_D2_PROVIDER_RESULT_CONTRACT_VERSION_V1,
+    contractVersion: PHARMACEUTICAL_D2_PROVIDER_RESULT_CONTRACT_VERSION_V2,
     findings: [],
   };
 }
@@ -183,9 +202,8 @@ export async function adjudicatePharmaceuticalD2ClaimsV2(
   }
   const receipt = runtimeReceipt(rawReceipt);
 
-  let providerResult: PharmaceuticalD2ProviderResultV1;
   try {
-    providerResult = validatePharmaceuticalD2ProviderResultV1(
+    validatePharmaceuticalD2ProviderResultV2(
       receipt.providerResult,
       request,
     );
@@ -196,6 +214,7 @@ export async function adjudicatePharmaceuticalD2ClaimsV2(
       providerValidationPath(cause),
       'provider result failed mandatory D2A authority validation',
       cause,
+      providerValidationMetadata(cause),
     );
   }
 
@@ -203,12 +222,12 @@ export async function adjudicatePharmaceuticalD2ClaimsV2(
   try {
     const findingSet = buildPharmaceuticalClinicalClaimFindingSetV2(
       request,
-      providerResult,
+      receipt.providerResult,
     );
     const validatedFindingSet = validatePharmaceuticalClinicalClaimFindingSetV2(
       findingSet,
       request,
-      providerResult,
+      receipt.providerResult,
     );
     return Object.freeze({
       findingSet: validatedFindingSet,

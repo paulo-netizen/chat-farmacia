@@ -27,12 +27,16 @@ export const PHARMACEUTICAL_D2_CLAIM_PROMPT_VERSION_V1 =
   'pharmaceutical-d2-claim-prompt/1' as const;
 export const PHARMACEUTICAL_D2_CLAIM_PROMPT_VERSION_V2 =
   'pharmaceutical-d2-claim-prompt/2' as const;
+export const PHARMACEUTICAL_D2_CLAIM_PROMPT_VERSION_V3 =
+  'pharmaceutical-d2-claim-prompt/3' as const;
 export const PHARMACEUTICAL_D2_STUDENT_MESSAGE_SET_CONTRACT_VERSION_V1 =
   'pharmaceutical-d2-student-message-set/1' as const;
 export const PHARMACEUTICAL_D2_SEMANTIC_REQUEST_CONTRACT_VERSION_V1 =
   'pharmaceutical-d2-semantic-request/1' as const;
 export const PHARMACEUTICAL_D2_PROVIDER_RESULT_CONTRACT_VERSION_V1 =
   'pharmaceutical-d2-provider-result/1' as const;
+export const PHARMACEUTICAL_D2_PROVIDER_RESULT_CONTRACT_VERSION_V2 =
+  'pharmaceutical-d2-provider-result/2' as const;
 export const PHARMACEUTICAL_D2_FINDING_SET_CONTRACT_VERSION_V1 =
   'pharmaceutical-clinical-claim-finding-set/1' as const;
 
@@ -128,6 +132,41 @@ export type PharmaceuticalD2ProviderResultV1 = Readonly<{
   schemaVersion: '2.0';
   contractVersion: 'pharmaceutical-d2-provider-result/1';
   findings: readonly PharmaceuticalD2ProviderFindingV1[];
+}>;
+
+export type PharmaceuticalD2ProviderFindingV2 = Readonly<{
+  messageRef: SessionMessageId;
+  excerpt: string;
+  /** Zero-based exact occurrence of excerpt in the original student message. */
+  occurrenceIndex: number;
+  domain: PharmaceuticalD2ClaimDomainV2;
+  findingType: PharmaceuticalD2FindingTypeV2;
+  claimForm: PharmaceuticalD2ClaimFormV2;
+  relatedClinicalRefs: readonly PharmaceuticalD2ClinicalRefV2[];
+}>;
+
+export type PharmaceuticalD2ProviderResultV2 = Readonly<{
+  schemaVersion: '2.0';
+  contractVersion: 'pharmaceutical-d2-provider-result/2';
+  findings: readonly PharmaceuticalD2ProviderFindingV2[];
+}>;
+
+export type PharmaceuticalD2ResolvedProviderFindingV2 = Readonly<{
+  messageRef: SessionMessageId;
+  excerpt: string;
+  /** Server-owned UTF-16 code-unit offsets in the student message, using [start, end). */
+  excerptStart: number;
+  excerptEnd: number;
+  domain: PharmaceuticalD2ClaimDomainV2;
+  findingType: PharmaceuticalD2FindingTypeV2;
+  claimForm: PharmaceuticalD2ClaimFormV2;
+  relatedClinicalRefs: readonly PharmaceuticalD2ClinicalRefV2[];
+}>;
+
+export type PharmaceuticalD2ResolvedProviderResultV2 = Readonly<{
+  schemaVersion: '2.0';
+  contractVersion: 'pharmaceutical-d2-provider-result/2';
+  findings: readonly PharmaceuticalD2ResolvedProviderFindingV2[];
 }>;
 
 export type PharmaceuticalClinicalClaimFindingV2 = Readonly<{

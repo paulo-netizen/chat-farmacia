@@ -8,10 +8,11 @@ import {
   type PharmaceuticalClinicalClaimFindingV2,
   type PharmaceuticalD2ClaimIdV2,
   type PharmaceuticalD2ProviderFindingV1,
-  type PharmaceuticalD2ProviderResultV1,
+  type PharmaceuticalD2ResolvedProviderFindingV2,
+  type PharmaceuticalD2ResolvedProviderResultV2,
   type PharmaceuticalD2SemanticRequestV2,
 } from './pharmaceutical-d2-claim-types';
-import { validatePharmaceuticalD2ProviderResultV1 } from './validate-pharmaceutical-d2-provider-result';
+import { validatePharmaceuticalD2ProviderResultV2 } from './validate-pharmaceutical-d2-provider-result';
 
 type UnknownRecord = Record<string, unknown>;
 type FindingSetCore = Omit<PharmaceuticalClinicalClaimFindingSetV2, 'fingerprint'>;
@@ -79,9 +80,9 @@ function indexOf<T extends string>(order: readonly T[], value: T): number {
   return order.indexOf(value);
 }
 
-function claimId(
+export function calculatePharmaceuticalD2ClaimIdV2(
   request: PharmaceuticalD2SemanticRequestV2,
-  finding: PharmaceuticalD2ProviderFindingV1,
+  finding: PharmaceuticalD2ProviderFindingV1 | PharmaceuticalD2ResolvedProviderFindingV2,
 ): PharmaceuticalD2ClaimIdV2 {
   const material = JSON.stringify([
     PHARMACEUTICAL_D2_FINDING_SET_CONTRACT_VERSION_V1,
@@ -130,14 +131,14 @@ export function buildPharmaceuticalClinicalClaimFindingSetV2(
   request: PharmaceuticalD2SemanticRequestV2,
   providerInput: unknown,
 ): PharmaceuticalClinicalClaimFindingSetV2 {
-  const providerResult: PharmaceuticalD2ProviderResultV1 =
-    validatePharmaceuticalD2ProviderResultV1(providerInput, request);
+  const providerResult: PharmaceuticalD2ResolvedProviderResultV2 =
+    validatePharmaceuticalD2ProviderResultV2(providerInput, request);
   const messageOrder = new Map(
     request.studentMessages.messages.map((message, index) => [message.messageRef, index] as const),
   );
   const findings = providerResult.findings
     .map((finding): PharmaceuticalClinicalClaimFindingV2 => ({
-      claimId: claimId(request, finding),
+      claimId: calculatePharmaceuticalD2ClaimIdV2(request, finding),
       ...structuredClone(finding),
     }))
     .sort((left, right) => compareFindings(left, right, messageOrder));
