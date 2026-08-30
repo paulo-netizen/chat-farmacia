@@ -3,7 +3,7 @@ import { describe, expect, it } from 'vitest';
 import {
   isPharmaceuticalD3LiveEnabledV1,
   parsePharmaceuticalD3LiveSelectionV1,
-  PHARMACEUTICAL_D3_LIVE_MATRIX_V5,
+  PHARMACEUTICAL_D3_LIVE_MATRIX_V6,
   runPharmaceuticalD3AcceptanceV1,
 } from './support/pharmaceutical-d3-live-matrix';
 
@@ -33,8 +33,8 @@ describe.skipIf(!liveEnabled)('M6-D3 pre-registered pharmaceutical semantic live
     }, selection);
 
     console.log(JSON.stringify({
-      matrixVersion: PHARMACEUTICAL_D3_LIVE_MATRIX_V5.matrixVersion,
-      matrixFingerprint: PHARMACEUTICAL_D3_LIVE_MATRIX_V5.fingerprint.value,
+      matrixVersion: PHARMACEUTICAL_D3_LIVE_MATRIX_V6.matrixVersion,
+      matrixFingerprint: PHARMACEUTICAL_D3_LIVE_MATRIX_V6.fingerprint.value,
       decision: result.decision,
       summaries: result.summaries,
     }, null, 2));
