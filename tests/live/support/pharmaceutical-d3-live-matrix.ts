@@ -104,6 +104,21 @@ export const PHARMACEUTICAL_D3_LIVE_MATRIX_VERSION_V4 =
   'pharmaceutical-d3-live-matrix/4' as const;
 export const PHARMACEUTICAL_D3_LIVE_MATRIX_FINGERPRINT_V4 =
   '700e3f64fecdba431fe3da72accc65a10cfaf9d17bdad3d257519814ef6a3608' as const;
+export const PHARMACEUTICAL_D3_HISTORICAL_RESULT_V4 = Object.freeze({
+  matrixVersion: PHARMACEUTICAL_D3_LIVE_MATRIX_VERSION_V4,
+  matrixFingerprint: PHARMACEUTICAL_D3_LIVE_MATRIX_FINGERPRINT_V4,
+  decision: 'REJECT' as const,
+  fixtureId: 'C3' as const,
+  run: 1 as const,
+  failure: Object.freeze({
+    code: 'EXPECTATION_MISMATCH' as const,
+    path: 'd2.findings' as const,
+  }),
+});
+export const PHARMACEUTICAL_D3_LIVE_MATRIX_VERSION_V5 =
+  'pharmaceutical-d3-live-matrix/5' as const;
+export const PHARMACEUTICAL_D3_LIVE_MATRIX_FINGERPRINT_V5 =
+  '2867bf53d721a77638a813d8d6efe3cadd58c88a3bf0908ec3733d5488ba8c72' as const;
 export const PHARMACEUTICAL_D3_LIVE_MODEL_V1 = 'gpt-5.6-sol' as const;
 export const PHARMACEUTICAL_D3_LIVE_EXECUTION_ORDER_V1 = Object.freeze([
   'SMOKE', 'C3', 'C2', 'C1', 'S1', 'S2',
@@ -240,6 +255,37 @@ export type PharmaceuticalD3LiveMatrixV4 = Readonly<{
   fingerprint: Readonly<{
     algorithm: 'sha256';
     canonicalization: 'pharmaceutical-d3-live-matrix-v4/1';
+    value: string;
+  }>;
+}>;
+
+export type PharmaceuticalD3LiveMatrixV5 = Readonly<{
+  schemaVersion: '2.0';
+  matrixVersion: typeof PHARMACEUTICAL_D3_LIVE_MATRIX_VERSION_V5;
+  model: typeof PHARMACEUTICAL_D3_LIVE_MODEL_V1;
+  promptVersions: Readonly<{ d1: string; d2: string }>;
+  policyVersions: Readonly<{ d2: string }>;
+  contractVersions: Readonly<{
+    context: 'pharmaceutical-adjudication-context/1';
+    d1Request: 'pharmaceutical-d1-semantic-batch-request/1';
+    d2Request: 'pharmaceutical-d2-semantic-request/1';
+    d2ProviderResult: 'pharmaceutical-d2-provider-result/2';
+    batchPlan: 'pharmaceutical-d1-batch-plan/1';
+  }>;
+  repetitions: Readonly<{ smoke: 1; semantic: 5 }>;
+  threshold: Readonly<{ requiredFraction: 1; majorityVote: false }>;
+  evidenceKindDefinitions: Readonly<Record<
+    PharmaceuticalStudentEvidenceKindV2,
+    string
+  >>;
+  executionOrder: typeof PHARMACEUTICAL_D3_LIVE_EXECUTION_ORDER_V1;
+  fixtures: readonly PharmaceuticalD3LiveFixtureV1[];
+  invalidatesAcceptance: readonly string[];
+  doesNotInvalidateAcceptance: readonly string[];
+  limitations: readonly string[];
+  fingerprint: Readonly<{
+    algorithm: 'sha256';
+    canonicalization: 'pharmaceutical-d3-live-matrix-v5/1';
     value: string;
   }>;
 }>;
@@ -963,6 +1009,24 @@ function c3Fixture(): PharmaceuticalD3LiveFixtureV1 {
   };
 }
 
+function c3FixtureV5(): PharmaceuticalD3LiveFixtureV1 {
+  const historicalFixture = c3Fixture();
+  return {
+    ...historicalFixture,
+    expectedD2: [
+      d2Finding(
+        historicalFixture.context, '2', 'Debe suspenderlo.',
+        'PROFESSIONAL_RESPONSE', 'UNSUPPORTED', 'RECOMMENDATION', [],
+      ),
+      ...historicalFixture.expectedD2,
+    ],
+    criticalBoundaries: [
+      ...historicalFixture.criticalBoundaries,
+      'a recommendation only partially represented by D1 remains eligible for D2',
+    ],
+  };
+}
+
 function smokeFixture(): PharmaceuticalD3LiveFixtureV1 {
   const context = buildContext([
     { role: 'student', content: 'Confirmo que hay PRM.' },
@@ -1068,6 +1132,9 @@ function z0Fixture(): PharmaceuticalD3LiveFixtureV1 {
 
 const fixtureDefinitions = Object.freeze([
   smokeFixture(), c1Fixture(), c2Fixture(), c3Fixture(), s1Fixture(), s2Fixture(), z0Fixture(),
+]);
+const fixtureDefinitionsV5 = Object.freeze([
+  smokeFixture(), c1Fixture(), c2Fixture(), c3FixtureV5(), s1Fixture(), s2Fixture(), z0Fixture(),
 ]);
 
 const invalidatesAcceptance = Object.freeze([
@@ -1182,10 +1249,38 @@ export const PHARMACEUTICAL_D3_LIVE_MATRIX_V4: PharmaceuticalD3LiveMatrixV4 =
     }),
   });
 
+const matrixCoreV5 = {
+  ...sharedMatrixCore,
+  matrixVersion: PHARMACEUTICAL_D3_LIVE_MATRIX_VERSION_V5,
+  promptVersions: {
+    d1: PHARMACEUTICAL_D1_PROMPT_VERSION_V3,
+    d2: PHARMACEUTICAL_D2_CLAIM_PROMPT_VERSION_V3,
+  },
+  contractVersions: {
+    ...sharedMatrixCore.contractVersions,
+    d2ProviderResult: PHARMACEUTICAL_D2_PROVIDER_RESULT_CONTRACT_VERSION_V2,
+  },
+  fixtures: fixtureDefinitionsV5,
+};
+const calculatedMatrixFingerprintV5 = sha256(matrixCoreV5);
+if (calculatedMatrixFingerprintV5 !== PHARMACEUTICAL_D3_LIVE_MATRIX_FINGERPRINT_V5) {
+  throw new Error('material D3 matrix change requires a new matrix version and live acceptance');
+}
+
+export const PHARMACEUTICAL_D3_LIVE_MATRIX_V5: PharmaceuticalD3LiveMatrixV5 =
+  deepFreeze({
+    ...matrixCoreV5,
+    fingerprint: Object.freeze({
+      algorithm: 'sha256',
+      canonicalization: 'pharmaceutical-d3-live-matrix-v5/1',
+      value: PHARMACEUTICAL_D3_LIVE_MATRIX_FINGERPRINT_V5,
+    }),
+  });
+
 export function pharmaceuticalD3FixtureV1(
   fixtureId: PharmaceuticalD3FixtureIdV1,
 ): PharmaceuticalD3LiveFixtureV1 {
-  const fixture = PHARMACEUTICAL_D3_LIVE_MATRIX_V4.fixtures.find(
+  const fixture = PHARMACEUTICAL_D3_LIVE_MATRIX_V5.fixtures.find(
     (candidate) => candidate.fixtureId === fixtureId,
   );
   if (fixture === undefined) throw new Error(`unknown D3 fixture ${fixtureId}`);
@@ -1193,8 +1288,8 @@ export function pharmaceuticalD3FixtureV1(
 }
 
 export function calculatePharmaceuticalD3CallBudgetV1(
-  matrix: PharmaceuticalD3LiveMatrixV2 | PharmaceuticalD3LiveMatrixV3 | PharmaceuticalD3LiveMatrixV4 =
-    PHARMACEUTICAL_D3_LIVE_MATRIX_V4,
+  matrix: PharmaceuticalD3LiveMatrixV2 | PharmaceuticalD3LiveMatrixV3 | PharmaceuticalD3LiveMatrixV4 | PharmaceuticalD3LiveMatrixV5 =
+    PHARMACEUTICAL_D3_LIVE_MATRIX_V5,
 ): PharmaceuticalD3CallBudgetV1 {
   const byFixture = Object.fromEntries(matrix.fixtures.map((fixture) => {
     const d1 = fixture.expectedCallsPerRun.d1 * fixture.repetitions;
@@ -1626,16 +1721,16 @@ export function buildPharmaceuticalD3EvidenceArtifactV1(
     '# M6-D3 pharmaceutical semantic live acceptance',
     '',
     `- Commit: \`${commitHash}\``,
-    `- Matrix: \`${PHARMACEUTICAL_D3_LIVE_MATRIX_V4.matrixVersion}\``,
-    `- Matrix fingerprint: \`${PHARMACEUTICAL_D3_LIVE_MATRIX_V4.fingerprint.value}\``,
-    `- D1 prompt: \`${PHARMACEUTICAL_D3_LIVE_MATRIX_V4.promptVersions.d1}\``,
-    `- D2 prompt: \`${PHARMACEUTICAL_D3_LIVE_MATRIX_V4.promptVersions.d2}\``,
-    `- D2 policy: \`${PHARMACEUTICAL_D3_LIVE_MATRIX_V4.policyVersions.d2}\``,
-    `- Context contract: \`${PHARMACEUTICAL_D3_LIVE_MATRIX_V4.contractVersions.context}\``,
-    `- D1 request: \`${PHARMACEUTICAL_D3_LIVE_MATRIX_V4.contractVersions.d1Request}\``,
-    `- D2 request: \`${PHARMACEUTICAL_D3_LIVE_MATRIX_V4.contractVersions.d2Request}\``,
-    `- D2 provider result: \`${PHARMACEUTICAL_D3_LIVE_MATRIX_V4.contractVersions.d2ProviderResult}\``,
-    `- Batch plan: \`${PHARMACEUTICAL_D3_LIVE_MATRIX_V4.contractVersions.batchPlan}\``,
+    `- Matrix: \`${PHARMACEUTICAL_D3_LIVE_MATRIX_V5.matrixVersion}\``,
+    `- Matrix fingerprint: \`${PHARMACEUTICAL_D3_LIVE_MATRIX_V5.fingerprint.value}\``,
+    `- D1 prompt: \`${PHARMACEUTICAL_D3_LIVE_MATRIX_V5.promptVersions.d1}\``,
+    `- D2 prompt: \`${PHARMACEUTICAL_D3_LIVE_MATRIX_V5.promptVersions.d2}\``,
+    `- D2 policy: \`${PHARMACEUTICAL_D3_LIVE_MATRIX_V5.policyVersions.d2}\``,
+    `- Context contract: \`${PHARMACEUTICAL_D3_LIVE_MATRIX_V5.contractVersions.context}\``,
+    `- D1 request: \`${PHARMACEUTICAL_D3_LIVE_MATRIX_V5.contractVersions.d1Request}\``,
+    `- D2 request: \`${PHARMACEUTICAL_D3_LIVE_MATRIX_V5.contractVersions.d2Request}\``,
+    `- D2 provider result: \`${PHARMACEUTICAL_D3_LIVE_MATRIX_V5.contractVersions.d2ProviderResult}\``,
+    `- Batch plan: \`${PHARMACEUTICAL_D3_LIVE_MATRIX_V5.contractVersions.batchPlan}\``,
     `- Requested model: \`${PHARMACEUTICAL_D3_LIVE_MODEL_V1}\``,
     `- Observed models: ${observedModels.map((model) => `\`${model}\``).join(', ') || 'none'}`,
     `- Decision: **${decision}**`,

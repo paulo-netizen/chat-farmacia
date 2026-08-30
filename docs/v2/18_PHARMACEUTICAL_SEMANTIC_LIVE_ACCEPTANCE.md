@@ -2,7 +2,7 @@
 
 ## 1. Estado y alcance
 
-M6-D3A congeló la primera matriz previa a la aceptación live de las lanes farmacéuticas D1 y D2. M6-D3R2 versionó la política de precisión de evidencia D1 después del rechazo histórico de esa primera matriz. Las ejecuciones de las matrices `/2` y `/3` quedaron `INCONCLUSIVE` por salidas provider D2 cuyos excerpts no coincidían literalmente con los offsets declarados bajo un contrato y validator correctos. M6-D3R6 elimina esa sobrecarga técnica del provider: D2 selecciona excerpt literal + ocurrencia y el servidor resuelve los offsets UTF-16. Ninguno de estos incrementos constituye aceptación del modelo. `gpt-5.6-sol` permanece **CANDIDATE — LIVE ACCEPTANCE PENDING** hasta M6-D3B.
+M6-D3A congeló la primera matriz previa a la aceptación live de las lanes farmacéuticas D1 y D2. M6-D3R2 versionó la política de precisión de evidencia D1 después del rechazo histórico de esa primera matriz. Las ejecuciones de las matrices `/2` y `/3` quedaron `INCONCLUSIVE` por salidas provider D2 cuyos excerpts no coincidían literalmente con los offsets declarados bajo un contrato y validator correctos. M6-D3R6 eliminó esa sobrecarga técnica del provider: D2 selecciona excerpt literal + ocurrencia y el servidor resuelve los offsets UTF-16. La matriz `/4` quedó `REJECT` porque su expectation C3 omitía una recomendación `UNSUPPORTED` válida. M6-D3R8 corrige exclusivamente esa expectation en `/5`. Ninguno de estos incrementos constituye aceptación del modelo. `gpt-5.6-sol` permanece **CANDIDATE — LIVE ACCEPTANCE PENDING** hasta M6-D3B.
 
 Histórico inmutable `/1`:
 
@@ -22,10 +22,16 @@ Histórico inmutable `/3`:
 - fingerprint: `64c55ed55be855933904c875cdbd3e7c3464c8aab5c6c9049e86b161b185950e`;
 - resultado: **INCONCLUSIVE**, en C3 run 1 por `INVALID_PROVIDER_RESULT` en `providerResult.findings[4].excerpt`; el provider volvió a producir un excerpt incompatible con su propio span aunque el validator y las expectativas clínicas permanecían correctos.
 
-Nueva candidata pendiente de ejecución live:
+Histórico inmutable `/4`:
 
 - matriz: `pharmaceutical-d3-live-matrix/4`;
 - fingerprint: `700e3f64fecdba431fe3da72accc65a10cfaf9d17bdad3d257519814ef6a3608`;
+- resultado: **REJECT**, en C3 run 1 por `EXPECTATION_MISMATCH` en `d2.findings`: el provider devolvió correctamente las refs 7, 8, 9 y 11 pre-registradas más la ref 2 como `UNSUPPORTED`, que la expectation histórica había omitido.
+
+Nueva candidata pendiente de ejecución live:
+
+- matriz: `pharmaceutical-d3-live-matrix/5`;
+- fingerprint: `2867bf53d721a77638a813d8d6efe3cadd58c88a3bf0908ec3733d5488ba8c72`;
 - prompt D1: `pharmaceutical-d1-adjudication-prompt/3`;
 - prompt D2: `pharmaceutical-d2-claim-prompt/3`;
 - provider result D2: `pharmaceutical-d2-provider-result/2`.
@@ -86,6 +92,8 @@ Los mensajes patient son únicamente contexto de adquisición y nunca evidencia 
 
 D2 registra el finding exacto, speech act, dominio, refs, excerpt y offsets UTF-16 server-owned. El provider solo aporta el excerpt literal y su ocurrencia exacta; el finding canónico conserva `excerptStart`/`excerptEnd`. Preguntas, hipótesis exploratorias, reconocimientos neutrales y strings técnicas no asumidas producen `[]`. Las oposiciones ya cubiertas por targets D1 —incluidos PRM, adherencia y referral— no se duplican en D2. Una alternativa no enumerada solo puede ser `UNSUPPORTED` por la autoridad suministrada, nunca `CONTRADICTORY` mediante conocimiento externo.
 
+En C3, `Debe suspenderlo.` (ref 2) es una `RECOMMENDATION` de `PROFESSIONAL_RESPONSE`: los targets D1 de acción/intervención son próximos, pero ninguno representa completamente la proposición de suspensión. Su cobertura D1 es por tanto parcial, no completa, y D2 conserva el finding `UNSUPPORTED` con excerpt literal, ocurrencia cero, offsets canónicos y sin inventar referencias clínicas. En contraste, `Hay que derivarlo.` (ref 4) y `Concluyo que no lo toma porque se le olvida.` (ref 6) quedan completamente representados por targets D1 y no generan finding D2; la intervención alternativa no enumerada de ref 9 permanece `UNSUPPORTED`.
+
 La traducción de un `conceptId` opaco a una etiqueta humana ausente es **NEEDS_TEACHER_DECISION**. D3 no inventa labels y solo prueba igualdad con el identificador canónico cuando esa es toda la autoridad disponible.
 
 ## 5. Decisión y fail-fast
@@ -143,8 +151,9 @@ No invalidan por sí solos: erratas documentales, logging allowlisted no materia
 - M6-D3R2: **CLOSED / COMPLETE**.
 - M6-D3R4: **CLOSED / COMPLETE**.
 - M6-D3R6: **CLOSED / COMPLETE**.
+- M6-D3R8: **CLOSED / COMPLETE**.
 - M6-D3B: **READY FOR NEW LIVE ATTEMPT FROM SMOKE**.
 - M6-D3: **PARTIAL**.
 - M6-D: **PARTIAL**.
 
-No se ha ejecutado OpenAI en D3R6 y no se ha cerrado M6-D. La matriz `/1` conserva su `REJECT` histórico; `/2` y `/3` conservan sus resultados `INCONCLUSIVE`; `/4` queda pendiente de aceptación live completa desde SMOKE.
+No se ha ejecutado OpenAI en D3R8 y no se ha cerrado M6-D. Las matrices `/1` y `/4` conservan sus `REJECT` históricos; `/2` y `/3` conservan sus resultados `INCONCLUSIVE`; `/5` queda pendiente de aceptación live completa desde SMOKE.

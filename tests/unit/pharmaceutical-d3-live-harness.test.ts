@@ -22,10 +22,12 @@ import {
   PHARMACEUTICAL_D3_HISTORICAL_RESULT_V1,
   PHARMACEUTICAL_D3_HISTORICAL_RESULT_V2,
   PHARMACEUTICAL_D3_HISTORICAL_RESULT_V3,
+  PHARMACEUTICAL_D3_HISTORICAL_RESULT_V4,
   PHARMACEUTICAL_D3_LIVE_EXECUTION_ORDER_V1,
   PHARMACEUTICAL_D3_LIVE_MATRIX_V2,
   PHARMACEUTICAL_D3_LIVE_MATRIX_V3,
   PHARMACEUTICAL_D3_LIVE_MATRIX_V4,
+  PHARMACEUTICAL_D3_LIVE_MATRIX_V5,
   runPharmaceuticalD3AcceptanceV1,
   runPharmaceuticalD3FixtureV1,
   type PharmaceuticalD3LiveFixtureV1,
@@ -137,22 +139,22 @@ function fakeFactory(overrides: Readonly<{
   return { factory, d1Calls, d2Calls };
 }
 
-describe('M6-D3R6 pre-registered matrix', () => {
+describe('M6-D3R8 pre-registered matrix', () => {
   it('freezes the explicit matrix identity, prompt versions and SHA-256 fingerprint', () => {
-    expect(PHARMACEUTICAL_D3_LIVE_MATRIX_V4.matrixVersion).toBe('pharmaceutical-d3-live-matrix/4');
-    expect(PHARMACEUTICAL_D3_LIVE_MATRIX_V4.promptVersions).toEqual({
+    expect(PHARMACEUTICAL_D3_LIVE_MATRIX_V5.matrixVersion).toBe('pharmaceutical-d3-live-matrix/5');
+    expect(PHARMACEUTICAL_D3_LIVE_MATRIX_V5.promptVersions).toEqual({
       d1: 'pharmaceutical-d1-adjudication-prompt/3',
       d2: 'pharmaceutical-d2-claim-prompt/3',
     });
-    expect(PHARMACEUTICAL_D3_LIVE_MATRIX_V4.contractVersions.d2ProviderResult)
+    expect(PHARMACEUTICAL_D3_LIVE_MATRIX_V5.contractVersions.d2ProviderResult)
       .toBe('pharmaceutical-d2-provider-result/2');
-    expect(PHARMACEUTICAL_D3_LIVE_MATRIX_V4.fingerprint).toEqual({
+    expect(PHARMACEUTICAL_D3_LIVE_MATRIX_V5.fingerprint).toEqual({
       algorithm: 'sha256',
-      canonicalization: 'pharmaceutical-d3-live-matrix-v4/1',
-      value: '700e3f64fecdba431fe3da72accc65a10cfaf9d17bdad3d257519814ef6a3608',
+      canonicalization: 'pharmaceutical-d3-live-matrix-v5/1',
+      value: '2867bf53d721a77638a813d8d6efe3cadd58c88a3bf0908ec3733d5488ba8c72',
     });
-    expect(Object.isFrozen(PHARMACEUTICAL_D3_LIVE_MATRIX_V4)).toBe(true);
-    expect(Object.isFrozen(PHARMACEUTICAL_D3_LIVE_MATRIX_V4.fixtures[0].expectedCallsPerRun))
+    expect(Object.isFrozen(PHARMACEUTICAL_D3_LIVE_MATRIX_V5)).toBe(true);
+    expect(Object.isFrozen(PHARMACEUTICAL_D3_LIVE_MATRIX_V5.fixtures[0].expectedCallsPerRun))
       .toBe(true);
   });
 
@@ -211,8 +213,27 @@ describe('M6-D3R6 pre-registered matrix', () => {
       .toBe('64c55ed55be855933904c875cdbd3e7c3464c8aab5c6c9049e86b161b185950e');
   });
 
+  it('preserves the rejected matrix /4 identity and historical outcome unchanged', () => {
+    expect(PHARMACEUTICAL_D3_LIVE_MATRIX_V4.fingerprint).toEqual({
+      algorithm: 'sha256',
+      canonicalization: 'pharmaceutical-d3-live-matrix-v4/1',
+      value: '700e3f64fecdba431fe3da72accc65a10cfaf9d17bdad3d257519814ef6a3608',
+    });
+    expect(PHARMACEUTICAL_D3_HISTORICAL_RESULT_V4).toEqual({
+      matrixVersion: 'pharmaceutical-d3-live-matrix/4',
+      matrixFingerprint: '700e3f64fecdba431fe3da72accc65a10cfaf9d17bdad3d257519814ef6a3608',
+      decision: 'REJECT',
+      fixtureId: 'C3',
+      run: 1,
+      failure: { code: 'EXPECTATION_MISMATCH', path: 'd2.findings' },
+    });
+    expect(PHARMACEUTICAL_D3_LIVE_MATRIX_V4.fixtures.find(
+      (fixture) => fixture.fixtureId === 'C3',
+    )?.expectedD2.map((finding) => finding.messageRef)).toEqual(['7', '8', '9', '11']);
+  });
+
   it('contains exactly the seven pre-registered fixture classes', () => {
-    expect(PHARMACEUTICAL_D3_LIVE_MATRIX_V4.fixtures.map((fixture) => fixture.fixtureId))
+    expect(PHARMACEUTICAL_D3_LIVE_MATRIX_V5.fixtures.map((fixture) => fixture.fixtureId))
       .toEqual(['SMOKE', 'C1', 'C2', 'C3', 'S1', 'S2', 'Z0']);
   });
 
@@ -231,8 +252,8 @@ describe('M6-D3R6 pre-registered matrix', () => {
   });
 
   it('freezes one smoke run, five semantic runs, 100% threshold and no majority vote', () => {
-    expect(PHARMACEUTICAL_D3_LIVE_MATRIX_V4.repetitions).toEqual({ smoke: 1, semantic: 5 });
-    expect(PHARMACEUTICAL_D3_LIVE_MATRIX_V4.threshold).toEqual({
+    expect(PHARMACEUTICAL_D3_LIVE_MATRIX_V5.repetitions).toEqual({ smoke: 1, semantic: 5 });
+    expect(PHARMACEUTICAL_D3_LIVE_MATRIX_V5.threshold).toEqual({
       requiredFraction: 1, majorityVote: false,
     });
     expect(PHARMACEUTICAL_D3_LIVE_EXECUTION_ORDER_V1).toEqual([
@@ -319,13 +340,13 @@ describe('M6-D3R6 pre-registered matrix', () => {
   });
 
   it('documents every structural evidence kind and the opaque-taxonomy limitation', () => {
-    expect(JSON.stringify(PHARMACEUTICAL_D3_LIVE_MATRIX_V4.fixtures)).toContain('student-only evidence');
-    expect(PHARMACEUTICAL_D3_LIVE_MATRIX_V4.limitations.join(' ')).toContain('NEEDS_TEACHER_DECISION');
-    expect(PHARMACEUTICAL_D3_LIVE_MATRIX_V4.limitations.join(' ')).toContain('conceptId');
-    expect(Object.keys(PHARMACEUTICAL_D3_LIVE_MATRIX_V4.evidenceKindDefinitions)).toEqual([
+    expect(JSON.stringify(PHARMACEUTICAL_D3_LIVE_MATRIX_V5.fixtures)).toContain('student-only evidence');
+    expect(PHARMACEUTICAL_D3_LIVE_MATRIX_V5.limitations.join(' ')).toContain('NEEDS_TEACHER_DECISION');
+    expect(PHARMACEUTICAL_D3_LIVE_MATRIX_V5.limitations.join(' ')).toContain('conceptId');
+    expect(Object.keys(PHARMACEUTICAL_D3_LIVE_MATRIX_V5.evidenceKindDefinitions)).toEqual([
       'STUDENT_QUESTION', 'STUDENT_INTERPRETATION', 'STUDENT_DECISION', 'STUDENT_ACTION',
     ]);
-    expect(PHARMACEUTICAL_D3_LIVE_MATRIX_V4.evidenceKindDefinitions.STUDENT_ACTION)
+    expect(PHARMACEUTICAL_D3_LIVE_MATRIX_V5.evidenceKindDefinitions.STUDENT_ACTION)
       .toContain('allowlisted');
   });
 
@@ -344,7 +365,7 @@ describe('M6-D3R6 pre-registered matrix', () => {
   it('pre-registers D2 speech-act boundaries and exact UTF-16 spans', () => {
     const c3 = pharmaceuticalD3FixtureV1('C3');
     expect(c3.expectedD2.map((finding) => finding.claimForm).sort()).toEqual([
-      'ASSERTION', 'ASSERTION', 'CONCLUSION', 'RECOMMENDATION',
+      'ASSERTION', 'ASSERTION', 'CONCLUSION', 'RECOMMENDATION', 'RECOMMENDATION',
     ]);
     for (const finding of c3.expectedD2) {
       const message = c3.context.targets[0].studentCandidates.find(
@@ -353,6 +374,71 @@ describe('M6-D3R6 pre-registered matrix', () => {
       expect(message.untrustedContent.slice(finding.excerptStart, finding.excerptEnd))
         .toBe(finding.excerpt);
     }
+  });
+
+  it('keeps C3 suspension in D2 because nearby D1 coverage is only partial', () => {
+    const c3 = pharmaceuticalD3FixtureV1('C3');
+    const candidates = c3.context.targets[0].studentCandidates;
+    expect(candidates.find((candidate) => candidate.messageRef === '2')?.untrustedContent)
+      .toBe('Debe suspenderlo.');
+    expect(candidates.find((candidate) => candidate.messageRef === '4')?.untrustedContent)
+      .toBe('Hay que derivarlo.');
+    expect(candidates.find((candidate) => candidate.messageRef === '6')?.untrustedContent)
+      .toBe('Concluyo que no lo toma porque se le olvida.');
+
+    const suspension = c3.expectedD2.find((finding) => finding.messageRef === '2');
+    expect(suspension).toEqual(expect.objectContaining({
+      excerpt: 'Debe suspenderlo.',
+      excerptStart: 0,
+      excerptEnd: 'Debe suspenderlo.'.length,
+      domain: 'PROFESSIONAL_RESPONSE',
+      findingType: 'UNSUPPORTED',
+      claimForm: 'RECOMMENDATION',
+      relatedClinicalRefs: [],
+    }));
+    const suspensionMessage = candidates.find((candidate) => candidate.messageRef === '2')!;
+    expect(suspensionMessage.untrustedContent.indexOf(suspension!.excerpt)).toBe(0);
+    expect(suspensionMessage.untrustedContent.indexOf(suspension!.excerpt, 1)).toBe(-1);
+
+    const nearbyD1 = c3.context.targets.filter((target) =>
+      target.aspect === 'PROFESSIONAL_ACTION_CATEGORY'
+      || target.aspect === 'INTERVENTION_TARGET');
+    expect(nearbyD1).not.toHaveLength(0);
+    expect(JSON.stringify(nearbyD1.map((target) => ({
+      expected: target.expected,
+      clinicalContext: target.clinicalContext,
+    })))).not.toContain('suspender');
+
+    expect(c3.context.targets.some((target) => target.aspect === 'REFERRAL_NEED')).toBe(true);
+    expect(c3.context.targets.some((target) => target.aspect === 'ADHERENCE_TYPE')).toBe(true);
+    expect(c3.context.targets.some((target) => target.aspect === 'BARRIER_CATEGORY')).toBe(true);
+
+    expect(c3.expectedD2.map((finding) => finding.messageRef)).toEqual([
+      '2', '7', '8', '9', '11',
+    ]);
+    expect(c3.expectedD2.find((finding) => finding.messageRef === '9')).toMatchObject({
+      findingType: 'UNSUPPORTED', claimForm: 'RECOMMENDATION',
+    });
+    expect(c3.expectedD2.some((finding) => finding.messageRef === '4')).toBe(false);
+    expect(c3.expectedD2.some((finding) => finding.messageRef === '6')).toBe(false);
+  });
+
+  it('reconstructs and accepts the complete five-finding C3 set canonically', async () => {
+    const summary = await runPharmaceuticalD3FixtureV1(
+      pharmaceuticalD3FixtureV1('C3'), 1, fakeFactory().factory,
+    );
+    expect(summary).toMatchObject({
+      decision: 'ACCEPT',
+      calls: { d1: 0, d2: 1, total: 1 },
+    });
+    expect(summary.d2.map((finding) => [finding.messageRef, finding.findingType])).toEqual([
+      ['2', 'UNSUPPORTED'],
+      ['7', 'CONTRADICTORY'],
+      ['8', 'UNSUPPORTED'],
+      ['9', 'UNSUPPORTED'],
+      ['11', 'UNSUPPORTED'],
+    ]);
+    expect(new Set(summary.d2.map((finding) => finding.claimId))).toHaveProperty('size', 5);
   });
 
   it('keeps structural zero-candidate shells entirely offline', async () => {
@@ -493,7 +579,7 @@ describe('M6-D3A acceptance runner hardening', () => {
       pharmaceuticalD3FixtureV1('SMOKE'), 1, fakeFactory().factory,
     );
     const artifact = buildPharmaceuticalD3EvidenceArtifactV1('a'.repeat(40), [summary], 'ACCEPT');
-    expect(artifact).toContain(PHARMACEUTICAL_D3_LIVE_MATRIX_V4.fingerprint.value);
+    expect(artifact).toContain(PHARMACEUTICAL_D3_LIVE_MATRIX_V5.fingerprint.value);
     expect(artifact).toContain('pharmaceutical-d1-adjudication-prompt/3');
     expect(artifact).not.toMatch(/raw provider output|API key/i);
     expect(buildPharmaceuticalD3EvidenceArtifactV1('a'.repeat(40), [summary], 'ACCEPT'))
