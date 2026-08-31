@@ -2,7 +2,7 @@
 
 ## 1. Estado y alcance
 
-M6-D3A congeló la primera matriz previa a la aceptación live de las lanes farmacéuticas D1 y D2. M6-D3R2 versionó la política de precisión de evidencia D1 después del rechazo histórico de esa primera matriz. Las ejecuciones de las matrices `/2` y `/3` quedaron `INCONCLUSIVE` por salidas provider D2 cuyos excerpts no coincidían literalmente con los offsets declarados bajo un contrato y validator correctos. M6-D3R6 eliminó esa sobrecarga técnica del provider: D2 selecciona excerpt literal + ocurrencia y el servidor resuelve los offsets UTF-16. La matriz `/4` quedó `REJECT` porque su expectation C3 omitía una recomendación `UNSUPPORTED` válida. M6-D3R8 incorporó esa expectation en `/5`, cuyo intento quedó `REJECT` porque exigía una única canonicalización de span/refs donde el contrato permite varias representaciones exactas. M6-D3R10 crea `/6` con alternativas completas, exactas y preregistradas. El intento `/6` quedó **REJECT** por omisión obligatoria de C3 ref 7, una `ASSERTION` `ADHERENCE / CONTRADICTORY`: `MODEL_SEMANTIC_FAILURE` bajo una matriz correcta. Sol queda **REJECTED_FOR_M6_D3_MATRIX_6** y **NOT_GLOBALLY_DISALLOWED**. M6-D3R14 autoriza experimentalmente Terra mediante una policy explícita y prepara `/7`, sin modificar semántica ni reevaluar históricos. El intento `/7` con Terra también quedó **REJECT** por omisión C3 ref 7. D3R15 concluyó **D2 CONTEXT SALIENCE GAP**, autoridad **SUFFICIENT_BUT_INDIRECT**. Ambos rechazos permanecen históricos. D3R16 preparó `/8` para aislar el efecto de representar explícitamente relaciones ya existentes; ese intento terminó **REJECT**. D3R17 concluyó **A — D2 PROMPT GAP**: la cobertura completa por D1 no estaba definida operativamente por identidad proposicional. D3R18 añade esa aclaración normativa en prompt `/4` y prepara `/9` offline; no demuestra aún que el fallo esté resuelto. No se repite `/6` para buscar PASS.
+M6-D3A congeló la primera matriz previa a la aceptación live de las lanes farmacéuticas D1 y D2. M6-D3R2 versionó la precisión de evidencia D1; `/2` y `/3` quedaron `INCONCLUSIVE`. M6-D3R6 movió la resolución UTF-16 al servidor; `/4` quedó `REJECT` por una expectation omitida. D3R8/D3R10 corrigieron expectativas exactas y prepararon `/5` y `/6`; `/6` quedó `REJECT` por omisión C3 ref 7 con Sol. D3R14 autorizó Terra y `/7` repitió esa omisión. D3R16 añadió autoridad relacional en `/8`, también `REJECT`; D3R18 aclaró identidad proposicional y preparó `/9`. En `/9`, prompt `/4` consiguió que ref 7 apareciera con identidad, excerpt y span correctos, pero la matrix la rechazó porque el conjunto exacto barrera …009 + medicamentos …001/…003 no estaba preregistrado. D3R19 clasificó el fallo como **RELATED_CLINICAL_REFS_ALTERNATIVE_GAP**. D3R20 conserva `/9` como `REJECT` y crea `/10`, pendiente de live, con esa tercera alternativa completa y exacta. No se reclasifica ningún histórico.
 
 Histórico inmutable `/1`:
 
@@ -64,7 +64,7 @@ Histórico inmutable `/8`:
 
 `pharmaceutical-semantic-model-policy/1` permite exactamente `gpt-5.6-sol` y `gpt-5.6-terra`. Es server-owned, de tipo cerrado y fail-closed: no admite aliases, strings arbitrarios, trim, normalización ni sustituciones. Los runtimes mantienen Sol como default histórico; Terra nunca se activa silenciosamente. Ambos executors envían el modelo validado y preservan `response.model` observado, sin fallback ni retries.
 
-La aceptación pendiente de `/9` exige selección explícita D1 = D2 = candidato de la matriz antes de crear runtimes o llamar al proveedor. Todas las respuestas evaluables deben identificar exactamente `gpt-5.6-terra`. Configuraciones mixtas o ausentes fallan antes de OpenAI. El wrapper toma un snapshot de entorno después de la activación opt-in.
+La aceptación pendiente de `/10` exige selección explícita D1 = D2 = candidato de la matriz antes de crear runtimes o llamar al proveedor. Todas las respuestas evaluables deben identificar exactamente `gpt-5.6-terra`. Configuraciones mixtas o ausentes fallan antes de OpenAI. El wrapper toma un snapshot de entorno después de la activación opt-in.
 
 La matriz `/7` reutiliza los mismos fixtures, contexts, expectations y alternativas de `/6`; conserva prompts D1/D2 `/3`, provider D2 `/2`, policy D2 `/1` y expectation D2 `/2`. Solo cambia funcionalmente el candidato. La versión de governance se registra separadamente como metadata experimental, sin alterar los requests semánticos. El fingerprint de matriz cambia por matrix identity/model; los fingerprints D1/D2, context, targets y transcript no cambian. Tampoco cambia el claimId para un mismo finding canónico.
 
@@ -194,11 +194,12 @@ No invalidan por sí solos: erratas documentales, logging allowlisted no materia
 - M6-D3R14: **CLOSED / COMPLETE**.
 - M6-D3R16: **CLOSED / COMPLETE**.
 - M6-D3R18: **CLOSED / COMPLETE**, exclusivamente offline.
-- M6-D3B: **NOT CLOSED — READY FOR PROMPT-V4 LIVE ACCEPTANCE FROM SMOKE**.
+- M6-D3R20: **CLOSED / COMPLETE**, exclusivamente offline.
+- M6-D3B: **NOT CLOSED — READY FOR MATRIX-10 LIVE ACCEPTANCE FROM SMOKE**.
 - M6-D3: **PARTIAL**.
 - M6-D: **PARTIAL**.
 
-No se ejecuta OpenAI en D3R18 y no se cierra M6-D. `/1`, `/4`, `/5`, `/6`, `/7` y `/8` conservan `REJECT`; `/2` y `/3`, `INCONCLUSIVE`; `/9` queda `PENDING LIVE ACCEPTANCE`. M6 sigue en 46% y el proyecto en 49.37%. No se afirma que Terra sea mejor ni que la aclaración haya superado aceptación live.
+No se ejecuta OpenAI en D3R20 y no se cierra M6-D. `/1`, `/4`, `/5`, `/6`, `/7`, `/8` y `/9` conservan `REJECT`; `/2` y `/3`, `INCONCLUSIVE`; `/10` queda `PENDING LIVE ACCEPTANCE`. M6 sigue en 46% y el proyecto en 49.37%. No se afirma que Terra sea mejor ni que la tercera alternativa haya superado aceptación live.
 
 ## 10. Validación offline M6-D3R14
 
@@ -293,3 +294,42 @@ Validación final offline de R18:
 - `git diff --check`: **PASS**.
 
 M6-D3R18 — **CLOSED / COMPLETE**. M6-D3B — **NOT CLOSED — READY FOR PROMPT-V4 LIVE ACCEPTANCE FROM SMOKE**. Matrix `/9` sigue **PENDING LIVE ACCEPTANCE**; la aceptación real requiere autorización independiente. Cero OpenAI/live en este incremento, sin staging, commit ni push. Progreso sin cambios: M6 46% / proyecto 49.37%.
+
+## 13. M6-D3R20 — tercera alternativa canónica exacta para C3 ref 7
+
+La ejecución live de `/9` queda históricamente **REJECT**. C3 ref 7 apareció con identidad semántica, excerpt literal y span correctos, pero con una combinación canónica completa no preregistrada: barrera `conclusion_…000009`, medicamento atribuido `med_…000001` y medicamento del ámbito real de esa barrera `med_…000003`. D3R19 clasificó el fallo como `RELATED_CLINICAL_REFS_ALTERNATIVE_GAP`; no se reinterpreta el resultado ni se relaja el gate.
+
+Matrix `/10` conserva expectation contract `pharmaceutical-d3-d2-expectation/2` y añade a ref 7 una tercera alternativa completa, exacta e indivisible:
+
+- excerpt: `La barrera FORGETFULNESS corresponde al Medicamento A.`;
+- span UTF-16: `[0,54)`;
+- refs exactas: conclusión de barrera `…000009`, medicamento atribuido `…000001` y ámbito canónico real `…000003`;
+- identidad semántica: `ADHERENCE / CONTRADICTORY / ASSERTION`, sin cambios;
+- claimId esperado: `pharm_claim_aa0b7f32a23b3096848b18e94fa02af396a038d91957a6a375af2f7c011bbc3f`.
+
+La conclusión de adherencia `…000015` no es necesaria para esta alternativa: la proposición está soportada estructuralmente por el sujeto barrera, el medicamento atribuido por el alumno y el medicamento del ámbito canónico real de esa barrera. Esto no autoriza subconjuntos, superconjuntos ni recombinaciones. La comparación sigue siendo igualdad exacta contra una de tres alternativas preregistradas; no hay subset matching, normalización, fuzzy matching, mayoría ni transformación server-side.
+
+Identidades congeladas:
+
+- Matrix: `pharmaceutical-d3-live-matrix/10`.
+- Canonicalization: `pharmaceutical-d3-live-matrix-v10/1`.
+- Fingerprint: `e435d6c6443a0ba4ce21b091d83d1bdab0e3d0bc38d3c7710d2fdb0ba04dda7c`.
+- Candidate: `gpt-5.6-terra`, **PENDING LIVE ACCEPTANCE**.
+- Prompt D1 `/3`; prompt D2 `/4`; request D2 `/2`; provider `/2`; policy `/1`; expectation `/2`; governance `/1`, todos intactos.
+- C3 request fingerprint: `ca1e4bfbbc099a1a15e89f0c3684b4f4335a4ce6fce3c31911c758575724dd5e`, intacto.
+
+La comparación estructural `/9`→`/10` demuestra que solo cambian identidad/fingerprint de matrix y la tercera alternativa exacta de C3 ref 7. Permanecen fixtures, mensajes, expectations clínicas, D1/D2, relaciones, request fingerprints, repeticiones, orden, gate 100%, stop-early, candidato, parámetros y presupuesto máximo de 82 llamadas (61 D1 + 21 D2). Los históricos permanecen: `/1`, `/4`, `/5`, `/6`, `/7`, `/8` y `/9` `REJECT`; `/2` y `/3` `INCONCLUSIVE`.
+
+Validación offline de R20:
+
+- tres alternativas exactas de C3 ref 7: **3/3 PASS**;
+- claimId y justificación estructural de la tercera alternativa: **PASS**;
+- subconjuntos, superconjuntos y combinaciones no registradas: **4/4 REJECT**;
+- invariancia estricta `/9`→`/10`: **PASS**;
+- D3 harness: **100/100 PASS**;
+- D2 regresiones: **216/216 PASS**;
+- D1 regresiones: **142/142 PASS**;
+- suite completa: **2827 PASS / 25 SKIPPED**;
+- TypeScript `--noEmit --incremental false`: **PASS**.
+
+M6-D3R20 — **CLOSED / COMPLETE**. M6-D3B — **NOT CLOSED — READY FOR MATRIX-10 LIVE ACCEPTANCE FROM SMOKE**. La aceptación real de `/10` requiere autorización independiente. Cero OpenAI/live en este incremento; progreso sin cambios: M6 46% / proyecto 49.37%.

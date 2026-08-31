@@ -3,9 +3,9 @@ import { describe, expect, it } from 'vitest';
 import {
   isPharmaceuticalD3LiveEnabledV1,
   parsePharmaceuticalD3LiveSelectionV1,
-  PHARMACEUTICAL_D3_CANDIDATE_REGISTRATION_V9,
-  PHARMACEUTICAL_D3_LIVE_MATRIX_V9,
-  runPharmaceuticalD3AcceptanceV4,
+  PHARMACEUTICAL_D3_CANDIDATE_REGISTRATION_V10,
+  PHARMACEUTICAL_D3_LIVE_MATRIX_V10,
+  runPharmaceuticalD3AcceptanceV5,
   validatePharmaceuticalD3ModelSelectionV8,
 } from './support/pharmaceutical-d3-live-matrix';
 
@@ -30,7 +30,7 @@ describe.skipIf(!liveEnabled)('M6-D3 pre-registered pharmaceutical semantic live
         .toString(16)
         .padStart(12, '0')}`;
     };
-    const result = await runPharmaceuticalD3AcceptanceV4({
+    const result = await runPharmaceuticalD3AcceptanceV5({
       createD1Runtime: () =>
         d1Module.createOpenAiPharmaceuticalD1SemanticRuntimeV2(runtimeEnvironment),
       createD2Runtime: () =>
@@ -40,9 +40,9 @@ describe.skipIf(!liveEnabled)('M6-D3 pre-registered pharmaceutical semantic live
     }, configuredModels, selection);
 
     console.log(JSON.stringify({
-      matrixVersion: PHARMACEUTICAL_D3_LIVE_MATRIX_V9.matrixVersion,
-      matrixFingerprint: PHARMACEUTICAL_D3_LIVE_MATRIX_V9.fingerprint.value,
-      modelPolicyVersion: PHARMACEUTICAL_D3_CANDIDATE_REGISTRATION_V9.modelPolicyVersion,
+      matrixVersion: PHARMACEUTICAL_D3_LIVE_MATRIX_V10.matrixVersion,
+      matrixFingerprint: PHARMACEUTICAL_D3_LIVE_MATRIX_V10.fingerprint.value,
+      modelPolicyVersion: PHARMACEUTICAL_D3_CANDIDATE_REGISTRATION_V10.modelPolicyVersion,
       decision: result.decision,
       summaries: result.summaries,
     }, null, 2));

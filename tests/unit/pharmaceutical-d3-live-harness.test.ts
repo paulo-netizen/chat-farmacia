@@ -42,9 +42,12 @@ import {
   PHARMACEUTICAL_D3_LIVE_MATRIX_V7,
   PHARMACEUTICAL_D3_LIVE_MATRIX_V8,
   PHARMACEUTICAL_D3_LIVE_MATRIX_V9,
+  PHARMACEUTICAL_D3_LIVE_MATRIX_V10,
+  PHARMACEUTICAL_D3_HISTORICAL_RESULT_V9,
   PHARMACEUTICAL_D3_HISTORICAL_RESULT_V8,
   PHARMACEUTICAL_D3_CANDIDATE_REGISTRATION_V9,
   runPharmaceuticalD3AcceptanceV4,
+  runPharmaceuticalD3AcceptanceV5,
   PHARMACEUTICAL_D3_HISTORICAL_RESULT_V7,
   PHARMACEUTICAL_D3_CANDIDATE_REGISTRATION_V8,
   runPharmaceuticalD3AcceptanceV3,
@@ -55,6 +58,82 @@ import {
   type PharmaceuticalD3LiveFixtureV1,
   type PharmaceuticalD3LiveRuntimeFactoryV1,
 } from '../live/support/pharmaceutical-d3-live-matrix';
+
+describe('M6-D3R20 third exact C3 ref 7 alternative', () => {
+  const terra = { d1: 'gpt-5.6-terra', d2: 'gpt-5.6-terra' } as const;
+  const c3 = PHARMACEUTICAL_D3_LIVE_MATRIX_V10.fixtures.find((item) => item.fixtureId === 'C3')!;
+  const ref7 = c3.expectedD2.find((item) => item.messageRef === '7')!;
+  if (!('expectationVersion' in ref7)) throw new Error('C3 ref 7 expectation /2 unavailable');
+
+  it.each([0, 1, 2])('accepts exact preregistered ref 7 alternative %s', async (alternativeIndex) => {
+    const fake = fakeFactory({ responseModel: terra.d2, d2Result: (fixture, request) =>
+      d2ProviderResult(fixture, request, { 7: alternativeIndex }) });
+    const result = await runPharmaceuticalD3AcceptanceV5(fake.factory, terra, { fixtureId: 'C3', run: 1 });
+    expect(result.decision).toBe('ACCEPT');
+    expect(fake.d2Calls).toHaveBeenCalledTimes(1);
+  });
+
+  it('derives the audited claimId from subject, attributed medication and actual scope', async () => {
+    const third = ref7.canonicalAlternatives[2];
+    expect(third).toEqual({
+      excerpt: 'La barrera FORGETFULNESS corresponde al Medicamento A.',
+      excerptStart: 0,
+      excerptEnd: 54,
+      relatedClinicalRefs: [
+        { kind: 'CONCLUSION', conclusionRef: 'conclusion_d3000000-0000-4000-8000-000000000009' },
+        { kind: 'MEDICATION', medicationRef: 'med_d3000000-0000-4000-8000-000000000001' },
+        { kind: 'MEDICATION', medicationRef: 'med_d3000000-0000-4000-8000-000000000003' },
+      ],
+    });
+    expect(third.relatedClinicalRefs).not.toContainEqual({
+      kind: 'CONCLUSION',
+      conclusionRef: 'conclusion_d3000000-0000-4000-8000-000000000015',
+    });
+    const fake = fakeFactory({ responseModel: terra.d2, d2Result: (fixture, request) =>
+      d2ProviderResult(fixture, request, { 7: 2 }) });
+    const result = await runPharmaceuticalD3AcceptanceV5(fake.factory, terra, { fixtureId: 'C3', run: 1 });
+    expect(result.summaries[0].d2.find((item) => item.messageRef === '7')?.claimId)
+      .toBe('pharm_claim_aa0b7f32a23b3096848b18e94fa02af396a038d91957a6a375af2f7c011bbc3f');
+  });
+
+  it.each([
+    ['barrier plus actual medication only', [0, 2]],
+    ['medications without barrier', [1, 2]],
+    ['registered refs plus an irrelevant extra ref', [0, 1, 2, 3]],
+    ['same identity with another unregistered refs set', [0, 3]],
+  ])('rejects %s', async (_label, indexes) => {
+    const fake = fakeFactory({ responseModel: terra.d2, d2Result: (fixture, request) => {
+      const result = d2ProviderResult(fixture, request, { 7: 2 });
+      const irrelevant = request.authorityProjection.allowedClinicalRefs.find((candidate) =>
+        !ref7.canonicalAlternatives[2].relatedClinicalRefs.some((ref) => JSON.stringify(ref) === JSON.stringify(candidate)))!;
+      const pool = [...ref7.canonicalAlternatives[2].relatedClinicalRefs, irrelevant];
+      return { ...result, findings: result.findings.map((finding) => finding.messageRef === '7'
+        ? { ...finding, relatedClinicalRefs: indexes.map((index) => structuredClone(pool[index])) }
+        : finding) };
+    } });
+    const result = await runPharmaceuticalD3AcceptanceV5(fake.factory, terra, { fixtureId: 'C3', run: 1 });
+    expect(result.decision).toBe('REJECT');
+    expect(result.summaries[0].failure).toEqual({ code: 'EXPECTATION_MISMATCH', path: 'd2.findings[1]' });
+  });
+
+  it('changes /9 only by identity, fingerprint and the third exact ref 7 alternative', () => {
+    const strip = (matrix: typeof PHARMACEUTICAL_D3_LIVE_MATRIX_V10 | typeof PHARMACEUTICAL_D3_LIVE_MATRIX_V9) => {
+      const { matrixVersion: _version, fingerprint: _fingerprint, fixtures, ...rest } = matrix;
+      return { ...rest, fixtures: fixtures.map((fixture) => ({ ...fixture,
+        expectedD2: fixture.expectedD2.map((finding) => finding.messageRef === '7' && 'expectationVersion' in finding
+          ? { ...finding, canonicalAlternatives: finding.canonicalAlternatives.slice(0, 2) }
+          : finding),
+      })) };
+    };
+    expect(strip(PHARMACEUTICAL_D3_LIVE_MATRIX_V10)).toEqual(strip(PHARMACEUTICAL_D3_LIVE_MATRIX_V9));
+    expect(PHARMACEUTICAL_D3_LIVE_MATRIX_V10.matrixVersion).toBe('pharmaceutical-d3-live-matrix/10');
+    expect(PHARMACEUTICAL_D3_LIVE_MATRIX_V10.fingerprint.value)
+      .toBe('e435d6c6443a0ba4ce21b091d83d1bdab0e3d0bc38d3c7710d2fdb0ba04dda7c');
+    expect(PHARMACEUTICAL_D3_HISTORICAL_RESULT_V9).toMatchObject({ decision: 'REJECT', fixtureId: 'C3', run: 1 });
+    expect(calculatePharmaceuticalD3CallBudgetV1(PHARMACEUTICAL_D3_LIVE_MATRIX_V10))
+      .toEqual({ ...calculatePharmaceuticalD3CallBudgetV1(PHARMACEUTICAL_D3_LIVE_MATRIX_V9) });
+  });
+});
 
 function d1ProviderResult(
   fixture: PharmaceuticalD3LiveFixtureV1,
@@ -521,8 +600,8 @@ describe('M6-D3R14 explicit experimental candidate', () => {
     expect(source.indexOf('const configuredModels = validatePharmaceuticalD3ModelSelectionV8')).toBeGreaterThan(0);
     expect(source.indexOf('const configuredModels = validatePharmaceuticalD3ModelSelectionV8'))
       .toBeLessThan(source.indexOf("import('../../lib/cases/v2/openai-pharmaceutical-d1-semantic-runtime')"));
-    expect(source).toContain('PHARMACEUTICAL_D3_LIVE_MATRIX_V9');
-    expect(source).toContain('runPharmaceuticalD3AcceptanceV4');
+    expect(source).toContain('PHARMACEUTICAL_D3_LIVE_MATRIX_V10');
+    expect(source).toContain('runPharmaceuticalD3AcceptanceV5');
     expect(source).not.toContain('runPharmaceuticalD3AcceptanceV1');
   });
 });
