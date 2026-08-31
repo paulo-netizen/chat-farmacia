@@ -3,7 +3,10 @@ import {
   buildPharmaceuticalClinicalClaimFindingSetV2,
   validatePharmaceuticalClinicalClaimFindingSetV2,
 } from './build-pharmaceutical-d2-claim-findings';
-import { buildPharmaceuticalD2SemanticRequestV2 } from './build-pharmaceutical-d2-semantic-request';
+import {
+  buildPharmaceuticalD2RelationalSemanticRequestV2,
+  buildPharmaceuticalD2SemanticRequestV2,
+} from './build-pharmaceutical-d2-semantic-request';
 import {
   PHARMACEUTICAL_D2_PROVIDER_RESULT_CONTRACT_VERSION_V2,
   type PharmaceuticalD2ProviderResultV2,
@@ -154,10 +157,20 @@ export async function adjudicatePharmaceuticalD2ClaimsV2(
   context: PharmaceuticalAdjudicationContextSetV2,
   runtime: PharmaceuticalD2SemanticRuntimeV2,
   allocateExecutionId: AllocatePharmaceuticalD2SemanticExecutionIdV2,
+  requestContractVersion: PharmaceuticalD2SemanticRequestV2['contractVersion'] = 'pharmaceutical-d2-semantic-request/1',
 ): Promise<PharmaceuticalD2ClaimAdjudicationV2> {
   let request: PharmaceuticalD2SemanticRequestV2;
   try {
-    request = buildPharmaceuticalD2SemanticRequestV2(context);
+    switch (requestContractVersion) {
+      case 'pharmaceutical-d2-semantic-request/1':
+        request = buildPharmaceuticalD2SemanticRequestV2(context);
+        break;
+      case 'pharmaceutical-d2-semantic-request/2':
+        request = buildPharmaceuticalD2RelationalSemanticRequestV2(context);
+        break;
+      default:
+        throw new Error('unsupported D2 semantic request contract');
+    }
   } catch (cause) {
     throw pharmaceuticalD2SemanticErrorV2(
       'INTERNAL_VALIDATION_ERROR',

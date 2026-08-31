@@ -33,6 +33,8 @@ export const PHARMACEUTICAL_D2_STUDENT_MESSAGE_SET_CONTRACT_VERSION_V1 =
   'pharmaceutical-d2-student-message-set/1' as const;
 export const PHARMACEUTICAL_D2_SEMANTIC_REQUEST_CONTRACT_VERSION_V1 =
   'pharmaceutical-d2-semantic-request/1' as const;
+export const PHARMACEUTICAL_D2_SEMANTIC_REQUEST_CONTRACT_VERSION_V2 =
+  'pharmaceutical-d2-semantic-request/2' as const;
 export const PHARMACEUTICAL_D2_PROVIDER_RESULT_CONTRACT_VERSION_V1 =
   'pharmaceutical-d2-provider-result/1' as const;
 export const PHARMACEUTICAL_D2_PROVIDER_RESULT_CONTRACT_VERSION_V2 =
@@ -105,7 +107,8 @@ export type PharmaceuticalD2SemanticRequestFingerprintV1 = Readonly<{
   value: string;
 }>;
 
-export type PharmaceuticalD2SemanticRequestV2 = Readonly<{
+/** Historical request /1: its material and canonicalization remain unchanged. */
+export type PharmaceuticalD2SemanticRequestV1 = Readonly<{
   schemaVersion: '2.0';
   contractVersion: 'pharmaceutical-d2-semantic-request/1';
   contextFingerprint: PharmaceuticalAdjudicationContextFingerprintV1;
@@ -115,6 +118,34 @@ export type PharmaceuticalD2SemanticRequestV2 = Readonly<{
   authorityProjection: PharmaceuticalD2AuthorityProjectionV2;
   requestFingerprint: PharmaceuticalD2SemanticRequestFingerprintV1;
 }>;
+
+/** Positive M6-C links only; no inferred clinical conclusions or free text. */
+export type PharmaceuticalD2RelationshipProjectionV2 = Readonly<{
+  barrierRef: ConclusionId;
+  barrierAssessmentRef: ConclusionId;
+  adherenceAssessmentRef: ConclusionId;
+  medicationRefs: readonly MedicationId[];
+}>;
+
+export type PharmaceuticalD2SemanticRequestFingerprintV2 = Readonly<{
+  algorithm: 'sha256';
+  canonicalization: 'pharmaceutical-d2-semantic-request-v2/2';
+  value: string;
+}>;
+
+export type PharmaceuticalD2RelationalSemanticRequestV2 = Readonly<
+  Omit<PharmaceuticalD2SemanticRequestV1, 'contractVersion' | 'authorityProjection' | 'requestFingerprint'> & {
+    contractVersion: 'pharmaceutical-d2-semantic-request/2';
+    authorityProjection: PharmaceuticalD2AuthorityProjectionV2 & Readonly<{
+      relationships: readonly PharmaceuticalD2RelationshipProjectionV2[];
+    }>;
+    requestFingerprint: PharmaceuticalD2SemanticRequestFingerprintV2;
+  }
+>;
+
+export type PharmaceuticalD2SemanticRequestV2 =
+  | PharmaceuticalD2SemanticRequestV1
+  | PharmaceuticalD2RelationalSemanticRequestV2;
 
 export type PharmaceuticalD2ProviderFindingV1 = Readonly<{
   messageRef: SessionMessageId;
@@ -194,7 +225,7 @@ export type PharmaceuticalClinicalClaimFindingSetV2 = Readonly<{
   caseVersionId: CaseVersionId;
   contextFingerprint: PharmaceuticalAdjudicationContextFingerprintV1;
   policyVersion: string;
-  requestFingerprint: PharmaceuticalD2SemanticRequestFingerprintV1;
+  requestFingerprint: PharmaceuticalD2SemanticRequestV2['requestFingerprint'];
   findings: readonly PharmaceuticalClinicalClaimFindingV2[];
   fingerprint: PharmaceuticalClinicalClaimFindingSetFingerprintV1;
 }>;

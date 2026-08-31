@@ -6,21 +6,25 @@ import type {
   PharmaceuticalTargetClinicalContextV2,
 } from './pharmaceutical-adjudication-context-types';
 import { buildPharmaceuticalD2StudentMessageSetV2 } from './build-pharmaceutical-d2-student-message-set';
+import { buildPharmaceuticalD2RelationshipProjectionV2 } from './build-pharmaceutical-d2-relationship-projection';
 import {
   PHARMACEUTICAL_D2_CLAIM_POLICY_VERSION_V1,
   PHARMACEUTICAL_D2_CLAIM_PROMPT_VERSION_V3,
   PHARMACEUTICAL_D2_SEMANTIC_REQUEST_CONTRACT_VERSION_V1,
+  PHARMACEUTICAL_D2_SEMANTIC_REQUEST_CONTRACT_VERSION_V2,
   type PharmaceuticalD2AuthorityProjectionV2,
   type PharmaceuticalD2AuthorityTargetV2,
   type PharmaceuticalD2ClaimDomainV2,
   type PharmaceuticalD2ClinicalRefV2,
   type PharmaceuticalD2SemanticRequestFingerprintV1,
-  type PharmaceuticalD2SemanticRequestV2,
+  type PharmaceuticalD2SemanticRequestV1,
+  type PharmaceuticalD2RelationalSemanticRequestV2,
+  type PharmaceuticalD2SemanticRequestFingerprintV2,
 } from './pharmaceutical-d2-claim-types';
 import type { PharmaceuticalEvaluationExpectedValueV2 } from './pharmaceutical-evaluation-target-types';
 
 type UnknownRecord = Record<string, unknown>;
-type RequestCore = Omit<PharmaceuticalD2SemanticRequestV2, 'requestFingerprint'>;
+type RequestCore = Omit<PharmaceuticalD2SemanticRequestV1, 'requestFingerprint'>;
 
 export class PharmaceuticalD2SemanticRequestError extends Error {
   constructor(public readonly path: string, message: string) {
@@ -295,7 +299,7 @@ export function buildPharmaceuticalD2SemanticRequestV2(
   context: PharmaceuticalAdjudicationContextSetV2,
   promptVersion: string = PHARMACEUTICAL_D2_CLAIM_PROMPT_VERSION_V3,
   policyVersion: string = PHARMACEUTICAL_D2_CLAIM_POLICY_VERSION_V1,
-): PharmaceuticalD2SemanticRequestV2 {
+): PharmaceuticalD2SemanticRequestV1 {
   const core: RequestCore = {
     schemaVersion: '2.0',
     contractVersion: PHARMACEUTICAL_D2_SEMANTIC_REQUEST_CONTRACT_VERSION_V1,
@@ -316,12 +320,51 @@ export function validatePharmaceuticalD2SemanticRequestV2(
   context: PharmaceuticalAdjudicationContextSetV2,
   expectedPromptVersion: string = PHARMACEUTICAL_D2_CLAIM_PROMPT_VERSION_V3,
   expectedPolicyVersion: string = PHARMACEUTICAL_D2_CLAIM_POLICY_VERSION_V1,
-): PharmaceuticalD2SemanticRequestV2 {
+): PharmaceuticalD2SemanticRequestV1 {
   const expected = buildPharmaceuticalD2SemanticRequestV2(
     context,
     expectedPromptVersion,
     expectedPolicyVersion,
   );
   assertExact(input, expected, 'pharmaceuticalD2SemanticRequest');
+  return expected;
+}
+
+export function calculatePharmaceuticalD2SemanticRequestFingerprintV2(
+  core: Omit<PharmaceuticalD2RelationalSemanticRequestV2, 'requestFingerprint'>,
+): PharmaceuticalD2SemanticRequestFingerprintV2 {
+  return {
+    algorithm: 'sha256',
+    canonicalization: 'pharmaceutical-d2-semantic-request-v2/2',
+    value: createHash('sha256').update(JSON.stringify([
+      core.contractVersion, core.contextFingerprint, core.policyVersion,
+      core.promptVersion, core.studentMessages, core.authorityProjection,
+    ])).digest('hex'),
+  };
+}
+
+/** Explicit opt-in; /1 callers and historical matrices retain their original material. */
+export function buildPharmaceuticalD2RelationalSemanticRequestV2(
+  context: PharmaceuticalAdjudicationContextSetV2,
+): PharmaceuticalD2RelationalSemanticRequestV2 {
+  const { requestFingerprint: _historicalFingerprint, ...historical } =
+    buildPharmaceuticalD2SemanticRequestV2(context);
+  const core = {
+    ...historical,
+    contractVersion: PHARMACEUTICAL_D2_SEMANTIC_REQUEST_CONTRACT_VERSION_V2,
+    authorityProjection: {
+      ...historical.authorityProjection,
+      relationships: buildPharmaceuticalD2RelationshipProjectionV2(context),
+    },
+  };
+  return { ...core, requestFingerprint: calculatePharmaceuticalD2SemanticRequestFingerprintV2(core) };
+}
+
+export function validatePharmaceuticalD2RelationalSemanticRequestV2(
+  input: unknown,
+  context: PharmaceuticalAdjudicationContextSetV2,
+): PharmaceuticalD2RelationalSemanticRequestV2 {
+  const expected = buildPharmaceuticalD2RelationalSemanticRequestV2(context);
+  assertExact(input, expected, 'pharmaceuticalD2RelationalSemanticRequest');
   return expected;
 }

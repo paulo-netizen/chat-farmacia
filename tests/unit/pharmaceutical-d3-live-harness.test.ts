@@ -39,6 +39,10 @@ import {
   PHARMACEUTICAL_D3_LIVE_MATRIX_V5,
   PHARMACEUTICAL_D3_LIVE_MATRIX_V6,
   PHARMACEUTICAL_D3_LIVE_MATRIX_V7,
+  PHARMACEUTICAL_D3_LIVE_MATRIX_V8,
+  PHARMACEUTICAL_D3_HISTORICAL_RESULT_V7,
+  PHARMACEUTICAL_D3_CANDIDATE_REGISTRATION_V8,
+  runPharmaceuticalD3AcceptanceV3,
   runPharmaceuticalD3AcceptanceV2,
   validatePharmaceuticalD3ModelSelectionV7,
   runPharmaceuticalD3AcceptanceV1,
@@ -166,6 +170,97 @@ function fakeFactory(overrides: Readonly<{
   };
   return { factory, d1Calls, d2Calls };
 }
+
+describe('M6-D3R16 isolated relationship representation', () => {
+  const terra = { d1: 'gpt-5.6-terra', d2: 'gpt-5.6-terra' } as const;
+
+  it('freezes matrix /8 without changing any material except matrix identity and D2 request version', () => {
+    const { fingerprint, matrixVersion, contractVersions, ...v8 } = PHARMACEUTICAL_D3_LIVE_MATRIX_V8;
+    const { fingerprint: _oldHash, matrixVersion: _oldVersion, contractVersions: oldContracts, ...v7 } = PHARMACEUTICAL_D3_LIVE_MATRIX_V7;
+    expect(matrixVersion).toBe('pharmaceutical-d3-live-matrix/8');
+    expect(fingerprint).toEqual({ algorithm: 'sha256', canonicalization: 'pharmaceutical-d3-live-matrix-v8/1', value: '18d8de2f85bbe40b9bd9389f87ebeb4d95a1b4861385fd62635ea32dc850e486' });
+    expect(v8).toEqual(v7);
+    expect(contractVersions).toEqual({ ...oldContracts, d2Request: 'pharmaceutical-d2-semantic-request/2' });
+    expect(oldContracts.d2Request).toBe('pharmaceutical-d2-semantic-request/1');
+    expect(PHARMACEUTICAL_D3_LIVE_MATRIX_V8.fixtures).toBe(PHARMACEUTICAL_D3_LIVE_MATRIX_V7.fixtures);
+    expect(Object.isFrozen(PHARMACEUTICAL_D3_LIVE_MATRIX_V8)).toBe(true);
+    expect(PHARMACEUTICAL_D3_LIVE_MATRIX_V8.promptVersions).toEqual({ d1: 'pharmaceutical-d1-adjudication-prompt/3', d2: 'pharmaceutical-d2-claim-prompt/3' });
+  });
+
+  it('preserves histories /1-/7 including the two model-specific rejections', () => {
+    const histories = [PHARMACEUTICAL_D3_HISTORICAL_RESULT_V1, PHARMACEUTICAL_D3_HISTORICAL_RESULT_V2,
+      PHARMACEUTICAL_D3_HISTORICAL_RESULT_V3, PHARMACEUTICAL_D3_HISTORICAL_RESULT_V4,
+      PHARMACEUTICAL_D3_HISTORICAL_RESULT_V5, PHARMACEUTICAL_D3_HISTORICAL_RESULT_V6,
+      PHARMACEUTICAL_D3_HISTORICAL_RESULT_V7];
+    expect(histories.map((item) => item.decision)).toEqual(['REJECT', 'INCONCLUSIVE', 'INCONCLUSIVE', 'REJECT', 'REJECT', 'REJECT', 'REJECT']);
+    expect(PHARMACEUTICAL_D3_HISTORICAL_RESULT_V7).toMatchObject({ model: terra.d2,
+      matrixFingerprint: '9194a30c2b7574e000d87571166d4d42384200b908654e7e048fc180188cfab9' });
+    expect(PHARMACEUTICAL_D3_CANDIDATE_REGISTRATION_V8).toMatchObject({ status: 'PENDING LIVE ACCEPTANCE', model: terra.d1, modelPolicyVersion: 'pharmaceutical-semantic-model-policy/1' });
+  });
+
+  it('retains repetitions, zero-call fixture, execution order and the 82-call budget', () => {
+    expect(calculatePharmaceuticalD3CallBudgetV1(PHARMACEUTICAL_D3_LIVE_MATRIX_V8))
+      .toEqual(calculatePharmaceuticalD3CallBudgetV1(PHARMACEUTICAL_D3_LIVE_MATRIX_V7));
+    expect(calculatePharmaceuticalD3CallBudgetV1(PHARMACEUTICAL_D3_LIVE_MATRIX_V8)).toMatchObject({ d1: 61, d2: 21, total: 82 });
+    expect(PHARMACEUTICAL_D3_LIVE_MATRIX_V8.fixtures.map((item) => [item.fixtureId, item.repetitions]))
+      .toEqual(PHARMACEUTICAL_D3_LIVE_MATRIX_V7.fixtures.map((item) => [item.fixtureId, item.repetitions]));
+  });
+
+  it('executes /7 as /1 and /8 as /2 while preserving all old request material and findings', async () => {
+    const requests7: PharmaceuticalD2SemanticRequestV2[] = [];
+    const requests8: PharmaceuticalD2SemanticRequestV2[] = [];
+    const d1Requests7: PharmaceuticalD1SemanticBatchRequestV2[] = [];
+    const d1Requests8: PharmaceuticalD1SemanticBatchRequestV2[] = [];
+    function factory(requests: PharmaceuticalD2SemanticRequestV2[], d1: PharmaceuticalD1SemanticBatchRequestV2[]) {
+      return fakeFactory({ responseModel: terra.d1,
+        d1Result: (fixture, request) => { d1.push(request); return d1ProviderResult(fixture, request); },
+        d2Result: (fixture, request) => { requests.push(request); return d2ProviderResult(fixture, request); },
+      });
+    }
+    const old = factory(requests7, d1Requests7);
+    const current = factory(requests8, d1Requests8);
+    const result7 = await runPharmaceuticalD3AcceptanceV2(old.factory, terra);
+    const result8 = await runPharmaceuticalD3AcceptanceV3(current.factory, terra);
+    expect(result7.decision).toBe('ACCEPT');
+    expect(result8.decision).toBe('ACCEPT');
+    expect(current.d1Calls).toHaveBeenCalledTimes(61);
+    expect(current.d2Calls).toHaveBeenCalledTimes(21);
+    expect(d1Requests8).toEqual(d1Requests7);
+    expect(requests8).toHaveLength(requests7.length);
+    requests8.forEach((request, index) => {
+      if (request.contractVersion !== 'pharmaceutical-d2-semantic-request/2') throw new Error('expected /2');
+      const previous = requests7[index];
+      expect(previous.contractVersion).toBe('pharmaceutical-d2-semantic-request/1');
+      const { relationships, ...authorityProjection } = request.authorityProjection;
+      expect(Array.isArray(relationships)).toBe(true);
+      expect({ ...request, authorityProjection, contractVersion: previous.contractVersion, requestFingerprint: previous.requestFingerprint }).toEqual(previous);
+      expect(request.requestFingerprint.value).not.toBe(previous.requestFingerprint.value);
+    });
+    expect(result8.summaries.map((item) => [item.d1, item.d2])).toEqual(result7.summaries.map((item) => [item.d1, item.d2]));
+    const artifact = buildPharmaceuticalD3EvidenceArtifactV1('a'.repeat(40), result8.summaries, result8.decision, PHARMACEUTICAL_D3_LIVE_MATRIX_V8);
+    expect(artifact).toContain('pharmaceutical-d2-semantic-request/2');
+    expect(artifact).toContain(PHARMACEUTICAL_D3_LIVE_MATRIX_V8.fingerprint.value);
+  });
+
+  it('keeps omission of C3 ref 7 a stop-early rejection under /8', async () => {
+    const fake = fakeFactory({ responseModel: terra.d2, d2Result: (fixture, request) => {
+      const result = d2ProviderResult(fixture, request);
+      return fixture.fixtureId === 'C3' ? { ...result, findings: result.findings.filter((item) => item.messageRef !== '7') } : result;
+    } });
+    const result = await runPharmaceuticalD3AcceptanceV3(fake.factory, terra);
+    expect(result.decision).toBe('REJECT');
+    expect(result.summaries.map((item) => [item.fixtureId, item.run])).toEqual([['SMOKE', 1], ['C3', 1]]);
+    expect(fake.d1Calls).toHaveBeenCalledTimes(1);
+    expect(fake.d2Calls).toHaveBeenCalledTimes(2);
+  });
+
+  it('retains fail-closed model preflight before runtime construction under /8', async () => {
+    const fake = fakeFactory();
+    await expect(runPharmaceuticalD3AcceptanceV3(fake.factory, { d1: 'gpt-5.6-sol', d2: terra.d2 })).rejects.toThrow();
+    expect(fake.d1Calls).not.toHaveBeenCalled();
+    expect(fake.d2Calls).not.toHaveBeenCalled();
+  });
+});
 
 describe('M6-D3R14 explicit experimental candidate', () => {
   const terra = { d1: 'gpt-5.6-terra', d2: 'gpt-5.6-terra' } as const;
@@ -312,9 +407,11 @@ describe('M6-D3R14 explicit experimental candidate', () => {
     const source = readFileSync(resolve(process.cwd(), 'tests/live/pharmaceutical-d1-d2-semantic-live.test.ts'), 'utf8');
     expect(source).toContain('describe.skipIf(!liveEnabled)');
     expect(source).toContain('Object.freeze({ ...process.env })');
-    expect(source.indexOf('const configuredModels = validatePharmaceuticalD3ModelSelectionV7'))
+    expect(source.indexOf('const configuredModels = validatePharmaceuticalD3ModelSelectionV8')).toBeGreaterThan(0);
+    expect(source.indexOf('const configuredModels = validatePharmaceuticalD3ModelSelectionV8'))
       .toBeLessThan(source.indexOf("import('../../lib/cases/v2/openai-pharmaceutical-d1-semantic-runtime')"));
-    expect(source).toContain('PHARMACEUTICAL_D3_LIVE_MATRIX_V7');
+    expect(source).toContain('PHARMACEUTICAL_D3_LIVE_MATRIX_V8');
+    expect(source).toContain('runPharmaceuticalD3AcceptanceV3');
     expect(source).not.toContain('runPharmaceuticalD3AcceptanceV1');
   });
 });

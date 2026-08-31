@@ -3,10 +3,10 @@ import { describe, expect, it } from 'vitest';
 import {
   isPharmaceuticalD3LiveEnabledV1,
   parsePharmaceuticalD3LiveSelectionV1,
-  PHARMACEUTICAL_D3_CANDIDATE_REGISTRATION_V7,
-  PHARMACEUTICAL_D3_LIVE_MATRIX_V7,
-  runPharmaceuticalD3AcceptanceV2,
-  validatePharmaceuticalD3ModelSelectionV7,
+  PHARMACEUTICAL_D3_CANDIDATE_REGISTRATION_V8,
+  PHARMACEUTICAL_D3_LIVE_MATRIX_V8,
+  runPharmaceuticalD3AcceptanceV3,
+  validatePharmaceuticalD3ModelSelectionV8,
 } from './support/pharmaceutical-d3-live-matrix';
 
 const liveEnabled = isPharmaceuticalD3LiveEnabledV1(process.env);
@@ -15,7 +15,7 @@ describe.skipIf(!liveEnabled)('M6-D3 pre-registered pharmaceutical semantic live
   it('executes only the frozen matrix with gpt-5.6-terra and safe summaries', async () => {
     const runtimeEnvironment = Object.freeze({ ...process.env });
     const selection = parsePharmaceuticalD3LiveSelectionV1(runtimeEnvironment);
-    const configuredModels = validatePharmaceuticalD3ModelSelectionV7({
+    const configuredModels = validatePharmaceuticalD3ModelSelectionV8({
       d1: runtimeEnvironment.OPENAI_PHARMACEUTICAL_D1_MODEL,
       d2: runtimeEnvironment.OPENAI_PHARMACEUTICAL_D2_MODEL,
     });
@@ -30,7 +30,7 @@ describe.skipIf(!liveEnabled)('M6-D3 pre-registered pharmaceutical semantic live
         .toString(16)
         .padStart(12, '0')}`;
     };
-    const result = await runPharmaceuticalD3AcceptanceV2({
+    const result = await runPharmaceuticalD3AcceptanceV3({
       createD1Runtime: () =>
         d1Module.createOpenAiPharmaceuticalD1SemanticRuntimeV2(runtimeEnvironment),
       createD2Runtime: () =>
@@ -40,9 +40,9 @@ describe.skipIf(!liveEnabled)('M6-D3 pre-registered pharmaceutical semantic live
     }, configuredModels, selection);
 
     console.log(JSON.stringify({
-      matrixVersion: PHARMACEUTICAL_D3_LIVE_MATRIX_V7.matrixVersion,
-      matrixFingerprint: PHARMACEUTICAL_D3_LIVE_MATRIX_V7.fingerprint.value,
-      modelPolicyVersion: PHARMACEUTICAL_D3_CANDIDATE_REGISTRATION_V7.modelPolicyVersion,
+      matrixVersion: PHARMACEUTICAL_D3_LIVE_MATRIX_V8.matrixVersion,
+      matrixFingerprint: PHARMACEUTICAL_D3_LIVE_MATRIX_V8.fingerprint.value,
+      modelPolicyVersion: PHARMACEUTICAL_D3_CANDIDATE_REGISTRATION_V8.modelPolicyVersion,
       decision: result.decision,
       summaries: result.summaries,
     }, null, 2));

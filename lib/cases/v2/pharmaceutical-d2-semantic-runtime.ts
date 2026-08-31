@@ -1,7 +1,6 @@
 import type { PharmaceuticalSemanticExecutionIdV2 } from './pharmaceutical-d1-adjudication-types';
 import type {
   PharmaceuticalClinicalClaimFindingSetV2,
-  PharmaceuticalD2SemanticRequestFingerprintV1,
   PharmaceuticalD2SemanticRequestV2,
 } from './pharmaceutical-d2-claim-types';
 
@@ -34,7 +33,7 @@ export type PharmaceuticalD2SemanticExecutionMetadataV2 = Readonly<{
   responseModel: string;
   promptVersion: string;
   policyVersion: string;
-  requestFingerprint: PharmaceuticalD2SemanticRequestFingerprintV1;
+  requestFingerprint: PharmaceuticalD2SemanticRequestV2['requestFingerprint'];
 }>;
 
 export type PharmaceuticalD2ClaimAdjudicationV2 = Readonly<{
