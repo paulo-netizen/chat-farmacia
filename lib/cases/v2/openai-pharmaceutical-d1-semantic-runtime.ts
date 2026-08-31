@@ -1,4 +1,9 @@
 import OpenAI from 'openai';
+import {
+  isPharmaceuticalSemanticModelV2,
+  PHARMACEUTICAL_SEMANTIC_MODEL_POLICY_VERSION_V1,
+  type PharmaceuticalSemanticModelV2,
+} from './pharmaceutical-semantic-model-policy';
 
 import {
   executeOpenAiPharmaceuticalD1SemanticBatchV1,
@@ -57,16 +62,16 @@ function readApiKey(env: Readonly<Record<string, string | undefined>>): string {
 
 function readModel(
   env: Readonly<Record<string, string | undefined>>,
-): typeof OPENAI_PHARMACEUTICAL_D1_CANDIDATE_MODEL {
+): PharmaceuticalSemanticModelV2 {
   const value = env.OPENAI_PHARMACEUTICAL_D1_MODEL;
   if (value === undefined) return OPENAI_PHARMACEUTICAL_D1_CANDIDATE_MODEL;
-  if (value !== OPENAI_PHARMACEUTICAL_D1_CANDIDATE_MODEL) {
+  if (!isPharmaceuticalSemanticModelV2(value)) {
     configurationFailure(
       'OPENAI_PHARMACEUTICAL_D1_MODEL',
-      `must be exactly ${OPENAI_PHARMACEUTICAL_D1_CANDIDATE_MODEL}`,
+      `must be an exact model allowed by ${PHARMACEUTICAL_SEMANTIC_MODEL_POLICY_VERSION_V1}`,
     );
   }
-  return OPENAI_PHARMACEUTICAL_D1_CANDIDATE_MODEL;
+  return value;
 }
 
 function readPositiveInteger(

@@ -5,6 +5,9 @@ import type {
   PharmaceuticalD2SemanticRequestV2,
 } from './pharmaceutical-d2-claim-types';
 
+export type { PharmaceuticalSemanticModelV2 } from './pharmaceutical-semantic-model-policy';
+
+// Preserve the existing default; Terra always requires explicit selection.
 export const OPENAI_PHARMACEUTICAL_D2_CANDIDATE_MODEL =
   'gpt-5.6-sol' as const;
 

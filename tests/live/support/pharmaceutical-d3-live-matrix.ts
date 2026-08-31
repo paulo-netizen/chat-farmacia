@@ -58,6 +58,12 @@ import { validatePharmaceuticalClinicalReferenceV2 } from '../../../lib/cases/v2
 import { validatePharmaceuticalEvaluationExpectationSetV2 } from '../../../lib/cases/v2/validate-pharmaceutical-evaluation-expectations';
 import { validateCaseVersionId } from '../../../lib/cases/v2/validate-patient-facts';
 
+import {
+  isPharmaceuticalSemanticModelV2,
+  PHARMACEUTICAL_SEMANTIC_MODEL_POLICY_VERSION_V1,
+  type PharmaceuticalSemanticModelV2,
+} from '../../../lib/cases/v2/pharmaceutical-semantic-model-policy';
+
 export const PHARMACEUTICAL_D3_LIVE_MATRIX_VERSION_V1 =
   'pharmaceutical-d3-live-matrix/1' as const;
 export const PHARMACEUTICAL_D3_LIVE_MATRIX_FINGERPRINT_V1 =
@@ -137,6 +143,25 @@ export const PHARMACEUTICAL_D3_LIVE_MATRIX_FINGERPRINT_V6 =
 export const PHARMACEUTICAL_D3_D2_EXPECTATION_VERSION_V2 =
   'pharmaceutical-d3-d2-expectation/2' as const;
 export const PHARMACEUTICAL_D3_LIVE_MODEL_V1 = 'gpt-5.6-sol' as const;
+export const PHARMACEUTICAL_D3_HISTORICAL_RESULT_V6 = Object.freeze({
+  matrixVersion: PHARMACEUTICAL_D3_LIVE_MATRIX_VERSION_V6,
+  matrixFingerprint: PHARMACEUTICAL_D3_LIVE_MATRIX_FINGERPRINT_V6,
+  model: PHARMACEUTICAL_D3_LIVE_MODEL_V1,
+  decision: 'REJECT' as const,
+  fixtureId: 'C3' as const,
+  run: 1 as const,
+  failure: Object.freeze({
+    code: 'MODEL_SEMANTIC_FAILURE' as const,
+    missingMessageRef: '7' as const,
+  }),
+  disposition: 'REJECTED_FOR_M6_D3_MATRIX_6' as const,
+  globalDisposition: 'NOT_GLOBALLY_DISALLOWED' as const,
+});
+export const PHARMACEUTICAL_D3_LIVE_MATRIX_VERSION_V7 =
+  'pharmaceutical-d3-live-matrix/7' as const;
+export const PHARMACEUTICAL_D3_LIVE_MATRIX_FINGERPRINT_V7 =
+  '9194a30c2b7574e000d87571166d4d42384200b908654e7e048fc180188cfab9' as const;
+export const PHARMACEUTICAL_D3_LIVE_MODEL_V7 = 'gpt-5.6-terra' as const;
 export const PHARMACEUTICAL_D3_LIVE_EXECUTION_ORDER_V1 = Object.freeze([
   'SMOKE', 'C3', 'C2', 'C1', 'S1', 'S2',
 ] as const);
@@ -359,6 +384,18 @@ export type PharmaceuticalD3LiveMatrixV6 = Readonly<{
   }>;
 }>;
 
+export type PharmaceuticalD3LiveMatrixV7 = Readonly<
+  Omit<PharmaceuticalD3LiveMatrixV6, 'matrixVersion' | 'model' | 'fingerprint'> & {
+    matrixVersion: typeof PHARMACEUTICAL_D3_LIVE_MATRIX_VERSION_V7;
+    model: typeof PHARMACEUTICAL_D3_LIVE_MODEL_V7;
+    fingerprint: Readonly<{
+      algorithm: 'sha256';
+      canonicalization: 'pharmaceutical-d3-live-matrix-v7/1';
+      value: string;
+    }>;
+  }
+>;
+
 export type PharmaceuticalD3CallBudgetV1 = Readonly<{
   byFixture: Readonly<Record<PharmaceuticalD3FixtureIdV1, Readonly<{
     repetitions: number;
@@ -375,7 +412,7 @@ export type PharmaceuticalD3SafeRunSummaryV1 = Readonly<{
   fixtureId: PharmaceuticalD3FixtureIdV1;
   run: number;
   decision: PharmaceuticalD3FinalDecisionV1;
-  requestedModel: typeof PHARMACEUTICAL_D3_LIVE_MODEL_V1;
+  requestedModel: PharmaceuticalSemanticModelV2;
   responseModels: readonly string[];
   requestFingerprints: readonly string[];
   d1: readonly Readonly<{
@@ -1520,6 +1557,50 @@ export const PHARMACEUTICAL_D3_LIVE_MATRIX_V6: PharmaceuticalD3LiveMatrixV6 =
     }),
   });
 
+// Do not mutate sharedMatrixCore: every historical identity remains Sol.
+// Model governance is execution metadata, not semantic request material.
+const matrixCoreV7 = {
+  ...matrixCoreV6,
+  matrixVersion: PHARMACEUTICAL_D3_LIVE_MATRIX_VERSION_V7,
+  model: PHARMACEUTICAL_D3_LIVE_MODEL_V7,
+};
+const calculatedMatrixFingerprintV7 = sha256(matrixCoreV7);
+if (calculatedMatrixFingerprintV7 !== PHARMACEUTICAL_D3_LIVE_MATRIX_FINGERPRINT_V7) {
+  throw new Error(`material D3 matrix v7 fingerprint is ${calculatedMatrixFingerprintV7}`);
+}
+export const PHARMACEUTICAL_D3_LIVE_MATRIX_V7: PharmaceuticalD3LiveMatrixV7 =
+  deepFreeze({
+    ...matrixCoreV7,
+    fingerprint: {
+      algorithm: 'sha256',
+      canonicalization: 'pharmaceutical-d3-live-matrix-v7/1',
+      value: PHARMACEUTICAL_D3_LIVE_MATRIX_FINGERPRINT_V7,
+    },
+  });
+
+export const PHARMACEUTICAL_D3_CANDIDATE_REGISTRATION_V7 = Object.freeze({
+  matrixVersion: PHARMACEUTICAL_D3_LIVE_MATRIX_VERSION_V7,
+  matrixFingerprint: PHARMACEUTICAL_D3_LIVE_MATRIX_FINGERPRINT_V7,
+  modelPolicyVersion: PHARMACEUTICAL_SEMANTIC_MODEL_POLICY_VERSION_V1,
+  model: PHARMACEUTICAL_D3_LIVE_MODEL_V7,
+  disposition: 'AUTHORIZED_AS_EXPERIMENTAL_M6_D3_CANDIDATE' as const,
+  status: 'PENDING LIVE ACCEPTANCE' as const,
+});
+
+export function validatePharmaceuticalD3ModelSelectionV7(
+  configured: Readonly<{ d1: unknown; d2: unknown }>,
+): Readonly<{ d1: typeof PHARMACEUTICAL_D3_LIVE_MODEL_V7; d2: typeof PHARMACEUTICAL_D3_LIVE_MODEL_V7 }> {
+  if (
+    !isPharmaceuticalSemanticModelV2(configured.d1) ||
+    !isPharmaceuticalSemanticModelV2(configured.d2) ||
+    configured.d1 !== PHARMACEUTICAL_D3_LIVE_MATRIX_V7.model ||
+    configured.d2 !== PHARMACEUTICAL_D3_LIVE_MATRIX_V7.model
+  ) {
+    throw new Error('D3 matrix /7 requires explicit matching D1/D2 candidate models');
+  }
+  return Object.freeze({ d1: configured.d1, d2: configured.d2 });
+}
+
 export function pharmaceuticalD3FixtureV1(
   fixtureId: PharmaceuticalD3FixtureIdV1,
 ): PharmaceuticalD3LiveFixtureV1 {
@@ -1531,7 +1612,7 @@ export function pharmaceuticalD3FixtureV1(
 }
 
 export function calculatePharmaceuticalD3CallBudgetV1(
-  matrix: PharmaceuticalD3LiveMatrixV2 | PharmaceuticalD3LiveMatrixV3 | PharmaceuticalD3LiveMatrixV4 | PharmaceuticalD3LiveMatrixV5 | PharmaceuticalD3LiveMatrixV6 =
+  matrix: PharmaceuticalD3LiveMatrixV2 | PharmaceuticalD3LiveMatrixV3 | PharmaceuticalD3LiveMatrixV4 | PharmaceuticalD3LiveMatrixV5 | PharmaceuticalD3LiveMatrixV6 | PharmaceuticalD3LiveMatrixV7 =
     PHARMACEUTICAL_D3_LIVE_MATRIX_V6,
 ): PharmaceuticalD3CallBudgetV1 {
   const byFixture = Object.fromEntries(matrix.fixtures.map((fixture) => {
@@ -1773,6 +1854,7 @@ function failureSummary(
   started: number,
   decision: 'REJECT' | 'INCONCLUSIVE',
   cause: unknown,
+  requestedModel: PharmaceuticalSemanticModelV2,
   d1?: PharmaceuticalTargetSemanticAdjudicationSetV2,
   d2?: PharmaceuticalD2ClaimAdjudicationV2,
   attemptedCalls: Readonly<{ d1: number; d2: number }> = { d1: 0, d2: 0 },
@@ -1801,7 +1883,7 @@ function failureSummary(
     fixtureId: fixture.fixtureId,
     run,
     decision,
-    requestedModel: PHARMACEUTICAL_D3_LIVE_MODEL_V1,
+    requestedModel,
     responseModels,
     requestFingerprints,
     d1: safeD1Summary(d1),
@@ -1835,6 +1917,16 @@ export async function runPharmaceuticalD3FixtureV1(
   run: number,
   runtimeFactory: PharmaceuticalD3LiveRuntimeFactoryV1,
 ): Promise<PharmaceuticalD3SafeRunSummaryV1> {
+  // Retained for offline historical regression, not the current live entrypoint.
+  return runPharmaceuticalD3Fixture(fixture, run, runtimeFactory, PHARMACEUTICAL_D3_LIVE_MODEL_V1);
+}
+
+async function runPharmaceuticalD3Fixture(
+  fixture: PharmaceuticalD3LiveFixtureV1,
+  run: number,
+  runtimeFactory: PharmaceuticalD3LiveRuntimeFactoryV1,
+  requestedModel: PharmaceuticalSemanticModelV2,
+): Promise<PharmaceuticalD3SafeRunSummaryV1> {
   if (!Number.isInteger(run) || run < 1 || run > fixture.repetitions) {
     throw new RangeError(`run must be between 1 and ${fixture.repetitions}`);
   }
@@ -1851,10 +1943,10 @@ export async function runPharmaceuticalD3FixtureV1(
           adjudicateBatch: async (request) => {
             attemptedCalls.d1 += 1;
             const receipt = await runtime.adjudicateBatch(request);
-            if (receipt.responseModel !== PHARMACEUTICAL_D3_LIVE_MODEL_V1) {
+            if (receipt.responseModel !== requestedModel) {
               throw new PharmaceuticalD3InconclusiveError(
                 'responseModel',
-                `must be exactly ${PHARMACEUTICAL_D3_LIVE_MODEL_V1}`,
+                `must be exactly ${requestedModel}`,
               );
             }
             return receipt;
@@ -1872,10 +1964,10 @@ export async function runPharmaceuticalD3FixtureV1(
           detectClaims: async (request) => {
             attemptedCalls.d2 += 1;
             const receipt = await runtime.detectClaims(request);
-            if (receipt.responseModel !== PHARMACEUTICAL_D3_LIVE_MODEL_V1) {
+            if (receipt.responseModel !== requestedModel) {
               throw new PharmaceuticalD3InconclusiveError(
                 'responseModel',
-                `must be exactly ${PHARMACEUTICAL_D3_LIVE_MODEL_V1}`,
+                `must be exactly ${requestedModel}`,
               );
             }
             return receipt;
@@ -1889,9 +1981,9 @@ export async function runPharmaceuticalD3FixtureV1(
       ...(d1?.executions.map((item) => item.responseModel) ?? []),
       ...(d2?.executions.map((item) => item.responseModel) ?? []),
     ];
-    if (responseModels.some((model) => model !== PHARMACEUTICAL_D3_LIVE_MODEL_V1)) {
+    if (responseModels.some((model) => model !== requestedModel)) {
       throw new PharmaceuticalD3InconclusiveError(
-        'responseModel', `must be exactly ${PHARMACEUTICAL_D3_LIVE_MODEL_V1}`,
+        'responseModel', `must be exactly ${requestedModel}`,
       );
     }
     const d1Calls = attemptedCalls.d1;
@@ -1908,7 +2000,7 @@ export async function runPharmaceuticalD3FixtureV1(
       fixtureId: fixture.fixtureId,
       run,
       decision: 'ACCEPT',
-      requestedModel: PHARMACEUTICAL_D3_LIVE_MODEL_V1,
+      requestedModel,
       responseModels,
       requestFingerprints: [
         ...(d1?.executions.map((item) => item.requestFingerprint.value) ?? []),
@@ -1926,6 +2018,7 @@ export async function runPharmaceuticalD3FixtureV1(
       started,
       cause instanceof PharmaceuticalD3ExpectationError ? 'REJECT' : 'INCONCLUSIVE',
       cause,
+      requestedModel,
       d1,
       d2,
       attemptedCalls,
@@ -1943,17 +2036,44 @@ export async function runPharmaceuticalD3AcceptanceV1(
   decision: PharmaceuticalD3FinalDecisionV1;
   summaries: readonly PharmaceuticalD3SafeRunSummaryV1[];
 }>> {
+  return runPharmaceuticalD3Acceptance(PHARMACEUTICAL_D3_LIVE_MATRIX_V6, runtimeFactory, selection);
+}
+
+export async function runPharmaceuticalD3AcceptanceV2(
+  runtimeFactory: PharmaceuticalD3LiveRuntimeFactoryV1,
+  configuredModels: Readonly<{ d1: unknown; d2: unknown }>,
+  selection?: Readonly<{
+    fixtureId?: Exclude<PharmaceuticalD3FixtureIdV1, 'Z0'>;
+    run?: number;
+  }>,
+) {
+  validatePharmaceuticalD3ModelSelectionV7(configuredModels);
+  return runPharmaceuticalD3Acceptance(PHARMACEUTICAL_D3_LIVE_MATRIX_V7, runtimeFactory, selection);
+}
+
+async function runPharmaceuticalD3Acceptance(
+  matrix: PharmaceuticalD3LiveMatrixV6 | PharmaceuticalD3LiveMatrixV7,
+  runtimeFactory: PharmaceuticalD3LiveRuntimeFactoryV1,
+  selection?: Readonly<{
+    fixtureId?: Exclude<PharmaceuticalD3FixtureIdV1, 'Z0'>;
+    run?: number;
+  }>,
+): Promise<Readonly<{
+  decision: PharmaceuticalD3FinalDecisionV1;
+  summaries: readonly PharmaceuticalD3SafeRunSummaryV1[];
+}>> {
   const fixtureIds = selection?.fixtureId === undefined
-    ? PHARMACEUTICAL_D3_LIVE_EXECUTION_ORDER_V1
+    ? matrix.executionOrder
     : [selection.fixtureId];
   const summaries: PharmaceuticalD3SafeRunSummaryV1[] = [];
   for (const fixtureId of fixtureIds) {
-    const fixture = pharmaceuticalD3FixtureV1(fixtureId);
+    const fixture = matrix.fixtures.find((item) => item.fixtureId === fixtureId);
+    if (fixture === undefined) throw new Error('unknown pre-registered D3 fixture');
     const runs = selection?.run === undefined
       ? Array.from({ length: fixture.repetitions }, (_, index) => index + 1)
       : [selection.run];
     for (const run of runs) {
-      const summary = await runPharmaceuticalD3FixtureV1(fixture, run, runtimeFactory);
+      const summary = await runPharmaceuticalD3Fixture(fixture, run, runtimeFactory, matrix.model);
       summaries.push(summary);
       if (summary.decision !== 'ACCEPT') {
         return Object.freeze({ decision: summary.decision, summaries: Object.freeze(summaries) });
@@ -2000,24 +2120,28 @@ export function buildPharmaceuticalD3EvidenceArtifactV1(
   commitHash: string,
   summaries: readonly PharmaceuticalD3SafeRunSummaryV1[],
   decision: PharmaceuticalD3FinalDecisionV1,
+  matrix: PharmaceuticalD3LiveMatrixV6 | PharmaceuticalD3LiveMatrixV7 = PHARMACEUTICAL_D3_LIVE_MATRIX_V6,
 ): string {
   const observedModels = [...new Set(summaries.flatMap((summary) => summary.responseModels))];
   return [
     '# M6-D3 pharmaceutical semantic live acceptance',
     '',
     `- Commit: \`${commitHash}\``,
-    `- Matrix: \`${PHARMACEUTICAL_D3_LIVE_MATRIX_V6.matrixVersion}\``,
-    `- Matrix fingerprint: \`${PHARMACEUTICAL_D3_LIVE_MATRIX_V6.fingerprint.value}\``,
-    `- D1 prompt: \`${PHARMACEUTICAL_D3_LIVE_MATRIX_V6.promptVersions.d1}\``,
-    `- D2 prompt: \`${PHARMACEUTICAL_D3_LIVE_MATRIX_V6.promptVersions.d2}\``,
-    `- D2 policy: \`${PHARMACEUTICAL_D3_LIVE_MATRIX_V6.policyVersions.d2}\``,
-    `- Context contract: \`${PHARMACEUTICAL_D3_LIVE_MATRIX_V6.contractVersions.context}\``,
-    `- D1 request: \`${PHARMACEUTICAL_D3_LIVE_MATRIX_V6.contractVersions.d1Request}\``,
-    `- D2 request: \`${PHARMACEUTICAL_D3_LIVE_MATRIX_V6.contractVersions.d2Request}\``,
-    `- D2 provider result: \`${PHARMACEUTICAL_D3_LIVE_MATRIX_V6.contractVersions.d2ProviderResult}\``,
-    `- D2 expectation: \`${PHARMACEUTICAL_D3_LIVE_MATRIX_V6.contractVersions.d2Expectation}\``,
-    `- Batch plan: \`${PHARMACEUTICAL_D3_LIVE_MATRIX_V6.contractVersions.batchPlan}\``,
-    `- Requested model: \`${PHARMACEUTICAL_D3_LIVE_MODEL_V1}\``,
+    `- Matrix: \`${matrix.matrixVersion}\``,
+    `- Matrix fingerprint: \`${matrix.fingerprint.value}\``,
+    `- D1 prompt: \`${matrix.promptVersions.d1}\``,
+    `- D2 prompt: \`${matrix.promptVersions.d2}\``,
+    `- D2 policy: \`${matrix.policyVersions.d2}\``,
+    `- Context contract: \`${matrix.contractVersions.context}\``,
+    `- D1 request: \`${matrix.contractVersions.d1Request}\``,
+    `- D2 request: \`${matrix.contractVersions.d2Request}\``,
+    `- D2 provider result: \`${matrix.contractVersions.d2ProviderResult}\``,
+    `- D2 expectation: \`${matrix.contractVersions.d2Expectation}\``,
+    `- Batch plan: \`${matrix.contractVersions.batchPlan}\``,
+    `- Requested model: \`${matrix.model}\``,
+    ...(matrix.matrixVersion === PHARMACEUTICAL_D3_LIVE_MATRIX_VERSION_V7
+      ? [`- Model policy: \`${PHARMACEUTICAL_SEMANTIC_MODEL_POLICY_VERSION_V1}\``]
+      : []),
     `- Observed models: ${observedModels.map((model) => `\`${model}\``).join(', ') || 'none'}`,
     `- Decision: **${decision}**`,
     '',

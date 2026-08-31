@@ -15,9 +15,13 @@ import {
   buildOpenAiPharmaceuticalD2SemanticParamsV1,
 } from './pharmaceutical-d2-prompt';
 import {
-  OPENAI_PHARMACEUTICAL_D2_CANDIDATE_MODEL,
+  type PharmaceuticalSemanticModelV2,
   type PharmaceuticalD2SemanticProviderReceiptV2,
 } from './pharmaceutical-d2-semantic-runtime';
+import {
+  isPharmaceuticalSemanticModelV2,
+  PHARMACEUTICAL_SEMANTIC_MODEL_POLICY_VERSION_V1,
+} from './pharmaceutical-semantic-model-policy';
 import { PHARMACEUTICAL_D2_PROVIDER_RESULT_SCHEMA_V2 } from './validate-pharmaceutical-d2-provider-result';
 
 export const OPENAI_PHARMACEUTICAL_D2_EXECUTION_LIMITS = Object.freeze({
@@ -31,7 +35,7 @@ export type OpenAiPharmaceuticalD2SemanticClientV1 = Readonly<{
 }>;
 
 export type OpenAiPharmaceuticalD2SemanticExecutionConfigV1 = Readonly<{
-  model: typeof OPENAI_PHARMACEUTICAL_D2_CANDIDATE_MODEL;
+  model: PharmaceuticalSemanticModelV2;
   maxOutputTokens: number;
   timeoutMs: number;
 }>;
@@ -56,10 +60,10 @@ function validateConfig(
   for (const key of Object.keys(source)) {
     if (!allowed.has(key)) configFailure(`config.${key}`, 'unexpected property');
   }
-  if (source.model !== OPENAI_PHARMACEUTICAL_D2_CANDIDATE_MODEL) {
+  if (!isPharmaceuticalSemanticModelV2(source.model)) {
     configFailure(
       'config.model',
-      `must be exactly ${OPENAI_PHARMACEUTICAL_D2_CANDIDATE_MODEL}`,
+      `must be an exact model allowed by ${PHARMACEUTICAL_SEMANTIC_MODEL_POLICY_VERSION_V1}`,
     );
   }
   if (
@@ -85,7 +89,7 @@ function validateConfig(
     );
   }
   return {
-    model: OPENAI_PHARMACEUTICAL_D2_CANDIDATE_MODEL,
+    model: source.model,
     maxOutputTokens: source.maxOutputTokens,
     timeoutMs: source.timeoutMs,
   };

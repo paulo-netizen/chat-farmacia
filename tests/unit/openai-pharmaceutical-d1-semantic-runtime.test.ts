@@ -1,4 +1,7 @@
 import { describe, expect, it, vi } from 'vitest';
+import {
+  PHARMACEUTICAL_SEMANTIC_MODELS_V1,
+} from '../../lib/cases/v2/pharmaceutical-semantic-model-policy';
 
 import {
   buildPharmaceuticalD1SemanticBatchRequestV2,
@@ -243,6 +246,59 @@ describe('M6-D1B server-owned pharmaceutical prompt and transport', () => {
 });
 
 describe('M6-D1B OpenAI executor', () => {
+  it.each(PHARMACEUTICAL_SEMANTIC_MODELS_V1)('sends exact candidate %s with no retry or payload alteration', async (model) => {
+    const fake = clientWith(response({ model }));
+    const receipt = await executeOpenAiPharmaceuticalD1SemanticBatchV1(fake.client, request(), { ...config, model });
+    expect(fake.parse).toHaveBeenCalledTimes(1);
+    expect(fake.parse.mock.calls[0][0]).toMatchObject({ model, store: false });
+    expect(fake.parse.mock.calls[0][1]).toEqual({ maxRetries: 0, timeout: config.timeoutMs });
+    expect(receipt.responseModel).toBe(model);
+  });
+
+  it('changes only transport model between Sol and Terra, preserving request fingerprints', async () => {
+    const canonicalRequest = request();
+    const payloads = [];
+    for (const model of PHARMACEUTICAL_SEMANTIC_MODELS_V1) {
+      const fake = clientWith(response({ model }));
+      await executeOpenAiPharmaceuticalD1SemanticBatchV1(fake.client, canonicalRequest, { ...config, model });
+      const { model: requested, ...payload } = fake.parse.mock.calls[0][0];
+      expect(requested).toBe(model);
+      expect(JSON.parse(payload.input).semanticRequest.requestFingerprint)
+        .toEqual(canonicalRequest.requestFingerprint);
+      payloads.push(payload);
+    }
+    expect(payloads[0]).toEqual(payloads[1]);
+  });
+
+  it('retains observed model metadata when Terra was requested without inventing a fallback', async () => {
+    const fake = clientWith(response({ model: 'gpt-5.6-terra-observed' }));
+    const receipt = await executeOpenAiPharmaceuticalD1SemanticBatchV1(fake.client, request(), { ...config, model: 'gpt-5.6-terra' });
+    expect(receipt.responseModel).toBe('gpt-5.6-terra-observed');
+    expect(fake.parse).toHaveBeenCalledTimes(1);
+    expect(fake.parse.mock.calls[0][0].model).toBe('gpt-5.6-terra');
+  });
+
+  it('does not retry or fall back when the Terra provider fails', async () => {
+    const fake = clientWith(response());
+    fake.parse.mockRejectedValue(new Error('synthetic Terra failure'));
+    await expect(executeOpenAiPharmaceuticalD1SemanticBatchV1(fake.client, request(), { ...config, model: 'gpt-5.6-terra' }))
+      .rejects.toMatchObject({ code: 'PROVIDER_FAILURE' });
+    expect(fake.parse).toHaveBeenCalledTimes(1);
+    expect(fake.parse.mock.calls[0][0].model).toBe('gpt-5.6-terra');
+  });
+
+  it.each(PHARMACEUTICAL_SEMANTIC_MODELS_V1)('factory propagates explicit candidate %s unchanged', async (model) => {
+    const fake = clientWith(response({ model }));
+    const runtime = createOpenAiPharmaceuticalD1SemanticRuntimeV2({
+      OPENAI_API_KEY: 'synthetic-test-key',
+      OPENAI_PHARMACEUTICAL_D1_MODEL: model,
+    }, { createClient: () => fake.client, execute: executeOpenAiPharmaceuticalD1SemanticBatchV1 });
+    const receipt = await runtime.adjudicateBatch(request());
+    expect(fake.parse.mock.calls[0][0]).toMatchObject({ model, max_output_tokens: 10_000 });
+    expect(fake.parse.mock.calls[0][1]).toEqual({ maxRetries: 0, timeout: 60_000 });
+    expect(receipt.responseModel).toBe(model);
+  });
+
   it('uses Responses API, store false, one parse call and zero retries', async () => {
     const fake = clientWith(response());
     const receipt = await executeOpenAiPharmaceuticalD1SemanticBatchV1(
@@ -309,26 +365,26 @@ describe('M6-D1B OpenAI executor', () => {
     )).rejects.toMatchObject({ code: 'INVALID_PROVIDER_RESULT' });
   });
 
-  it('rejects non-Sol execution config before calling OpenAI', async () => {
+  it.each(['gpt-5.6', 'gpt-5.4', 'gpt-4o-mini', 'terra', 'sol', '', 'arbitrary-model', 'gpt-5.6-terra-observed', ' gpt-5.6-terra', 'gpt-5.6-terra '])('rejects unallowlisted execution config %j before calling OpenAI', async (model) => {
     const fake = clientWith(response());
     await expect(executeOpenAiPharmaceuticalD1SemanticBatchV1(
       fake.client,
       request(),
-      { ...config, model: 'gpt-5.6-terra' } as never,
+      { ...config, model } as never,
     )).rejects.toMatchObject({ code: 'CONFIGURATION_ERROR' });
     expect(fake.parse).not.toHaveBeenCalled();
   });
 });
 
 describe('M6-D1B server-owned OpenAI runtime configuration', () => {
-  it('defaults to the sole candidate model and accepts the exact allowlisted override', () => {
+  it('preserves the historical Sol default and exact Sol override', () => {
     expect(readOpenAiPharmaceuticalD1ExecutionConfigV1({}).model).toBe('gpt-5.6-sol');
     expect(readOpenAiPharmaceuticalD1ExecutionConfigV1({
       OPENAI_PHARMACEUTICAL_D1_MODEL: 'gpt-5.6-sol',
     }).model).toBe('gpt-5.6-sol');
   });
 
-  it.each(['gpt-5.6-terra', 'gpt-5.4', '', ' gpt-5.6-sol '])(
+  it.each(['gpt-5.4', '', ' gpt-5.6-sol ', 'gpt-5.6-terra-observed'])(
     'rejects model override %j',
     (model) => {
       expect(() => readOpenAiPharmaceuticalD1ExecutionConfigV1({

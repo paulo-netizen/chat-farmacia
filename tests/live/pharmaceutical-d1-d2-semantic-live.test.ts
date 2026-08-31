@@ -3,15 +3,22 @@ import { describe, expect, it } from 'vitest';
 import {
   isPharmaceuticalD3LiveEnabledV1,
   parsePharmaceuticalD3LiveSelectionV1,
-  PHARMACEUTICAL_D3_LIVE_MATRIX_V6,
-  runPharmaceuticalD3AcceptanceV1,
+  PHARMACEUTICAL_D3_CANDIDATE_REGISTRATION_V7,
+  PHARMACEUTICAL_D3_LIVE_MATRIX_V7,
+  runPharmaceuticalD3AcceptanceV2,
+  validatePharmaceuticalD3ModelSelectionV7,
 } from './support/pharmaceutical-d3-live-matrix';
 
 const liveEnabled = isPharmaceuticalD3LiveEnabledV1(process.env);
 
 describe.skipIf(!liveEnabled)('M6-D3 pre-registered pharmaceutical semantic live acceptance', () => {
-  it('executes only the frozen matrix with gpt-5.6-sol and safe summaries', async () => {
-    const selection = parsePharmaceuticalD3LiveSelectionV1(process.env);
+  it('executes only the frozen matrix with gpt-5.6-terra and safe summaries', async () => {
+    const runtimeEnvironment = Object.freeze({ ...process.env });
+    const selection = parsePharmaceuticalD3LiveSelectionV1(runtimeEnvironment);
+    const configuredModels = validatePharmaceuticalD3ModelSelectionV7({
+      d1: runtimeEnvironment.OPENAI_PHARMACEUTICAL_D1_MODEL,
+      d2: runtimeEnvironment.OPENAI_PHARMACEUTICAL_D2_MODEL,
+    });
     const [d1Module, d2Module] = await Promise.all([
       import('../../lib/cases/v2/openai-pharmaceutical-d1-semantic-runtime'),
       import('../../lib/cases/v2/openai-pharmaceutical-d2-semantic-runtime'),
@@ -23,18 +30,19 @@ describe.skipIf(!liveEnabled)('M6-D3 pre-registered pharmaceutical semantic live
         .toString(16)
         .padStart(12, '0')}`;
     };
-    const result = await runPharmaceuticalD3AcceptanceV1({
+    const result = await runPharmaceuticalD3AcceptanceV2({
       createD1Runtime: () =>
-        d1Module.createOpenAiPharmaceuticalD1SemanticRuntimeV2(process.env),
+        d1Module.createOpenAiPharmaceuticalD1SemanticRuntimeV2(runtimeEnvironment),
       createD2Runtime: () =>
-        d2Module.createOpenAiPharmaceuticalD2SemanticRuntimeV2(process.env),
+        d2Module.createOpenAiPharmaceuticalD2SemanticRuntimeV2(runtimeEnvironment),
       allocateD1ExecutionId: allocateExecutionId,
       allocateD2ExecutionId: allocateExecutionId,
-    }, selection);
+    }, configuredModels, selection);
 
     console.log(JSON.stringify({
-      matrixVersion: PHARMACEUTICAL_D3_LIVE_MATRIX_V6.matrixVersion,
-      matrixFingerprint: PHARMACEUTICAL_D3_LIVE_MATRIX_V6.fingerprint.value,
+      matrixVersion: PHARMACEUTICAL_D3_LIVE_MATRIX_V7.matrixVersion,
+      matrixFingerprint: PHARMACEUTICAL_D3_LIVE_MATRIX_V7.fingerprint.value,
+      modelPolicyVersion: PHARMACEUTICAL_D3_CANDIDATE_REGISTRATION_V7.modelPolicyVersion,
       decision: result.decision,
       summaries: result.summaries,
     }, null, 2));
