@@ -17,7 +17,8 @@ import { createSessionTranscriptSnapshotV2 } from '../../lib/cases/v2/spfa-sessi
 import type { PharmaceuticalClinicalReferenceV2 } from '../../lib/cases/v2/pharmaceutical-clinical-reference-types';
 import { buildPharmaceuticalClinicalClaimFindingSetV2 } from '../../lib/cases/v2/build-pharmaceutical-d2-claim-findings';
 import { adjudicatePharmaceuticalD2ClaimsV2 } from '../../lib/cases/v2/adjudicate-pharmaceutical-d2-claims';
-import { buildOpenAiPharmaceuticalD2SemanticParamsV1, PHARMACEUTICAL_D2_SEMANTIC_INSTRUCTIONS_V3 } from '../../lib/cases/v2/pharmaceutical-d2-prompt';
+import { buildOpenAiPharmaceuticalD2SemanticParamsV1, PHARMACEUTICAL_D2_SEMANTIC_INSTRUCTIONS_V3, PHARMACEUTICAL_D2_SEMANTIC_INSTRUCTIONS_V4 } from '../../lib/cases/v2/pharmaceutical-d2-prompt';
+import { PHARMACEUTICAL_D2_CLAIM_PROMPT_VERSION_V4 } from '../../lib/cases/v2/pharmaceutical-d2-claim-types';
 import { executeOpenAiPharmaceuticalD2SemanticClaimsV1 } from '../../lib/cases/v2/execute-openai-pharmaceutical-d2-semantic-adjudication';
 import type { PharmaceuticalAdjudicationContextSetV2 } from '../../lib/cases/v2/pharmaceutical-adjudication-context-types';
 import type { PharmaceuticalD2SemanticRequestV2 } from '../../lib/cases/v2/pharmaceutical-d2-claim-types';
@@ -247,6 +248,140 @@ describe('M6-D3R16 positive D2 relationship projection', () => {
     if (source?.domain !== 'BARRIER') throw new Error('missing fixture barrier');
     expect(output[0].medicationRefs).not.toBe(source.adherenceAssessment.medicationRefs);
     expect(JSON.stringify(c3)).toBe(before);
+  });
+});
+
+describe('M6-D3R18 explicit prompt /4 request binding', () => {
+  const prompt = PHARMACEUTICAL_D2_CLAIM_PROMPT_VERSION_V4;
+
+  it('changes only promptVersion and its derived SHA while preserving historical /3', () => {
+    const previous = buildPharmaceuticalD2RelationalSemanticRequestV2(c3);
+    const current = buildPharmaceuticalD2RelationalSemanticRequestV2(c3, prompt);
+    expect({ ...current, promptVersion: previous.promptVersion, requestFingerprint: previous.requestFingerprint }).toEqual(previous);
+    expect(current.contractVersion).toBe('pharmaceutical-d2-semantic-request/2');
+    expect(current.requestFingerprint).toEqual({ algorithm: 'sha256', canonicalization: 'pharmaceutical-d2-semantic-request-v2/2', value: 'ca1e4bfbbc099a1a15e89f0c3684b4f4335a4ce6fce3c31911c758575724dd5e' });
+    expect(previous.requestFingerprint.value).toBe('3e57da398d6dafcebdedc10ab1976f6397aeef5b4bb611420dd00ca304f366e5');
+    expect(buildPharmaceuticalD2RelationalSemanticRequestV2(c3, prompt)).toEqual(current);
+    expect(calculatePharmaceuticalD2SemanticRequestFingerprintV2(current)).toEqual(current.requestFingerprint);
+    expect(current.authorityProjection.relationships).toEqual([expected]);
+  });
+
+  it('reconstructs the explicitly pinned prompt and rejects version substitution or a stale hash', () => {
+    const previous = buildPharmaceuticalD2RelationalSemanticRequestV2(c3);
+    const current = buildPharmaceuticalD2RelationalSemanticRequestV2(c3, prompt);
+    expect(validatePharmaceuticalD2RelationalSemanticRequestV2(current, c3, prompt)).toEqual(current);
+    expect(validatePharmaceuticalD2RelationalSemanticRequestV2(previous, c3)).toEqual(previous);
+    expect(() => validatePharmaceuticalD2RelationalSemanticRequestV2(current, c3)).toThrow();
+    expect(() => validatePharmaceuticalD2RelationalSemanticRequestV2(previous, c3, prompt)).toThrow();
+    expect(() => validatePharmaceuticalD2RelationalSemanticRequestV2({ ...current, requestFingerprint: previous.requestFingerprint }, c3, prompt)).toThrow();
+  });
+
+  it('passes prompt /4 through the real executor with mock-only Terra and unchanged transport controls', async () => {
+    const request = buildPharmaceuticalD2RelationalSemanticRequestV2(c3, prompt);
+    const parse = vi.fn().mockResolvedValue({ model: 'gpt-5.6-terra', status: 'completed', output: [], output_parsed: {
+      schemaVersion: '2.0', contractVersion: 'pharmaceutical-d2-provider-result/2', findings: [],
+    } });
+    const receipt = await executeOpenAiPharmaceuticalD2SemanticClaimsV1({ responses: { parse } }, request, { model: 'gpt-5.6-terra', timeoutMs: 12000, maxOutputTokens: 4000 });
+    expect(parse).toHaveBeenCalledTimes(1);
+    const [params, options] = parse.mock.calls[0];
+    expect(params.instructions).toBe(PHARMACEUTICAL_D2_SEMANTIC_INSTRUCTIONS_V4);
+    expect(JSON.parse(params.input).semanticRequest).toEqual(request);
+    expect(params.text).toEqual(buildOpenAiPharmaceuticalD2SemanticParamsV1(buildPharmaceuticalD2RelationalSemanticRequestV2(c3)).text);
+    expect(params).toMatchObject({ model: 'gpt-5.6-terra', max_output_tokens: 4000, store: false });
+    expect(options).toEqual({ maxRetries: 0, timeout: 12000 });
+    expect(receipt.responseModel).toBe('gpt-5.6-terra');
+  });
+
+  it('orchestrates /4 explicitly while default historical execution remains /3', async () => {
+    const requests: PharmaceuticalD2SemanticRequestV2[] = [];
+    const detectClaims = vi.fn(async (request: PharmaceuticalD2SemanticRequestV2) => {
+      requests.push(request);
+      return { provider: 'openai' as const, responseModel: 'gpt-5.6-terra', providerResult: { schemaVersion: '2.0', contractVersion: 'pharmaceutical-d2-provider-result/2', findings: [] } };
+    });
+    const allocate = () => 'pharm_sem_exec_d3000000-0000-4000-8000-000000000001';
+    await adjudicatePharmaceuticalD2ClaimsV2(c3, { detectClaims }, allocate, 'pharmaceutical-d2-semantic-request/2');
+    await adjudicatePharmaceuticalD2ClaimsV2(c3, { detectClaims }, allocate, 'pharmaceutical-d2-semantic-request/2', prompt);
+    expect(requests.map((request) => request.promptVersion)).toEqual(['pharmaceutical-d2-claim-prompt/3', prompt]);
+    expect(detectClaims).toHaveBeenCalledTimes(2);
+  });
+});
+
+// These are structural contracts and controlled provider outcomes, not evidence of LLM accuracy.
+describe('M6-D3R18 propositional coverage offline contracts', () => {
+  const request = buildPharmaceuticalD2RelationalSemanticRequestV2(c3, PHARMACEUTICAL_D2_CLAIM_PROMPT_VERSION_V4);
+  function expectedProviderFinding(messageRef: string) {
+    const finding = pharmaceuticalD3FixtureV1('C3').expectedD2.find((item) => item.messageRef === messageRef);
+    if (!finding || !('expectationVersion' in finding)) throw new Error('missing canonical expectation');
+    const alternative = finding.canonicalAlternatives[0];
+    return { messageRef: finding.messageRef, domain: finding.domain, findingType: finding.findingType,
+      claimForm: finding.claimForm, excerpt: alternative.excerpt, occurrenceIndex: 0, relatedClinicalRefs: alternative.relatedClinicalRefs };
+  }
+  function output(findings: readonly unknown[]) {
+    return { schemaVersion: '2.0', contractVersion: 'pharmaceutical-d2-provider-result/2', findings };
+  }
+
+  it('A: separate barrier/medication components do not form a D1 barrier-to-medication target', () => {
+    const authority = request.authorityProjection;
+    expect(authority.targets.some((target) => target.aspect === 'BARRIER_CLASSIFICATION')).toBe(true);
+    expect(authority.targets.some((target) => target.aspect === 'ADHERENCE_MEDICATION_SCOPE')).toBe(true);
+    expect(authority.allowedClinicalRefs).toEqual(expect.arrayContaining([
+      { kind: 'CONCLUSION', conclusionRef: conclusion(9) }, { kind: 'MEDICATION', medicationRef: med(1) },
+    ]));
+    expect(authority.targets.filter((target) => target.clinicalContext.domain === 'BARRIER').map((target) => target.aspect).sort())
+      .toEqual(['BARRIER_CATEGORY', 'BARRIER_CLASSIFICATION', 'BARRIER_EXISTENCE', 'BARRIER_ROLE']);
+    expect(buildPharmaceuticalClinicalClaimFindingSetV2(request, output([expectedProviderFinding('7')])).findings)
+      .toMatchObject([{ messageRef: '7', findingType: 'CONTRADICTORY' }]);
+  });
+
+  it('B: the same opposite adherence-type proposition belongs entirely to its D1 target, not D2', () => {
+    const text = 'Concluyo que lo hace voluntariamente.';
+    const counterfactual = changed((value) => {
+      for (const target of value.targets) {
+        for (const candidate of target.studentCandidates) {
+          if (candidate.messageRef === '7') candidate.untrustedContent = text;
+        }
+      }
+    });
+    const same = buildPharmaceuticalD2RelationalSemanticRequestV2(counterfactual, PHARMACEUTICAL_D2_CLAIM_PROMPT_VERSION_V4);
+    const target = same.authorityProjection.targets.find((item) => item.aspect === 'ADHERENCE_TYPE');
+    if (!target?.primaryClinicalRef || target.clinicalContext.domain !== 'ADHERENCE') throw new Error('missing adherence type');
+    expect(target.expected).toEqual({ kind: 'ENUM', value: 'unintentional' });
+    expect(target.clinicalContext.assessment.medicationRefs).toEqual([med(3)]);
+    expect(buildPharmaceuticalClinicalClaimFindingSetV2(same, output([])).findings).toEqual([]);
+    expect(() => buildPharmaceuticalClinicalClaimFindingSetV2(same, output([{
+      ...expectedProviderFinding('7'), excerpt: text, claimForm: 'CONCLUSION', relatedClinicalRefs: [target.primaryClinicalRef],
+    }]))).toThrow(/duplicates a contradiction structurally represented/);
+  });
+
+  it('C: a wrong association between valid entities remains CONTRADICTORY, not UNSUPPORTED', () => {
+    expect(request.authorityProjection.relationships).toEqual([expected]);
+    expect(request.studentMessages.messages.find((item) => item.messageRef === '7')?.untrustedContent)
+      .toBe('La barrera FORGETFULNESS corresponde al Medicamento A.');
+    const canonical = buildPharmaceuticalClinicalClaimFindingSetV2(request, output([expectedProviderFinding('7')])).findings[0];
+    expect(canonical).toMatchObject({ messageRef: '7', domain: 'ADHERENCE', findingType: 'CONTRADICTORY', claimForm: 'ASSERTION', excerptStart: 0 });
+    expect(canonical.relatedClinicalRefs).toEqual(expect.arrayContaining([
+      { kind: 'CONCLUSION', conclusionRef: conclusion(9) }, { kind: 'MEDICATION', medicationRef: med(1) },
+    ]));
+    const historical = buildPharmaceuticalClinicalClaimFindingSetV2(buildPharmaceuticalD2RelationalSemanticRequestV2(c3), output([expectedProviderFinding('7')]));
+    expect(canonical).toEqual(historical.findings[0]);
+  });
+
+  it('D: an unrepresented new causal claim retains the preregistered UNSUPPORTED outcome', () => {
+    const finding = expectedProviderFinding('11');
+    expect(finding.excerpt).toBe('Afirmo una causalidad clínica adicional no representada.');
+    // The existing relation is an auditable reference, not support for the additional causal claim.
+    expect(finding.relatedClinicalRefs).toEqual([{ kind: 'RELATION', relationRef: conclusion(5) }]);
+    expect(buildPharmaceuticalClinicalClaimFindingSetV2(request, output([finding])).findings)
+      .toMatchObject([{ messageRef: '11', findingType: 'UNSUPPORTED', claimForm: 'ASSERTION' }]);
+  });
+
+  it('E: a supported correct association accepts an empty controlled output without inventing a finding', () => {
+    // Offline counterfactual only: same statement, but canonical scope now agrees with it.
+    const correct = buildPharmaceuticalD2RelationalSemanticRequestV2(withScope([1]), PHARMACEUTICAL_D2_CLAIM_PROMPT_VERSION_V4);
+    expect(correct.authorityProjection.relationships).toEqual([{ ...expected, medicationRefs: [med(1)] }]);
+    expect(correct.studentMessages.messages).toEqual(request.studentMessages.messages);
+    expect(buildPharmaceuticalClinicalClaimFindingSetV2(correct, output([])).findings).toEqual([]);
+    expect(buildPharmaceuticalD2RelationalSemanticRequestV2(c3).authorityProjection.relationships).toEqual([expected]);
   });
 });
 

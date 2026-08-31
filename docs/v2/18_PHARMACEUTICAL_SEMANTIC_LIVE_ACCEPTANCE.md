@@ -2,7 +2,7 @@
 
 ## 1. Estado y alcance
 
-M6-D3A congeló la primera matriz previa a la aceptación live de las lanes farmacéuticas D1 y D2. M6-D3R2 versionó la política de precisión de evidencia D1 después del rechazo histórico de esa primera matriz. Las ejecuciones de las matrices `/2` y `/3` quedaron `INCONCLUSIVE` por salidas provider D2 cuyos excerpts no coincidían literalmente con los offsets declarados bajo un contrato y validator correctos. M6-D3R6 eliminó esa sobrecarga técnica del provider: D2 selecciona excerpt literal + ocurrencia y el servidor resuelve los offsets UTF-16. La matriz `/4` quedó `REJECT` porque su expectation C3 omitía una recomendación `UNSUPPORTED` válida. M6-D3R8 incorporó esa expectation en `/5`, cuyo intento quedó `REJECT` porque exigía una única canonicalización de span/refs donde el contrato permite varias representaciones exactas. M6-D3R10 crea `/6` con alternativas completas, exactas y preregistradas. El intento `/6` quedó **REJECT** por omisión obligatoria de C3 ref 7, una `ASSERTION` `ADHERENCE / CONTRADICTORY`: `MODEL_SEMANTIC_FAILURE` bajo una matriz correcta. Sol queda **REJECTED_FOR_M6_D3_MATRIX_6** y **NOT_GLOBALLY_DISALLOWED**. M6-D3R14 autoriza experimentalmente Terra mediante una policy explícita y prepara `/7`, sin modificar semántica ni reevaluar históricos. El intento `/7` con Terra también quedó **REJECT** por omisión C3 ref 7. D3R15 concluyó **D2 CONTEXT SALIENCE GAP**, autoridad **SUFFICIENT_BUT_INDIRECT**. Ambos rechazos permanecen históricos. D3R16 prepara `/8` para aislar el efecto de representar explícitamente relaciones ya existentes; no demuestra aún que el fallo esté resuelto. No se repite `/6` para buscar PASS.
+M6-D3A congeló la primera matriz previa a la aceptación live de las lanes farmacéuticas D1 y D2. M6-D3R2 versionó la política de precisión de evidencia D1 después del rechazo histórico de esa primera matriz. Las ejecuciones de las matrices `/2` y `/3` quedaron `INCONCLUSIVE` por salidas provider D2 cuyos excerpts no coincidían literalmente con los offsets declarados bajo un contrato y validator correctos. M6-D3R6 eliminó esa sobrecarga técnica del provider: D2 selecciona excerpt literal + ocurrencia y el servidor resuelve los offsets UTF-16. La matriz `/4` quedó `REJECT` porque su expectation C3 omitía una recomendación `UNSUPPORTED` válida. M6-D3R8 incorporó esa expectation en `/5`, cuyo intento quedó `REJECT` porque exigía una única canonicalización de span/refs donde el contrato permite varias representaciones exactas. M6-D3R10 crea `/6` con alternativas completas, exactas y preregistradas. El intento `/6` quedó **REJECT** por omisión obligatoria de C3 ref 7, una `ASSERTION` `ADHERENCE / CONTRADICTORY`: `MODEL_SEMANTIC_FAILURE` bajo una matriz correcta. Sol queda **REJECTED_FOR_M6_D3_MATRIX_6** y **NOT_GLOBALLY_DISALLOWED**. M6-D3R14 autoriza experimentalmente Terra mediante una policy explícita y prepara `/7`, sin modificar semántica ni reevaluar históricos. El intento `/7` con Terra también quedó **REJECT** por omisión C3 ref 7. D3R15 concluyó **D2 CONTEXT SALIENCE GAP**, autoridad **SUFFICIENT_BUT_INDIRECT**. Ambos rechazos permanecen históricos. D3R16 preparó `/8` para aislar el efecto de representar explícitamente relaciones ya existentes; ese intento terminó **REJECT**. D3R17 concluyó **A — D2 PROMPT GAP**: la cobertura completa por D1 no estaba definida operativamente por identidad proposicional. D3R18 añade esa aclaración normativa en prompt `/4` y prepara `/9` offline; no demuestra aún que el fallo esté resuelto. No se repite `/6` para buscar PASS.
 
 Histórico inmutable `/1`:
 
@@ -51,15 +51,24 @@ Histórico inmutable `/7`:
 - modelo D1 y D2: `gpt-5.6-terra`;
 - resultado: **REJECT**, C3 run 1 por omisión mandatory ref 7; se conserva request D2 `/1` y el fingerprint original.
 
+Histórico inmutable `/8`:
+
+- matriz: `pharmaceutical-d3-live-matrix/8`;
+- fingerprint: `18d8de2f85bbe40b9bd9389f87ebeb4d95a1b4861385fd62635ea32dc850e486`;
+- modelo D1 y D2: `gpt-5.6-terra`;
+- request D2 `/2`, canonicalization `pharmaceutical-d2-semantic-request-v2/2`, prompt D2 `/3`;
+- C3 request fingerprint: `3e57da398d6dafcebdedc10ab1976f6397aeef5b4bb611420dd00ca304f366e5`;
+- resultado: **REJECT**, omisión mandatory C3 ref 7 pese a la proyección relacional explícita. El resultado se registra fuera del material congelado; no se reconstruye `/8` con prompt `/4`.
+
 ### Governance farmacéutica /1
 
 `pharmaceutical-semantic-model-policy/1` permite exactamente `gpt-5.6-sol` y `gpt-5.6-terra`. Es server-owned, de tipo cerrado y fail-closed: no admite aliases, strings arbitrarios, trim, normalización ni sustituciones. Los runtimes mantienen Sol como default histórico; Terra nunca se activa silenciosamente. Ambos executors envían el modelo validado y preservan `response.model` observado, sin fallback ni retries.
 
-La aceptación de `/8` exige selección explícita D1 = D2 = candidato de la matriz antes de crear runtimes o llamar al proveedor. Todas las respuestas evaluables deben identificar exactamente `gpt-5.6-terra`. Configuraciones mixtas o ausentes fallan antes de OpenAI. El wrapper toma un snapshot de entorno después de la activación opt-in.
+La aceptación pendiente de `/9` exige selección explícita D1 = D2 = candidato de la matriz antes de crear runtimes o llamar al proveedor. Todas las respuestas evaluables deben identificar exactamente `gpt-5.6-terra`. Configuraciones mixtas o ausentes fallan antes de OpenAI. El wrapper toma un snapshot de entorno después de la activación opt-in.
 
 La matriz `/7` reutiliza los mismos fixtures, contexts, expectations y alternativas de `/6`; conserva prompts D1/D2 `/3`, provider D2 `/2`, policy D2 `/1` y expectation D2 `/2`. Solo cambia funcionalmente el candidato. La versión de governance se registra separadamente como metadata experimental, sin alterar los requests semánticos. El fingerprint de matriz cambia por matrix identity/model; los fingerprints D1/D2, context, targets y transcript no cambian. Tampoco cambia el claimId para un mismo finding canónico.
 
-Los fingerprints `/1`–`/7` y sus materiales congelados permanecen intactos; los resultados históricos `/6` y `/7` se registran fuera de su material de fingerprint. No se sustituye la constante Sol compartida por las matrices históricas. La autorización técnica de un candidato no equivale a aceptación clínica.
+Los fingerprints `/1`–`/8` y sus materiales congelados permanecen intactos; los resultados históricos `/6`, `/7` y `/8` se registran fuera de su material de fingerprint. No se sustituye la constante Sol compartida por las matrices históricas. La autorización técnica de un candidato no equivale a aceptación clínica.
 
 El prompt D2 `/3` exige copiar el excerpt literalmente del mensaje student completo y seleccionar su `occurrenceIndex` zero-based entre coincidencias exactas enumeradas de izquierda a derecha. El provider no calcula ni devuelve offsets. El servidor localiza todas las ocurrencias literales —incluidos solapamientos—, valida la selección, deriva índices JavaScript UTF-16 `[start,end)` y comprueba la igualdad exacta con `slice`. No hay normalización, trim transformativo, case folding, fuzzy matching ni reparación silenciosa. La forma canónica final y el algoritmo de `claimId` conservan los offsets ya resueltos.
 
@@ -184,11 +193,12 @@ No invalidan por sí solos: erratas documentales, logging allowlisted no materia
 - M6-D3R10: **CLOSED / COMPLETE**.
 - M6-D3R14: **CLOSED / COMPLETE**.
 - M6-D3R16: **CLOSED / COMPLETE**.
-- M6-D3B: **NOT CLOSED — READY FOR RELATIONAL-PROJECTION LIVE ACCEPTANCE**.
+- M6-D3R18: **CLOSED / COMPLETE**, exclusivamente offline.
+- M6-D3B: **NOT CLOSED — READY FOR PROMPT-V4 LIVE ACCEPTANCE FROM SMOKE**.
 - M6-D3: **PARTIAL**.
 - M6-D: **PARTIAL**.
 
-No se ejecuta OpenAI en D3R16 y no se cierra M6-D. `/1`, `/4`, `/5`, `/6` y `/7` conservan `REJECT`; `/2` y `/3`, `INCONCLUSIVE`; `/8` queda `PENDING LIVE ACCEPTANCE`. M6 sigue en 46% y el proyecto en 49.37%. No se afirma que Terra sea mejor ni que la proyección haya superado aceptación live.
+No se ejecuta OpenAI en D3R18 y no se cierra M6-D. `/1`, `/4`, `/5`, `/6`, `/7` y `/8` conservan `REJECT`; `/2` y `/3`, `INCONCLUSIVE`; `/9` queda `PENDING LIVE ACCEPTANCE`. M6 sigue en 46% y el proyecto en 49.37%. No se afirma que Terra sea mejor ni que la aclaración haya superado aceptación live.
 
 ## 10. Validación offline M6-D3R14
 
@@ -229,7 +239,7 @@ C3 conserva `barrier …000009 → barrierAssessment …000008 → adherenceAsse
 - C3 request `/2`: `3e57da398d6dafcebdedc10ab1976f6397aeef5b4bb611420dd00ca304f366e5`.
 - Matrix: `pharmaceutical-d3-live-matrix/8`.
 - Fingerprint: `18d8de2f85bbe40b9bd9389f87ebeb4d95a1b4861385fd62635ea32dc850e486`.
-- Candidate: `gpt-5.6-terra`, **PENDING LIVE ACCEPTANCE**.
+- Candidate histórico `/8`: `gpt-5.6-terra`; el registro inicial fue **PENDING LIVE ACCEPTANCE**, con resultado posterior **REJECT** documentado en §1.
 
 Comparación /7→/8: se comparte el mismo material congelado de fixtures, transcript/context/targets, expectativas (incluida C3 ref 7), prompts D1/D2 `/3`, provider D2 `/2`, policy D2 `/1`, expectation `/2` y governance `/1`. Solo cambian identidad/fingerprint de matriz y versión/material del request D2. Permanecen gate 100%, SMOKE 1, C1/C2/C3/S1/S2 5, Z0 offline, stop-early, 82 llamadas máximas (61 D1 + 21 D2) y parámetros de ejecución. Los findings canónicos, offsets y claimId para el mismo finding/context siguen idénticos; la metadata de ejecución/finding set registra el nuevo requestFingerprint. No se añade heurística semántica ni se cambia el schema/validator de respuesta.
 
@@ -243,4 +253,43 @@ Validación final offline:
 - TypeScript `--noEmit --incremental false`: **PASS**.
 - `git diff --check`: **PASS**.
 
-Ninguna nueva llamada OpenAI/live en este incremento. La próxima ejecución requiere autorización independiente y debe empezar desde SMOKE. R16 queda cerrado exclusivamente como preparación estructural offline; D3B no está cerrado y no se afirma que el problema semántico esté resuelto.
+Ninguna nueva llamada OpenAI/live durante el incremento offline R16. R16 quedó cerrado exclusivamente como preparación estructural; el rechazo posterior de `/8` no modifica esta validación histórica. D3B no está cerrado y no se afirma que el problema semántico esté resuelto.
+
+## 12. M6-D3R18 — propositional non-duplication clarification
+
+La única variable semántica experimental respecto de `/8` es `pharmaceutical-d2-claim-prompt/3` → `pharmaceutical-d2-claim-prompt/4`. `/4` conserva íntegramente `/3` y añade únicamente reglas normativas generales en FRONTERA D1/D2, sin ejemplos ni identificadores del fixture:
+
+- La cobertura completa exige la misma proposición: sujeto, relación, objeto/ámbito y polaridad/valor cuando aplique, incluida la oposición a lo esperado por D1.
+- Componentes presentes por separado no equivalen a una relación completamente cubierta.
+- Dos entidades canónicas válidas pueden estar incorrectamente asociadas. Si la relación contradice authorityProjection y ningún target D1 cubre esa misma proposición, D2 clasifica `CONTRADICTORY`, no `UNSUPPORTED`.
+- Si esa misma proposición incorrecta está completamente representada como oposición a un target D1, D2 no la duplica.
+- `UNSUPPORTED` conserva su significado: proposición elegible no sustentada ni contradictoria con la autoridad suministrada. Una relación correcta sustentada no produce finding. No se añade conocimiento clínico externo.
+
+Identidades nuevas, calculadas del material canónico:
+
+- Request: `pharmaceutical-d2-semantic-request/2` (sin request `/3`).
+- Canonicalization: `pharmaceutical-d2-semantic-request-v2/2` (sin cambios).
+- C3 request con prompt `/4`: `ca1e4bfbbc099a1a15e89f0c3684b4f4335a4ce6fce3c31911c758575724dd5e`.
+- Matrix: `pharmaceutical-d3-live-matrix/9`.
+- Canonicalization de matrix: `pharmaceutical-d3-live-matrix-v9/1`.
+- Fingerprint: `56e31f12ae545bf6e3b814731faa70be5b3f304a20397ad5a61513c49633844c`.
+- Candidate: `gpt-5.6-terra`, **PENDING LIVE ACCEPTANCE**; governance `/1` intacta.
+
+El request de C3 difiere del histórico `/8` exclusivamente en promptVersion y SHA derivado. `authorityProjection.relationships`, targets, mensajes, context/transcript fingerprints y policy `/1` permanecen idénticos. Los builders históricos conservan prompt `/3` por defecto; `/9` selecciona `/4` explícitamente. El transport acepta las dos versiones explícitas sin fallback y conserva schema/provider `/2`, modelos y parámetros.
+
+Matrix `/9` comparte exactamente los fixtures congelados de `/8`. Incluye los fingerprints D2 derivados por fixture dentro del material de fingerprint, sin datos ambientales. La comparación estructural excluye solo identidad/fingerprint de matriz, promptVersion y estos hashes derivados: todo el resto debe coincidir. Permanecen C3 refs 2/7/8/9/11, las alternativas canónicas, expectation `/2`, D1 completo, provider/output validator, span resolver, claimId, comparator, policy, autoridad y proyección relacional. Se mantienen SMOKE 1, C1/C2/C3/S1/S2 5, Z0 offline, orden, gate 100%, stop-early, 82 llamadas máximas (61 D1 + 21 D2), tokens, timeouts y sampling.
+
+Los tests A–E documentan componentes separados, proposición completamente cubierta, asociación contradictoria, causalidad nueva no sustentada y relación correcta mediante contratos y salidas controladas. Los contrafactuales de prueba no cambian el fixture live. Se compara también el recorrido completo mockeado `/8`–`/9`, incluida la identidad de requests D1 y findings canónicos/claimId. Esta cobertura offline no demuestra comportamiento real del LLM ni aceptación clínica. La siguiente ejecución requiere autorización independiente desde SMOKE; no se repite ningún histórico buscando PASS.
+
+Validación final offline de R18:
+
+- Prompt `/4`: **8/8 PASS** nuevas (seis reglas normativas, preservación íntegra de `/3` y selección explícita sin cambio de schema).
+- Relaciones/request y casos A–E: **48/48 PASS** (9 nuevas).
+- Runtime/transport D2: **78/78 PASS**; claims **58/58**, orquestación **32/32**; D2 total **216/216 PASS**.
+- D3 harness: **91/91 PASS** (8 nuevas: invariancia experimental e histórica, hashes, presupuesto, recorrido mockeado, stop-early y selección de modelo).
+- D1 regresiones: **142/142 PASS**, sin modificaciones.
+- Suite completa: **2818 PASS / 25 SKIPPED**; 25 pruebas nuevas respecto a 2793 PASS. Los live y PostgreSQL permanecen skipped.
+- TypeScript `--noEmit --incremental false`: **PASS**.
+- `git diff --check`: **PASS**.
+
+M6-D3R18 — **CLOSED / COMPLETE**. M6-D3B — **NOT CLOSED — READY FOR PROMPT-V4 LIVE ACCEPTANCE FROM SMOKE**. Matrix `/9` sigue **PENDING LIVE ACCEPTANCE**; la aceptación real requiere autorización independiente. Cero OpenAI/live en este incremento, sin staging, commit ni push. Progreso sin cambios: M6 46% / proyecto 49.37%.

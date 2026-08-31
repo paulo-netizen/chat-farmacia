@@ -9,6 +9,7 @@ import {
 } from './build-pharmaceutical-d2-semantic-request';
 import {
   PHARMACEUTICAL_D2_PROVIDER_RESULT_CONTRACT_VERSION_V2,
+  PHARMACEUTICAL_D2_CLAIM_PROMPT_VERSION_V3,
   type PharmaceuticalD2ProviderResultV2,
   type PharmaceuticalD2SemanticRequestV2,
 } from './pharmaceutical-d2-claim-types';
@@ -158,15 +159,16 @@ export async function adjudicatePharmaceuticalD2ClaimsV2(
   runtime: PharmaceuticalD2SemanticRuntimeV2,
   allocateExecutionId: AllocatePharmaceuticalD2SemanticExecutionIdV2,
   requestContractVersion: PharmaceuticalD2SemanticRequestV2['contractVersion'] = 'pharmaceutical-d2-semantic-request/1',
+  promptVersion: string = PHARMACEUTICAL_D2_CLAIM_PROMPT_VERSION_V3,
 ): Promise<PharmaceuticalD2ClaimAdjudicationV2> {
   let request: PharmaceuticalD2SemanticRequestV2;
   try {
     switch (requestContractVersion) {
       case 'pharmaceutical-d2-semantic-request/1':
-        request = buildPharmaceuticalD2SemanticRequestV2(context);
+        request = buildPharmaceuticalD2SemanticRequestV2(context, promptVersion);
         break;
       case 'pharmaceutical-d2-semantic-request/2':
-        request = buildPharmaceuticalD2RelationalSemanticRequestV2(context);
+        request = buildPharmaceuticalD2RelationalSemanticRequestV2(context, promptVersion);
         break;
       default:
         throw new Error('unsupported D2 semantic request contract');

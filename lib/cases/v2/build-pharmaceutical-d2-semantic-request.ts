@@ -346,9 +346,10 @@ export function calculatePharmaceuticalD2SemanticRequestFingerprintV2(
 /** Explicit opt-in; /1 callers and historical matrices retain their original material. */
 export function buildPharmaceuticalD2RelationalSemanticRequestV2(
   context: PharmaceuticalAdjudicationContextSetV2,
+  promptVersion: string = PHARMACEUTICAL_D2_CLAIM_PROMPT_VERSION_V3,
 ): PharmaceuticalD2RelationalSemanticRequestV2 {
   const { requestFingerprint: _historicalFingerprint, ...historical } =
-    buildPharmaceuticalD2SemanticRequestV2(context);
+    buildPharmaceuticalD2SemanticRequestV2(context, promptVersion);
   const core = {
     ...historical,
     contractVersion: PHARMACEUTICAL_D2_SEMANTIC_REQUEST_CONTRACT_VERSION_V2,
@@ -363,8 +364,9 @@ export function buildPharmaceuticalD2RelationalSemanticRequestV2(
 export function validatePharmaceuticalD2RelationalSemanticRequestV2(
   input: unknown,
   context: PharmaceuticalAdjudicationContextSetV2,
+  expectedPromptVersion: string = PHARMACEUTICAL_D2_CLAIM_PROMPT_VERSION_V3,
 ): PharmaceuticalD2RelationalSemanticRequestV2 {
-  const expected = buildPharmaceuticalD2RelationalSemanticRequestV2(context);
+  const expected = buildPharmaceuticalD2RelationalSemanticRequestV2(context, expectedPromptVersion);
   assertExact(input, expected, 'pharmaceuticalD2RelationalSemanticRequest');
   return expected;
 }

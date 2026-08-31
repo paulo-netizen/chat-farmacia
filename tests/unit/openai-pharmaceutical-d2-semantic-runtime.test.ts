@@ -21,6 +21,8 @@ import {
   buildOpenAiPharmaceuticalD2SemanticParamsV1,
   OPENAI_PHARMACEUTICAL_D2_TEXT_FORMAT_V2,
   PHARMACEUTICAL_D2_SEMANTIC_INSTRUCTIONS_V3,
+  PHARMACEUTICAL_D2_SEMANTIC_INSTRUCTIONS_V4,
+  PHARMACEUTICAL_D2_PROPOSITIONAL_COVERAGE_INSTRUCTIONS_V4,
 } from '../../lib/cases/v2/pharmaceutical-d2-prompt';
 import { OPENAI_PHARMACEUTICAL_D2_CANDIDATE_MODEL } from '../../lib/cases/v2/pharmaceutical-d2-semantic-runtime';
 
@@ -268,11 +270,45 @@ describe('M6-D2B server-owned semantic prompt and transport', () => {
 
   it('rejects non-canonical prompt or policy identity before provider execution', () => {
     expect(() => buildOpenAiPharmaceuticalD2SemanticParamsV1({
-      ...request(), promptVersion: 'pharmaceutical-d2-claim-prompt/4',
+      ...request(), promptVersion: 'pharmaceutical-d2-claim-prompt/5',
     })).toThrow(/promptVersion/);
     expect(() => buildOpenAiPharmaceuticalD2SemanticParamsV1({
       ...request(), policyVersion: 'pharmaceutical-d2-claim-policy/2',
     })).toThrow(/policyVersion/);
+  });
+});
+
+describe('M6-D3R18 normative propositional non-duplication prompt /4', () => {
+  const rules = PHARMACEUTICAL_D2_PROPOSITIONAL_COVERAGE_INSTRUCTIONS_V4;
+
+  it.each([
+    ['component coverage is not proposition coverage', /mera presencia de los componentes[\s\S]*no significa que esa relación esté completamente representada/],
+    ['full coverage retains subject, relation and scope', /sujeto, relación y objeto\/ámbito[\s\S]*polaridad\/valor/],
+    ['valid canonical entities can be incorrectly associated', /entidades canónicas válidas pueden estar asociadas incorrectamente/],
+    ['uncovered contradictory relation belongs to D2 CONTRADICTORY', /contradice una relación de authorityProjection[\s\S]*ningún target D1 representa completamente esa misma proposición[\s\S]*D2[\s\S]*CONTRADICTORY, no como UNSUPPORTED/],
+    ['same proposition fully covered by D1 is not duplicated', /MISMA proposición incorrecta[\s\S]*oposición a un target D1[\s\S]*NO emitas un finding D2 adicional/],
+    ['unsupported requires absence of support and contradiction', /no está sustentada por authorityProjection y no la contradice[\s\S]*UNSUPPORTED con su significado existente/],
+  ])('states %s', (_name, rule) => {
+    expect(rules).toMatch(rule);
+    expect(PHARMACEUTICAL_D2_SEMANTIC_INSTRUCTIONS_V4).toContain(rules);
+  });
+
+  it('preserves every historical /3 instruction and adds only general normative rules', () => {
+    expect(PHARMACEUTICAL_D2_SEMANTIC_INSTRUCTIONS_V4.replace(`${rules}\n`, ''))
+      .toBe(PHARMACEUTICAL_D2_SEMANTIC_INSTRUCTIONS_V3);
+    expect(rules).not.toMatch(/ref 7|FORGETFULNESS|Medicamento A|\bC3\b|conclusion_|med_/);
+  });
+
+  it('selects /4 explicitly without changing the strict provider schema or data envelope', () => {
+    const previous = request();
+    const current = buildPharmaceuticalD2SemanticRequestV2(context(), 'pharmaceutical-d2-claim-prompt/4');
+    const oldParams = buildOpenAiPharmaceuticalD2SemanticParamsV1(previous);
+    const params = buildOpenAiPharmaceuticalD2SemanticParamsV1(current);
+    expect(oldParams.instructions).toBe(PHARMACEUTICAL_D2_SEMANTIC_INSTRUCTIONS_V3);
+    expect(params.instructions).toBe(PHARMACEUTICAL_D2_SEMANTIC_INSTRUCTIONS_V4);
+    expect(params.text).toEqual(oldParams.text);
+    expect(JSON.parse(params.input)).toEqual({ ...JSON.parse(oldParams.input), semanticRequest: current });
+    expect(current.policyVersion).toBe(previous.policyVersion);
   });
 });
 

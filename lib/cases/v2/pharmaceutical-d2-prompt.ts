@@ -3,6 +3,7 @@ import { zodTextFormat } from 'openai/helpers/zod';
 import {
   PHARMACEUTICAL_D2_CLAIM_POLICY_VERSION_V1,
   PHARMACEUTICAL_D2_CLAIM_PROMPT_VERSION_V3,
+  PHARMACEUTICAL_D2_CLAIM_PROMPT_VERSION_V4,
   type PharmaceuticalD2SemanticRequestV2,
 } from './pharmaceutical-d2-claim-types';
 import {
@@ -129,6 +130,21 @@ export const PHARMACEUTICAL_D2_SEMANTIC_INSTRUCTIONS_V3 =
 - No devuelvas claimId, semanticExecutionRef, provider/model metadata, requestFingerprint ni campos adicionales.`,
   );
 
+// /3 remains byte-for-byte available for historical requests. Only this boundary is clarified.
+export const PHARMACEUTICAL_D2_PROPOSITIONAL_COVERAGE_INSTRUCTIONS_V4 = `
+- Evalúa la cobertura D1 por la proposición que representa el target: sujeto, relación y objeto/ámbito, incluida la oposición a su valor esperado; conserva la identidad del sujeto, relación, objeto/ámbito y polaridad/valor cuando aplique.
+- La mera presencia de los componentes de una proposición en uno o varios targets D1 no significa que esa relación esté completamente representada.
+- Dos entidades canónicas válidas pueden estar asociadas incorrectamente. Si la asociación afirmada contradice una relación de authorityProjection y ningún target D1 representa completamente esa misma proposición, corresponde a D2 y debe clasificarse como CONTRADICTORY, no como UNSUPPORTED.
+- Si la MISMA proposición incorrecta ya está completamente representada como oposición a un target D1, NO emitas un finding D2 adicional; no deduzcas cobertura completa de la presencia separada de sus entidades.
+- Si una proposición elegible no está sustentada por authorityProjection y no la contradice, aplica UNSUPPORTED con su significado existente. Una relación correcta y sustentada no produce finding.
+`.trim();
+
+export const PHARMACEUTICAL_D2_SEMANTIC_INSTRUCTIONS_V4 =
+  PHARMACEUTICAL_D2_SEMANTIC_INSTRUCTIONS_V3.replace(
+    'FRONTERA D1/D2\n',
+    `FRONTERA D1/D2\n${PHARMACEUTICAL_D2_PROPOSITIONAL_COVERAGE_INSTRUCTIONS_V4}\n`,
+  );
+
 export const OPENAI_PHARMACEUTICAL_D2_TEXT_FORMAT_V1 = zodTextFormat(
   PHARMACEUTICAL_D2_PROVIDER_RESULT_SCHEMA_V1,
   'chatusal_pharmaceutical_d2_claims_v1',
@@ -145,7 +161,7 @@ export type OpenAiPharmaceuticalD2SemanticTransportRequestV1 = Readonly<{
 }>;
 
 export type OpenAiPharmaceuticalD2SemanticParamsV1 = Readonly<{
-  instructions: typeof PHARMACEUTICAL_D2_SEMANTIC_INSTRUCTIONS_V3;
+  instructions: string;
   input: string;
   text: Readonly<{
     format: typeof OPENAI_PHARMACEUTICAL_D2_TEXT_FORMAT_V2;
@@ -155,7 +171,10 @@ export type OpenAiPharmaceuticalD2SemanticParamsV1 = Readonly<{
 export function buildOpenAiPharmaceuticalD2SemanticParamsV1(
   request: PharmaceuticalD2SemanticRequestV2,
 ): OpenAiPharmaceuticalD2SemanticParamsV1 {
-  if (request.promptVersion !== PHARMACEUTICAL_D2_CLAIM_PROMPT_VERSION_V3) {
+  if (
+    request.promptVersion !== PHARMACEUTICAL_D2_CLAIM_PROMPT_VERSION_V3 &&
+    request.promptVersion !== PHARMACEUTICAL_D2_CLAIM_PROMPT_VERSION_V4
+  ) {
     throw new TypeError(
       'semanticRequest.promptVersion must match the server-owned D2 prompt version',
     );
@@ -170,7 +189,9 @@ export function buildOpenAiPharmaceuticalD2SemanticParamsV1(
     semanticRequest: structuredClone(request),
   };
   return Object.freeze({
-    instructions: PHARMACEUTICAL_D2_SEMANTIC_INSTRUCTIONS_V3,
+    instructions: request.promptVersion === PHARMACEUTICAL_D2_CLAIM_PROMPT_VERSION_V4
+      ? PHARMACEUTICAL_D2_SEMANTIC_INSTRUCTIONS_V4
+      : PHARMACEUTICAL_D2_SEMANTIC_INSTRUCTIONS_V3,
     input: JSON.stringify(transportRequest),
     text: Object.freeze({ format: OPENAI_PHARMACEUTICAL_D2_TEXT_FORMAT_V2 }),
   });

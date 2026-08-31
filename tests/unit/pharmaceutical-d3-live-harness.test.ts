@@ -19,6 +19,7 @@ import type {
   PharmaceuticalD2SemanticRuntimeV2,
 } from '../../lib/cases/v2/pharmaceutical-d2-semantic-runtime';
 import { validateSessionMessageIdV2 } from '../../lib/cases/v2/spfa-session-transcript';
+import { buildPharmaceuticalD2RelationalSemanticRequestV2 } from '../../lib/cases/v2/build-pharmaceutical-d2-semantic-request';
 import {
   buildPharmaceuticalD3EvidenceArtifactV1,
   calculatePharmaceuticalD3CallBudgetV1,
@@ -40,6 +41,10 @@ import {
   PHARMACEUTICAL_D3_LIVE_MATRIX_V6,
   PHARMACEUTICAL_D3_LIVE_MATRIX_V7,
   PHARMACEUTICAL_D3_LIVE_MATRIX_V8,
+  PHARMACEUTICAL_D3_LIVE_MATRIX_V9,
+  PHARMACEUTICAL_D3_HISTORICAL_RESULT_V8,
+  PHARMACEUTICAL_D3_CANDIDATE_REGISTRATION_V9,
+  runPharmaceuticalD3AcceptanceV4,
   PHARMACEUTICAL_D3_HISTORICAL_RESULT_V7,
   PHARMACEUTICAL_D3_CANDIDATE_REGISTRATION_V8,
   runPharmaceuticalD3AcceptanceV3,
@@ -171,6 +176,108 @@ function fakeFactory(overrides: Readonly<{
   return { factory, d1Calls, d2Calls };
 }
 
+describe('M6-D3R18 single-variable prompt experiment', () => {
+  const terra = { d1: 'gpt-5.6-terra', d2: 'gpt-5.6-terra' } as const;
+
+  it('changes only matrix identity, D2 prompt and derived request fingerprints from /8 to /9', () => {
+    const { matrixVersion, fingerprint, promptVersions, d2RequestFingerprints, ...current } = PHARMACEUTICAL_D3_LIVE_MATRIX_V9;
+    const { matrixVersion: _oldVersion, fingerprint: _oldHash, promptVersions: previousPrompts, ...previous } = PHARMACEUTICAL_D3_LIVE_MATRIX_V8;
+    expect(current).toEqual(previous);
+    expect(current.fixtures).toBe(previous.fixtures);
+    expect(promptVersions).toEqual({ ...previousPrompts, d2: 'pharmaceutical-d2-claim-prompt/4' });
+    expect(matrixVersion).toBe('pharmaceutical-d3-live-matrix/9');
+    expect(fingerprint).toEqual({ algorithm: 'sha256', canonicalization: 'pharmaceutical-d3-live-matrix-v9/1', value: '56e31f12ae545bf6e3b814731faa70be5b3f304a20397ad5a61513c49633844c' });
+    expect(d2RequestFingerprints).toEqual(current.fixtures.map((fixture) => ({ fixtureId: fixture.fixtureId,
+      requestFingerprint: buildPharmaceuticalD2RelationalSemanticRequestV2(fixture.context, promptVersions.d2).requestFingerprint,
+    })));
+    expect(Object.isFrozen(d2RequestFingerprints)).toBe(true);
+  });
+
+  it('preserves all /1-/8 historical outcomes, hashes and /8 prompt /3 binding', () => {
+    const histories = [PHARMACEUTICAL_D3_HISTORICAL_RESULT_V1, PHARMACEUTICAL_D3_HISTORICAL_RESULT_V2,
+      PHARMACEUTICAL_D3_HISTORICAL_RESULT_V3, PHARMACEUTICAL_D3_HISTORICAL_RESULT_V4,
+      PHARMACEUTICAL_D3_HISTORICAL_RESULT_V5, PHARMACEUTICAL_D3_HISTORICAL_RESULT_V6,
+      PHARMACEUTICAL_D3_HISTORICAL_RESULT_V7, PHARMACEUTICAL_D3_HISTORICAL_RESULT_V8];
+    expect(histories.map((item) => item.decision)).toEqual(['REJECT', 'INCONCLUSIVE', 'INCONCLUSIVE', 'REJECT', 'REJECT', 'REJECT', 'REJECT', 'REJECT']);
+    expect(histories.map((item) => item.matrixFingerprint)).toEqual([
+      'cc8d82fb2adcdbd72039053951997e3c54d4fe619c0b566dc936bd8cde4cf1da',
+      'd6fe321921abfff8073645e5db398f63b81d5c39abfc8dafc3d2397ea3c38a95',
+      '64c55ed55be855933904c875cdbd3e7c3464c8aab5c6c9049e86b161b185950e',
+      '700e3f64fecdba431fe3da72accc65a10cfaf9d17bdad3d257519814ef6a3608',
+      '2867bf53d721a77638a813d8d6efe3cadd58c88a3bf0908ec3733d5488ba8c72',
+      '1b3f458a20c1c6bafe2e6fe122761de3ef365fc5add1fee488c4eea2f4005c8f',
+      '9194a30c2b7574e000d87571166d4d42384200b908654e7e048fc180188cfab9',
+      '18d8de2f85bbe40b9bd9389f87ebeb4d95a1b4861385fd62635ea32dc850e486',
+    ]);
+    expect(PHARMACEUTICAL_D3_LIVE_MATRIX_V8.promptVersions.d2).toBe('pharmaceutical-d2-claim-prompt/3');
+    expect(PHARMACEUTICAL_D3_LIVE_MATRIX_V8.contractVersions.d2Request).toBe('pharmaceutical-d2-semantic-request/2');
+    expect(buildPharmaceuticalD2RelationalSemanticRequestV2(pharmaceuticalD3FixtureV1('C3').context, PHARMACEUTICAL_D3_LIVE_MATRIX_V8.promptVersions.d2).requestFingerprint.value)
+      .toBe('3e57da398d6dafcebdedc10ab1976f6397aeef5b4bb611420dd00ca304f366e5');
+    expect(PHARMACEUTICAL_D3_CANDIDATE_REGISTRATION_V9).toMatchObject({ status: 'PENDING LIVE ACCEPTANCE', model: terra.d1, modelPolicyVersion: 'pharmaceutical-semantic-model-policy/1' });
+  });
+
+  it('retains 61 D1 + 21 D2 calls, repetitions and offline Z0 without changing expectations', () => {
+    expect(calculatePharmaceuticalD3CallBudgetV1(PHARMACEUTICAL_D3_LIVE_MATRIX_V9))
+      .toEqual(calculatePharmaceuticalD3CallBudgetV1(PHARMACEUTICAL_D3_LIVE_MATRIX_V8));
+    expect(calculatePharmaceuticalD3CallBudgetV1(PHARMACEUTICAL_D3_LIVE_MATRIX_V9)).toMatchObject({ d1: 61, d2: 21, total: 82 });
+    expect(pharmaceuticalD3FixtureV1('C3').expectedD2.map((item) => [item.messageRef, item.findingType]))
+      .toEqual([['2', 'UNSUPPORTED'], ['7', 'CONTRADICTORY'], ['8', 'UNSUPPORTED'], ['9', 'UNSUPPORTED'], ['11', 'UNSUPPORTED']]);
+  });
+
+  it('runs full mocked /8 and /9 with identical D1 requests and canonical findings; only D2 prompt/hash differ', async () => {
+    const d1Previous: PharmaceuticalD1SemanticBatchRequestV2[] = [];
+    const d1Current: PharmaceuticalD1SemanticBatchRequestV2[] = [];
+    const d2Previous: PharmaceuticalD2SemanticRequestV2[] = [];
+    const d2Current: PharmaceuticalD2SemanticRequestV2[] = [];
+    function factory(d1: PharmaceuticalD1SemanticBatchRequestV2[], d2: PharmaceuticalD2SemanticRequestV2[]) {
+      return fakeFactory({ responseModel: terra.d1,
+        d1Result: (fixture, request) => { d1.push(request); return d1ProviderResult(fixture, request); },
+        d2Result: (fixture, request) => { d2.push(request); return d2ProviderResult(fixture, request); },
+      });
+    }
+    const previous = factory(d1Previous, d2Previous);
+    const current = factory(d1Current, d2Current);
+    const oldResult = await runPharmaceuticalD3AcceptanceV3(previous.factory, terra);
+    const newResult = await runPharmaceuticalD3AcceptanceV4(current.factory, terra);
+    expect(oldResult.decision).toBe('ACCEPT');
+    expect(newResult.decision).toBe('ACCEPT');
+    expect(current.d1Calls).toHaveBeenCalledTimes(61);
+    expect(current.d2Calls).toHaveBeenCalledTimes(21);
+    expect(d1Current).toEqual(d1Previous);
+    expect(d2Current).toHaveLength(d2Previous.length);
+    d2Current.forEach((request, index) => {
+      const historical = d2Previous[index];
+      expect(request.promptVersion).toBe('pharmaceutical-d2-claim-prompt/4');
+      expect(historical.promptVersion).toBe('pharmaceutical-d2-claim-prompt/3');
+      expect({ ...request, promptVersion: historical.promptVersion, requestFingerprint: historical.requestFingerprint }).toEqual(historical);
+      expect(request.requestFingerprint.value).not.toBe(historical.requestFingerprint.value);
+    });
+    expect(newResult.summaries.map((item) => [item.d1, item.d2])).toEqual(oldResult.summaries.map((item) => [item.d1, item.d2]));
+    const artifact = buildPharmaceuticalD3EvidenceArtifactV1('a'.repeat(40), newResult.summaries, newResult.decision, PHARMACEUTICAL_D3_LIVE_MATRIX_V9);
+    expect(artifact).toContain('pharmaceutical-d2-claim-prompt/4');
+    expect(artifact).toContain(PHARMACEUTICAL_D3_LIVE_MATRIX_V9.fingerprint.value);
+  });
+
+  it('still rejects an omitted mandatory C3 ref 7 and stops before another repetition', async () => {
+    const fake = fakeFactory({ responseModel: terra.d2, d2Result: (fixture, request) => {
+      const result = d2ProviderResult(fixture, request);
+      return fixture.fixtureId === 'C3' ? { ...result, findings: result.findings.filter((item) => item.messageRef !== '7') } : result;
+    } });
+    const result = await runPharmaceuticalD3AcceptanceV4(fake.factory, terra);
+    expect(result.decision).toBe('REJECT');
+    expect(result.summaries.map((item) => [item.fixtureId, item.run])).toEqual([['SMOKE', 1], ['C3', 1]]);
+    expect(fake.d1Calls).toHaveBeenCalledTimes(1);
+    expect(fake.d2Calls).toHaveBeenCalledTimes(2);
+  });
+
+  it('rejects a different model selection before invoking any runtime in /9', async () => {
+    const fake = fakeFactory();
+    await expect(runPharmaceuticalD3AcceptanceV4(fake.factory, { d1: 'gpt-5.6-sol', d2: terra.d2 })).rejects.toThrow();
+    expect(fake.d1Calls).not.toHaveBeenCalled();
+    expect(fake.d2Calls).not.toHaveBeenCalled();
+  });
+});
+
 describe('M6-D3R16 isolated relationship representation', () => {
   const terra = { d1: 'gpt-5.6-terra', d2: 'gpt-5.6-terra' } as const;
 
@@ -277,11 +384,15 @@ describe('M6-D3R14 explicit experimental candidate', () => {
     PHARMACEUTICAL_D3_LIVE_MATRIX_V2, PHARMACEUTICAL_D3_LIVE_MATRIX_V3,
     PHARMACEUTICAL_D3_LIVE_MATRIX_V4, PHARMACEUTICAL_D3_LIVE_MATRIX_V5,
     PHARMACEUTICAL_D3_LIVE_MATRIX_V6, PHARMACEUTICAL_D3_LIVE_MATRIX_V7,
+    PHARMACEUTICAL_D3_LIVE_MATRIX_V8, PHARMACEUTICAL_D3_LIVE_MATRIX_V9,
   ])('recalculates the frozen fingerprint of $matrixVersion', (matrix) => {
     const { fingerprint, ...core } = matrix;
     expect(createHash('sha256').update(JSON.stringify(stable(core))).digest('hex'))
       .toBe(fingerprint.value);
-    expect(matrix.model).toBe(matrix === PHARMACEUTICAL_D3_LIVE_MATRIX_V7 ? terra.d1 : 'gpt-5.6-sol');
+    expect(matrix.model).toBe(
+      matrix === PHARMACEUTICAL_D3_LIVE_MATRIX_V7 || matrix === PHARMACEUTICAL_D3_LIVE_MATRIX_V8 || matrix === PHARMACEUTICAL_D3_LIVE_MATRIX_V9
+        ? terra.d1 : 'gpt-5.6-sol',
+    );
   });
 
   it('freezes Terra matrix /7 and its separate model-policy registration', () => {
@@ -410,8 +521,8 @@ describe('M6-D3R14 explicit experimental candidate', () => {
     expect(source.indexOf('const configuredModels = validatePharmaceuticalD3ModelSelectionV8')).toBeGreaterThan(0);
     expect(source.indexOf('const configuredModels = validatePharmaceuticalD3ModelSelectionV8'))
       .toBeLessThan(source.indexOf("import('../../lib/cases/v2/openai-pharmaceutical-d1-semantic-runtime')"));
-    expect(source).toContain('PHARMACEUTICAL_D3_LIVE_MATRIX_V8');
-    expect(source).toContain('runPharmaceuticalD3AcceptanceV3');
+    expect(source).toContain('PHARMACEUTICAL_D3_LIVE_MATRIX_V9');
+    expect(source).toContain('runPharmaceuticalD3AcceptanceV4');
     expect(source).not.toContain('runPharmaceuticalD3AcceptanceV1');
   });
 });
