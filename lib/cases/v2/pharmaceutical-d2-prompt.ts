@@ -4,6 +4,7 @@ import {
   PHARMACEUTICAL_D2_CLAIM_POLICY_VERSION_V1,
   PHARMACEUTICAL_D2_CLAIM_PROMPT_VERSION_V3,
   PHARMACEUTICAL_D2_CLAIM_PROMPT_VERSION_V4,
+  PHARMACEUTICAL_D2_CLAIM_PROMPT_VERSION_V5,
   type PharmaceuticalD2SemanticRequestV2,
 } from './pharmaceutical-d2-claim-types';
 import {
@@ -145,6 +146,20 @@ export const PHARMACEUTICAL_D2_SEMANTIC_INSTRUCTIONS_V4 =
     `FRONTERA D1/D2\n${PHARMACEUTICAL_D2_PROPOSITIONAL_COVERAGE_INSTRUCTIONS_V4}\n`,
   );
 
+export const PHARMACEUTICAL_D2_PROPOSITION_LOCAL_PROVENANCE_INSTRUCTIONS_V5 = `
+PROVENANCE LOCAL A LA PROPOSICIÓN
+- Evalúa relatedClinicalRefs de cada finding de forma independiente y local a la proposición concreta que ese finding clasifica.
+- Incluye una ref únicamente si participa directamente en el sujeto, la relación o el objeto/ámbito de la proposición evaluada, o si forma parte directa de la autoridad necesaria para establecer soporte, contradicción o ausencia de soporte de ESA misma proposición.
+- No incluyas una ref únicamente porque aparece en authorityProjection, pertenece al mismo dominio global, comparte indirectamente medicamento o contexto, está clínicamente relacionada en general, parece contexto adicional útil o es pertinente para otro finding de la misma respuesta.
+- No transfieras relatedClinicalRefs entre findings. Una ref canónica real que pertenece a otra proposición debe excluirse del finding actual.
+- No exijas mecánicamente el conjunto mínimo ni todas las refs posibles: puede haber varias selecciones válidas, pero cada ref seleccionada debe ser directamente pertinente a esa proposición exacta.
+- No uses conocimiento externo para seleccionar, añadir o relacionar refs.
+`.trim();
+
+// /4 remains byte-for-byte available for historical requests.
+export const PHARMACEUTICAL_D2_SEMANTIC_INSTRUCTIONS_V5 =
+  `${PHARMACEUTICAL_D2_SEMANTIC_INSTRUCTIONS_V4}\n\n${PHARMACEUTICAL_D2_PROPOSITION_LOCAL_PROVENANCE_INSTRUCTIONS_V5}`;
+
 export const OPENAI_PHARMACEUTICAL_D2_TEXT_FORMAT_V1 = zodTextFormat(
   PHARMACEUTICAL_D2_PROVIDER_RESULT_SCHEMA_V1,
   'chatusal_pharmaceutical_d2_claims_v1',
@@ -173,7 +188,8 @@ export function buildOpenAiPharmaceuticalD2SemanticParamsV1(
 ): OpenAiPharmaceuticalD2SemanticParamsV1 {
   if (
     request.promptVersion !== PHARMACEUTICAL_D2_CLAIM_PROMPT_VERSION_V3 &&
-    request.promptVersion !== PHARMACEUTICAL_D2_CLAIM_PROMPT_VERSION_V4
+    request.promptVersion !== PHARMACEUTICAL_D2_CLAIM_PROMPT_VERSION_V4 &&
+    request.promptVersion !== PHARMACEUTICAL_D2_CLAIM_PROMPT_VERSION_V5
   ) {
     throw new TypeError(
       'semanticRequest.promptVersion must match the server-owned D2 prompt version',
@@ -189,9 +205,11 @@ export function buildOpenAiPharmaceuticalD2SemanticParamsV1(
     semanticRequest: structuredClone(request),
   };
   return Object.freeze({
-    instructions: request.promptVersion === PHARMACEUTICAL_D2_CLAIM_PROMPT_VERSION_V4
-      ? PHARMACEUTICAL_D2_SEMANTIC_INSTRUCTIONS_V4
-      : PHARMACEUTICAL_D2_SEMANTIC_INSTRUCTIONS_V3,
+    instructions: request.promptVersion === PHARMACEUTICAL_D2_CLAIM_PROMPT_VERSION_V5
+      ? PHARMACEUTICAL_D2_SEMANTIC_INSTRUCTIONS_V5
+      : request.promptVersion === PHARMACEUTICAL_D2_CLAIM_PROMPT_VERSION_V4
+        ? PHARMACEUTICAL_D2_SEMANTIC_INSTRUCTIONS_V4
+        : PHARMACEUTICAL_D2_SEMANTIC_INSTRUCTIONS_V3,
     input: JSON.stringify(transportRequest),
     text: Object.freeze({ format: OPENAI_PHARMACEUTICAL_D2_TEXT_FORMAT_V2 }),
   });

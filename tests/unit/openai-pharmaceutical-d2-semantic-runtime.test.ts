@@ -22,7 +22,9 @@ import {
   OPENAI_PHARMACEUTICAL_D2_TEXT_FORMAT_V2,
   PHARMACEUTICAL_D2_SEMANTIC_INSTRUCTIONS_V3,
   PHARMACEUTICAL_D2_SEMANTIC_INSTRUCTIONS_V4,
+  PHARMACEUTICAL_D2_SEMANTIC_INSTRUCTIONS_V5,
   PHARMACEUTICAL_D2_PROPOSITIONAL_COVERAGE_INSTRUCTIONS_V4,
+  PHARMACEUTICAL_D2_PROPOSITION_LOCAL_PROVENANCE_INSTRUCTIONS_V5,
 } from '../../lib/cases/v2/pharmaceutical-d2-prompt';
 import { OPENAI_PHARMACEUTICAL_D2_CANDIDATE_MODEL } from '../../lib/cases/v2/pharmaceutical-d2-semantic-runtime';
 
@@ -270,11 +272,57 @@ describe('M6-D2B server-owned semantic prompt and transport', () => {
 
   it('rejects non-canonical prompt or policy identity before provider execution', () => {
     expect(() => buildOpenAiPharmaceuticalD2SemanticParamsV1({
-      ...request(), promptVersion: 'pharmaceutical-d2-claim-prompt/5',
+      ...request(), promptVersion: 'pharmaceutical-d2-claim-prompt/6',
     })).toThrow(/promptVersion/);
     expect(() => buildOpenAiPharmaceuticalD2SemanticParamsV1({
       ...request(), policyVersion: 'pharmaceutical-d2-claim-policy/2',
     })).toThrow(/policyVersion/);
+  });
+});
+
+describe('M6-D3R27 proposition-local provenance prompt /5', () => {
+  const rules = PHARMACEUTICAL_D2_PROPOSITION_LOCAL_PROVENANCE_INSTRUCTIONS_V5;
+
+  it.each([
+    ['proposition-local selection', /cada finding[\s\S]*local a la proposición concreta/],
+    ['direct subject relation or object', /sujeto, la relación o el objeto\/ámbito/],
+    ['same-proposition authority', /autoridad necesaria[\s\S]*ESA misma proposición/],
+    ['no authority-presence shortcut', /únicamente porque aparece en authorityProjection/],
+    ['no indirect context', /comparte indirectamente medicamento o contexto/],
+    ['no cross-finding transfer', /No transfieras relatedClinicalRefs entre findings/],
+    ['no other-proposition refs', /pertenece a otra proposición debe excluirse/],
+    ['no mechanical minimality', /No exijas mecánicamente el conjunto mínimo/],
+    ['no mechanical exhaustiveness', /ni todas las refs posibles/],
+    ['no external knowledge', /No uses conocimiento externo/],
+  ])('states %s', (_name, pattern) => {
+    expect(rules).toMatch(pattern);
+    expect(PHARMACEUTICAL_D2_SEMANTIC_INSTRUCTIONS_V5).toContain(rules);
+  });
+
+  it('preserves prompt /4 exactly and contains no fixture-specific exception', () => {
+    expect(PHARMACEUTICAL_D2_SEMANTIC_INSTRUCTIONS_V5)
+      .toBe(`${PHARMACEUTICAL_D2_SEMANTIC_INSTRUCTIONS_V4}\n\n${rules}`);
+    expect(rules).not.toMatch(/\bC3\b|ref 7|ref 11|R005|FORGETFULNESS|Medicamento A|conclusion_|med_/);
+  });
+
+  it('selects /5 without changing provider /2 schema or the request envelope', () => {
+    const previous = buildPharmaceuticalD2SemanticRequestV2(
+      context(),
+      'pharmaceutical-d2-claim-prompt/4',
+    );
+    const current = buildPharmaceuticalD2SemanticRequestV2(
+      context(),
+      'pharmaceutical-d2-claim-prompt/5',
+    );
+    const oldParams = buildOpenAiPharmaceuticalD2SemanticParamsV1(previous);
+    const params = buildOpenAiPharmaceuticalD2SemanticParamsV1(current);
+    expect(params.instructions).toBe(PHARMACEUTICAL_D2_SEMANTIC_INSTRUCTIONS_V5);
+    expect(params.text).toEqual(oldParams.text);
+    expect(JSON.parse(params.input).contractVersion)
+      .toBe('openai-pharmaceutical-d2-semantic-request/1');
+    expect(JSON.parse(params.input).semanticRequest.contractVersion)
+      .toBe('pharmaceutical-d2-semantic-request/1');
+    expect(JSON.stringify(params.text)).toContain('pharmaceutical-d2-provider-result/2');
   });
 });
 

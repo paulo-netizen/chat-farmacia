@@ -2,7 +2,7 @@
 
 ## 1. Estado y alcance
 
-M6-D3A congeló la primera matriz previa a la aceptación live de las lanes farmacéuticas D1 y D2. M6-D3R2 versionó la precisión de evidencia D1; `/2` y `/3` quedaron `INCONCLUSIVE`. M6-D3R6 movió la resolución UTF-16 al servidor; `/4` quedó `REJECT`. Las matrices `/5`–`/10` también conservan sus resultados históricos `REJECT`. En `/10`, C3 ref 7 llegó con semántica y literalidad correctas y una provenance segura, pero expectation `/2` no podía representar ese producto: **RELATED_CLINICAL_REFS ACCEPTANCE CONTRACT OVERCONSTRAINED**. D3R23 cerró la auditoría como `A. SUFFICIENT`. D3R24 conserva `/1`–`/10` y crea `/11`, pendiente de live, con expectation `/3`: identidad semántica exacta, `ONE_OF` literal exacto y provenance required/optional/forbidden. No se reclasifica ningún histórico.
+M6-D3A congeló la primera matriz previa a la aceptación live de las lanes farmacéuticas D1 y D2. M6-D3R2 versionó la precisión de evidencia D1; `/2` y `/3` quedaron `INCONCLUSIVE`. M6-D3R6 movió la resolución UTF-16 al servidor; `/4` quedó `REJECT`. Las matrices `/5`–`/11` también conservan sus resultados históricos `REJECT`. En `/11`, C3 ref 7 llegó con identidad semántica y literal correctas, pero incluyó R005, ref válida para otra proposición y forbidden para ref 7: **PROMPT/PROVIDER PROVENANCE SELECTION GAP**. Expectation `/3` y comparator `/3` permanecen sound. D3R27 preserva `/1`–`/11` y crea `/12`, pendiente de live, con prompt D2 `/5` proposition-local y diagnóstico estructurado seguro `/1`. No se reclasifica ningún histórico.
 
 Histórico inmutable `/1`:
 
@@ -195,11 +195,13 @@ No invalidan por sí solos: erratas documentales, logging allowlisted no materia
 - M6-D3R16: **CLOSED / COMPLETE**.
 - M6-D3R18: **CLOSED / COMPLETE**, exclusivamente offline.
 - M6-D3R20: **CLOSED / COMPLETE**, exclusivamente offline.
-- M6-D3B: **NOT CLOSED — READY FOR MATRIX-10 LIVE ACCEPTANCE FROM SMOKE**.
+- M6-D3R24: **CLOSED / COMPLETE**, exclusivamente offline.
+- M6-D3R27: **CLOSED / COMPLETE**, exclusivamente offline.
+- M6-D3B: **NOT CLOSED — READY FOR PROMPT-V5 MATRIX-12 LIVE ACCEPTANCE FROM SMOKE**.
 - M6-D3: **PARTIAL**.
 - M6-D: **PARTIAL**.
 
-No se ejecuta OpenAI en D3R20 y no se cierra M6-D. `/1`, `/4`, `/5`, `/6`, `/7`, `/8` y `/9` conservan `REJECT`; `/2` y `/3`, `INCONCLUSIVE`; `/10` queda `PENDING LIVE ACCEPTANCE`. M6 sigue en 46% y el proyecto en 49.37%. No se afirma que Terra sea mejor ni que la tercera alternativa haya superado aceptación live.
+No se ejecuta OpenAI en D3R27 y no se cierra M6-D. `/1`, `/4`–`/11` conservan `REJECT`; `/2` y `/3`, `INCONCLUSIVE`; `/12` queda `PENDING LIVE ACCEPTANCE`. M6 sigue en 46% y el proyecto en 49.37%. No se afirma aceptación live.
 
 ## 10. Validación offline M6-D3R14
 
@@ -358,3 +360,28 @@ La nueva matriz conserva fixtures, transcripts, semántica clínica, D1, prompt 
 La cobertura offline prueba las ocho combinaciones de optional refs de C3 ref 7, los cuatro productos literal/provenance de ref 8, las políticas de refs 2/9/11, identidad semántica/literal exacta, anti-duplicación y validación estructural fail-closed. También demuestra que el producto observado en `/10` falla bajo expectation `/2` y pasa bajo `/3`, sin cambiar producción.
 
 M6-D3R24 — **CLOSED / COMPLETE**. M6-D3B — **NOT CLOSED — READY FOR EXPECTATION-V3 MATRIX-11 LIVE ACCEPTANCE FROM SMOKE**. La aceptación real de `/11` requiere autorización independiente. Cero OpenAI/live en este incremento; progreso sin cambios: M6 46% / proyecto 49.37%.
+
+## 15. M6-D3R27 — provenance proposition-local y diagnóstico seguro
+
+Matrix `/11` permanece históricamente **REJECT**. El finding C3 ref 7 superó clasificación semántica y literalidad, pero observó C009, M001 y R005 frente a required C009/M001 y optional C006/C015/M003. R005 es autoridad real para ref 11, no para la proposición de ref 7; el comparator `/3` la rechazó correctamente como forbidden. La causa raíz es `PROMPT/PROVIDER PROVENANCE SELECTION GAP`, no un defecto de authority, expectation o comparator.
+
+El prompt `pharmaceutical-d2-claim-prompt/5` conserva íntegramente `/4` y añade una regla general proposition-local: cada `relatedClinicalRef` debe intervenir directamente en subject/relation/object/scope o en la autoridad necesaria para establecer soporte, contradicción o ausencia de soporte de ese mismo finding. Prohíbe transferir refs entre findings o seleccionarlas por mera presencia en authority, dominio compartido, relación clínica general o contexto indirecto. No impone ni minimalidad mecánica ni exhaustividad y mantiene la prohibición de conocimiento externo.
+
+El diagnóstico server/test-only `pharmaceutical-d3-provenance-diagnostic/1` conserva únicamente identidad/versiones, índices, `claimId` y refs canónicas observadas, required, optional, missing, forbidden y duplicate, siempre en orden determinista. Sus subtipos son `MISSING_REQUIRED`, `FORBIDDEN_REF`, `MISSING_REQUIRED_AND_FORBIDDEN_REF`, `DUPLICATE_REF` y `OTHER`. No contiene raw provider output, transcript, cuerpo de mensaje, excerpt, prompt, authority payload, texto clínico libre, PII, secretos ni API keys; no se expone por Student DTO/API. Es observabilidad pura y no cambia ninguna decisión del comparator `/3`.
+
+Matrix `/12`:
+
+- identity: `pharmaceutical-d3-live-matrix/12`;
+- fingerprint: `00afc0adcf5f35b6e14a63a6c47a7e3778a2d53cd4ca1384f904ad34448e2b33`;
+- candidate: `gpt-5.6-terra`;
+- prompt D2: `pharmaceutical-d2-claim-prompt/5`;
+- request D2: `pharmaceutical-d2-semantic-request/2`;
+- C3 request fingerprint: `2346d967f0e68ef542cb7c38f303f58e68851b76678fe7c24c69567783336ce1`;
+- provider: `pharmaceutical-d2-provider-result/2`;
+- expectation/comparator: `/3` y `/3`;
+- diagnostic: `pharmaceutical-d3-provenance-diagnostic/1`;
+- status: **PENDING LIVE ACCEPTANCE**.
+
+El delta `/11`→`/12` se limita a identidad/fingerprint de matriz, prompt D2 `/5`, fingerprints D2 derivados y versión diagnóstica. Fixtures, transcripts, authority, relationships, `allowedClinicalRefs`, semántica clínica, expectations, comparator, provider, validator, D1, governance, Terra, orden, repeticiones, gate 100%, stop-early, sampling, tokens, timeouts y budget 82 (D1 61 + D2 21) permanecen intactos.
+
+M6-D3R27 — **CLOSED / COMPLETE**. M6-D3B — **NOT CLOSED — READY FOR PROMPT-V5 MATRIX-12 LIVE ACCEPTANCE FROM SMOKE**. La aceptación real de `/12` requiere autorización independiente. Cero OpenAI/live en este incremento; progreso sin cambios: M6 46% / proyecto 49.37%.

@@ -21,9 +21,11 @@ La fuente canónica del progreso, los porcentajes, los pesos M0–M11 y el check
 - M10 — Analítica y revisión docente: **NOT STARTED**.
 - M11 — Hardening y observabilidad final: **NOT STARTED**.
 
-El repositorio dispone de una suite automatizada amplia. M6-A, M6-B, M6-C, M6-D1, M6-D2, la preparación offline M6-D3A y las políticas versionadas M6-D3R2/M6-D3R4/M6-D3R6/M6-D3R8/M6-D3R10/M6-D3R14 quedaron validados con contratos estrictos, tests automatizados y TypeScript correcto.
+El repositorio dispone de una suite automatizada amplia. M6-A, M6-B, M6-C, M6-D1, M6-D2, la preparación offline M6-D3A y los refinamientos versionados hasta M6-D3R27 quedaron validados con contratos estrictos, tests automatizados y TypeScript correcto.
 
 ## Próximo frente funcional
+
+M6-D3R27 — **CLOSED / COMPLETE**, exclusivamente offline: matrix `/11` permanece `REJECT`; D3R26 cerró la causa como `PROMPT/PROVIDER PROVENANCE SELECTION GAP`, con expectation `/3` y comparator `/3` correctos. Prompt D2 `/5` exige selección proposition-local de `relatedClinicalRefs` y el diagnóstico server/test-only `pharmaceutical-d3-provenance-diagnostic/1` conserva metadata estructural segura sin alterar decisiones. Matrix `/12` queda **PENDING LIVE ACCEPTANCE** con Terra; request `/2`, provider `/2`, fixtures, semántica, D1, governance y budget 82 permanecen intactos. M6-D3B queda **NOT CLOSED — READY FOR PROMPT-V5 MATRIX-12 LIVE ACCEPTANCE FROM SMOKE**. Progreso sin cambios: M6 46% / proyecto 49.37%.
 
 M6-D3R24 — **CLOSED / COMPLETE**, exclusivamente offline: matrix `/10` permanece `REJECT` por `RELATED_CLINICAL_REFS ACCEPTANCE CONTRACT OVERCONSTRAINED`. D3R23 concluyó `A. SUFFICIENT`; expectation `pharmaceutical-d3-d2-expectation/3` separa clasificación semántica exacta, `ONE_OF` de spans literales exactos y provenance required/optional/forbidden, con comparator `/3` fail-closed. Matrix `/11` queda **PENDING LIVE ACCEPTANCE** con Terra. Prompt D2 `/4`, request D2 `/2`, provider `/2`, validator, claimId, D1 y governance permanecen intactos. M6-D3B queda **NOT CLOSED — READY FOR EXPECTATION-V3 MATRIX-11 LIVE ACCEPTANCE FROM SMOKE**. Progreso sin cambios: M6 46% / proyecto 49.37%.
 
@@ -33,7 +35,7 @@ M6-D3R18 — **CLOSED / COMPLETE**, exclusivamente offline: aclaración de ident
 
 M6-D3R16 — **CLOSED / COMPLETE**: request `pharmaceutical-d2-semantic-request/2` con proyección positiva y trazable barrera → assessment → adherencia → medicationRefs. Matrix `/8` con Terra terminó `REJECT`; `/6` Sol y `/7` Terra permanecen `REJECT`. M6-D3B sigue **NOT CLOSED**; la preparación actual corresponde a D3R18 y matrix `/9`. No cambia el prompt D2 `/3`, la semántica clínica ni el progreso M6 46% / proyecto 49.37%. Validación offline: 2793 PASS / 25 SKIPPED; TypeScript y diff-check PASS.
 
-El milestone funcional activo es **M6 — Evaluación farmacéutica/PRM–RNM/adherencia**. M6-A aporta la referencia clínica farmacéutica canónica; M6-B cierra identidad, targets y evidencia; M6-C prepara el contexto determinista; M6-D1 y D2 aportan las adjudicaciones farmacéuticas. M6-D3 conserva como históricos `/1` `REJECT`, `/2`–`/3` `INCONCLUSIVE` y `/4`–`/10` `REJECT`. D3R23 concluyó que el contrato mínimo suficiente separa identidad semántica, alternativas literales exactas y provenance required/optional/forbidden. D3R24 implementa esa expectation `/3` y comparator `/3` solo en la nueva matrix `/11`, manteniendo todos los históricos y componentes productivos intactos. La futura aceptación M6-D3B requiere autorización independiente y comienza desde SMOKE bajo `/11` con Terra explícito; no se afirma aceptación live.
+El milestone funcional activo es **M6 — Evaluación farmacéutica/PRM–RNM/adherencia**. M6-A aporta la referencia clínica farmacéutica canónica; M6-B cierra identidad, targets y evidencia; M6-C prepara el contexto determinista; M6-D1 y D2 aportan las adjudicaciones farmacéuticas. M6-D3 conserva como históricos `/1` `REJECT`, `/2`–`/3` `INCONCLUSIVE` y `/4`–`/11` `REJECT`. D3R27 conserva expectation `/3`, comparator `/3` y provider `/2`, versiona únicamente el prompt D2 a `/5` con provenance proposition-local y añade observabilidad estructurada segura. La futura aceptación M6-D3B requiere autorización independiente y comienza desde SMOKE bajo `/12` con Terra explícito; no se afirma aceptación live.
 
 Antes de implementar cada incremento de M6:
 
@@ -55,7 +57,7 @@ M2 Editor docente estructurado ── M3 Generador,      │
 
 M4 Runtime seguro del paciente [CLOSED]
 M5 Motor de protocolos SPFA [CLOSED]
-  └─ M6 Evaluación farmacéutica/PRM–RNM/adherencia [PARTIAL — A/B/C/D1/D2/D3A/D3R2/D3R4/D3R6/D3R8/D3R10/D3R14/D3R16/D3R18/D3R20/D3R24 CLOSED]
+  └─ M6 Evaluación farmacéutica/PRM–RNM/adherencia [PARTIAL — A/B/C/D1/D2/D3A/D3R2/D3R4/D3R6/D3R8/D3R10/D3R14/D3R16/D3R18/D3R20/D3R24/D3R27 CLOSED]
        ├─ M7 Evaluación de comunicación
        └─ M8 Cuestionario post-caso
             └─ M9 Resultados y feedback
