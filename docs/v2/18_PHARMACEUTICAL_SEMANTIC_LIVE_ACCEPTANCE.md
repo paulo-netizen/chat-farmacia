@@ -2,7 +2,7 @@
 
 ## 1. Estado y alcance
 
-M6-D3A congeló la primera matriz previa a la aceptación live de las lanes farmacéuticas D1 y D2. M6-D3R2 versionó la precisión de evidencia D1; `/2` y `/3` quedaron `INCONCLUSIVE`. M6-D3R6 movió la resolución UTF-16 al servidor; `/4` quedó `REJECT` por una expectation omitida. D3R8/D3R10 corrigieron expectativas exactas y prepararon `/5` y `/6`; `/6` quedó `REJECT` por omisión C3 ref 7 con Sol. D3R14 autorizó Terra y `/7` repitió esa omisión. D3R16 añadió autoridad relacional en `/8`, también `REJECT`; D3R18 aclaró identidad proposicional y preparó `/9`. En `/9`, prompt `/4` consiguió que ref 7 apareciera con identidad, excerpt y span correctos, pero la matrix la rechazó porque el conjunto exacto barrera …009 + medicamentos …001/…003 no estaba preregistrado. D3R19 clasificó el fallo como **RELATED_CLINICAL_REFS_ALTERNATIVE_GAP**. D3R20 conserva `/9` como `REJECT` y crea `/10`, pendiente de live, con esa tercera alternativa completa y exacta. No se reclasifica ningún histórico.
+M6-D3A congeló la primera matriz previa a la aceptación live de las lanes farmacéuticas D1 y D2. M6-D3R2 versionó la precisión de evidencia D1; `/2` y `/3` quedaron `INCONCLUSIVE`. M6-D3R6 movió la resolución UTF-16 al servidor; `/4` quedó `REJECT`. Las matrices `/5`–`/10` también conservan sus resultados históricos `REJECT`. En `/10`, C3 ref 7 llegó con semántica y literalidad correctas y una provenance segura, pero expectation `/2` no podía representar ese producto: **RELATED_CLINICAL_REFS ACCEPTANCE CONTRACT OVERCONSTRAINED**. D3R23 cerró la auditoría como `A. SUFFICIENT`. D3R24 conserva `/1`–`/10` y crea `/11`, pendiente de live, con expectation `/3`: identidad semántica exacta, `ONE_OF` literal exacto y provenance required/optional/forbidden. No se reclasifica ningún histórico.
 
 Histórico inmutable `/1`:
 
@@ -64,7 +64,7 @@ Histórico inmutable `/8`:
 
 `pharmaceutical-semantic-model-policy/1` permite exactamente `gpt-5.6-sol` y `gpt-5.6-terra`. Es server-owned, de tipo cerrado y fail-closed: no admite aliases, strings arbitrarios, trim, normalización ni sustituciones. Los runtimes mantienen Sol como default histórico; Terra nunca se activa silenciosamente. Ambos executors envían el modelo validado y preservan `response.model` observado, sin fallback ni retries.
 
-La aceptación pendiente de `/10` exige selección explícita D1 = D2 = candidato de la matriz antes de crear runtimes o llamar al proveedor. Todas las respuestas evaluables deben identificar exactamente `gpt-5.6-terra`. Configuraciones mixtas o ausentes fallan antes de OpenAI. El wrapper toma un snapshot de entorno después de la activación opt-in.
+La aceptación pendiente de `/11` exige selección explícita D1 = D2 = candidato de la matriz antes de crear runtimes o llamar al proveedor. Todas las respuestas evaluables deben identificar exactamente `gpt-5.6-terra`. Configuraciones mixtas o ausentes fallan antes de OpenAI. El wrapper toma un snapshot de entorno después de la activación opt-in.
 
 La matriz `/7` reutiliza los mismos fixtures, contexts, expectations y alternativas de `/6`; conserva prompts D1/D2 `/3`, provider D2 `/2`, policy D2 `/1` y expectation D2 `/2`. Solo cambia funcionalmente el candidato. La versión de governance se registra separadamente como metadata experimental, sin alterar los requests semánticos. El fingerprint de matriz cambia por matrix identity/model; los fingerprints D1/D2, context, targets y transcript no cambian. Tampoco cambia el claimId para un mismo finding canónico.
 
@@ -332,4 +332,29 @@ Validación offline de R20:
 - suite completa: **2827 PASS / 25 SKIPPED**;
 - TypeScript `--noEmit --incremental false`: **PASS**.
 
-M6-D3R20 — **CLOSED / COMPLETE**. M6-D3B — **NOT CLOSED — READY FOR MATRIX-10 LIVE ACCEPTANCE FROM SMOKE**. La aceptación real de `/10` requiere autorización independiente. Cero OpenAI/live en este incremento; progreso sin cambios: M6 46% / proyecto 49.37%.
+M6-D3R20 — **CLOSED / COMPLETE**. Su matrix `/10` permanece históricamente **REJECT** y no se reevalúa ni reclasifica.
+
+## 14. M6-D3R24 — expectation `/3` y comparator fail-closed
+
+M6-D3R23 concluyó `A. SUFFICIENT`: todos los findings actuales son productos seguros y no existe coupling literal/provenance. El contrato `pharmaceutical-d3-d2-expectation/3` separa tres dimensiones auditables:
+
+- `semanticClassification`: `messageRef`, `domain`, `findingType` y `claimForm` exactos;
+- `literalAlternatives`: al menos un tuple exacto `excerpt` + offsets UTF-16 `[start,end)`, sin normalización;
+- `provenancePolicy`: refs `requiredClinicalRefs` y `optionalClinicalRefs` disjuntas; toda ref fuera de su unión está prohibida.
+
+El comparator `pharmaceutical-d3-d2-comparator/3` exige count e identidades exactos, rechaza duplicados, acepta exactamente una alternativa literal y obliga a incluir todas las refs required sin admitir refs fuera de required + optional. Los optional son independientes. El `claimId` productivo no forma parte de la unicidad preregistrada porque continúa derivándose de las refs realmente observadas.
+
+Matrix `/11`:
+
+- identity: `pharmaceutical-d3-live-matrix/11`;
+- fingerprint: `e98c4ffb8ebd6c025bf9d23f2282d69662c70b192c6d68f3daa6ba661c0112b1`;
+- candidate: `gpt-5.6-terra`;
+- expectation: `pharmaceutical-d3-d2-expectation/3`;
+- comparator: `pharmaceutical-d3-d2-comparator/3`;
+- status: **PENDING LIVE ACCEPTANCE**.
+
+La nueva matriz conserva fixtures, transcripts, semántica clínica, D1, prompt D2 `/4`, request D2 `/2`, provider `/2`, policy `/1`, validator, relationship projection, governance, orden, repeticiones, gate 100%, stop-early, tokens, sampling, timeouts y budget máximo 82 (D1 61 + D2 21). El fingerprint del request C3 permanece `ca1e4bfbbc099a1a15e89f0c3684b4f4335a4ce6fce3c31911c758575724dd5e`.
+
+La cobertura offline prueba las ocho combinaciones de optional refs de C3 ref 7, los cuatro productos literal/provenance de ref 8, las políticas de refs 2/9/11, identidad semántica/literal exacta, anti-duplicación y validación estructural fail-closed. También demuestra que el producto observado en `/10` falla bajo expectation `/2` y pasa bajo `/3`, sin cambiar producción.
+
+M6-D3R24 — **CLOSED / COMPLETE**. M6-D3B — **NOT CLOSED — READY FOR EXPECTATION-V3 MATRIX-11 LIVE ACCEPTANCE FROM SMOKE**. La aceptación real de `/11` requiere autorización independiente. Cero OpenAI/live en este incremento; progreso sin cambios: M6 46% / proyecto 49.37%.
