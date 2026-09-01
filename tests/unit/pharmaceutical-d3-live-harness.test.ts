@@ -631,8 +631,8 @@ describe('M6-D3R14 explicit experimental candidate', () => {
     expect(source.indexOf('const configuredModels = validatePharmaceuticalD3ModelSelectionV8')).toBeGreaterThan(0);
     expect(source.indexOf('const configuredModels = validatePharmaceuticalD3ModelSelectionV8'))
       .toBeLessThan(source.indexOf("import('../../lib/cases/v2/openai-pharmaceutical-d1-semantic-runtime')"));
-    expect(source).toContain('PHARMACEUTICAL_D3_LIVE_MATRIX_V12');
-    expect(source).toContain('runPharmaceuticalD3AcceptanceV7');
+    expect(source).toContain('PHARMACEUTICAL_D3_LIVE_MATRIX_V13');
+    expect(source).toContain('runPharmaceuticalD3AcceptanceV8');
     expect(source).not.toContain('runPharmaceuticalD3AcceptanceV1');
   });
 });

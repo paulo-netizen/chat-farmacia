@@ -15,12 +15,15 @@ import {
   buildPharmaceuticalD3ProvenanceDiagnosticV1,
   PHARMACEUTICAL_D3_CANDIDATE_REGISTRATION_V11,
   PHARMACEUTICAL_D3_CANDIDATE_REGISTRATION_V12,
+  PHARMACEUTICAL_D3_CANDIDATE_REGISTRATION_V13,
   PHARMACEUTICAL_D3_D2_COMPARATOR_VERSION_V3,
   PHARMACEUTICAL_D3_D2_EXPECTATION_VERSION_V3,
   PHARMACEUTICAL_D3_HISTORICAL_RESULT_V10,
   PHARMACEUTICAL_D3_HISTORICAL_RESULT_V11,
+  PHARMACEUTICAL_D3_HISTORICAL_RESULT_V12,
   PHARMACEUTICAL_D3_LIVE_MATRIX_FINGERPRINT_V11,
   PHARMACEUTICAL_D3_LIVE_MATRIX_FINGERPRINT_V12,
+  PHARMACEUTICAL_D3_LIVE_MATRIX_FINGERPRINT_V13,
   PHARMACEUTICAL_D3_LIVE_MATRIX_V2,
   PHARMACEUTICAL_D3_LIVE_MATRIX_V3,
   PHARMACEUTICAL_D3_LIVE_MATRIX_V4,
@@ -32,10 +35,12 @@ import {
   PHARMACEUTICAL_D3_LIVE_MATRIX_V10,
   PHARMACEUTICAL_D3_LIVE_MATRIX_V11,
   PHARMACEUTICAL_D3_LIVE_MATRIX_V12,
+  PHARMACEUTICAL_D3_LIVE_MATRIX_V13,
   PHARMACEUTICAL_D3_PROVENANCE_DIAGNOSTIC_VERSION_V1,
   runPharmaceuticalD3AcceptanceV5,
   runPharmaceuticalD3AcceptanceV6,
   runPharmaceuticalD3AcceptanceV7,
+  runPharmaceuticalD3AcceptanceV8,
   validatePharmaceuticalD3ExpectedD2FindingV3,
   validatePharmaceuticalD3ExpectedD2SetV3,
   type PharmaceuticalD3ExpectedD2FindingV3,
@@ -47,12 +52,23 @@ const terra = { d1: 'gpt-5.6-terra', d2: 'gpt-5.6-terra' } as const;
 const c3 = PHARMACEUTICAL_D3_LIVE_MATRIX_V11.fixtures.find(
   (fixture) => fixture.fixtureId === 'C3',
 )!;
+const c3V13 = PHARMACEUTICAL_D3_LIVE_MATRIX_V13.fixtures.find(
+  (fixture) => fixture.fixtureId === 'C3',
+)!;
 
 function expected(messageRef: string): PharmaceuticalD3ExpectedD2FindingV3 {
   const value = c3.expectedD2.find(
     (finding) => finding.semanticClassification.messageRef === messageRef,
   );
   if (value === undefined) throw new Error(`missing /11 expectation ${messageRef}`);
+  return value;
+}
+
+function expectedV13(messageRef: string): PharmaceuticalD3ExpectedD2FindingV3 {
+  const value = c3V13.expectedD2.find(
+    (finding) => finding.semanticClassification.messageRef === messageRef,
+  );
+  if (value === undefined) throw new Error(`missing /13 expectation ${messageRef}`);
   return value;
 }
 
@@ -155,6 +171,17 @@ async function runC3V12(
   literalByMessageRef: Readonly<Record<string, number>> = {},
 ) {
   return runPharmaceuticalD3AcceptanceV7(
+    runtimeFactory(mutate, literalByMessageRef),
+    terra,
+    { fixtureId: 'C3', run: 1 },
+  );
+}
+
+async function runC3V13(
+  mutate?: (findings: any[], request: PharmaceuticalD2SemanticRequestV2) => void,
+  literalByMessageRef: Readonly<Record<string, number>> = {},
+) {
+  return runPharmaceuticalD3AcceptanceV8(
     runtimeFactory(mutate, literalByMessageRef),
     terra,
     { fixtureId: 'C3', run: 1 },
@@ -825,5 +852,172 @@ describe('M6-D3R27 matrix /12 and historical invariance', () => {
       .toEqual(omitAllowedChanges(PHARMACEUTICAL_D3_LIVE_MATRIX_V11));
     expect(PHARMACEUTICAL_D3_LIVE_MATRIX_V12.fixtures)
       .toEqual(PHARMACEUTICAL_D3_LIVE_MATRIX_V11.fixtures);
+  });
+});
+
+describe('M6-D3R29 C3 ref 8 absence-based provenance and matrix /13', () => {
+  const refKeys = (refs: readonly PharmaceuticalD2ClinicalRefV2[]) =>
+    refs.map(pharmaceuticalD2ClinicalRefKey);
+
+  it('registers ref 8 with no required provenance and exactly C008/C009 optional', () => {
+    expect(expectedV13('8').provenancePolicy).toMatchObject({
+      requiredClinicalRefs: [],
+    });
+    expect(refKeys(expectedV13('8').provenancePolicy.optionalClinicalRefs)).toEqual([
+      'CONCLUSION:conclusion_d3000000-0000-4000-8000-000000000008',
+      'CONCLUSION:conclusion_d3000000-0000-4000-8000-000000000009',
+    ]);
+  });
+
+  it.each(Array.from({ length: 8 }, (_, product) => product))(
+    'accepts every exact ref 8 literal/provenance product %s',
+    async (product) => {
+      const literalIndex = product >> 2;
+      const mask = product & 3;
+      const optional = expectedV13('8').provenancePolicy.optionalClinicalRefs.filter(
+        (_ref, index) => (mask & (1 << index)) !== 0,
+      );
+      const result = await runC3V13(
+        (findings) => setRefs(findings, '8', optional),
+        { 8: literalIndex },
+      );
+      expect(result.decision).toBe('ACCEPT');
+    },
+  );
+
+  it.each([
+    ['unrelated ref', (findings: any[]) => setRefs(
+      findings,
+      '8',
+      expectedV13('2').provenancePolicy.optionalClinicalRefs,
+    )],
+    ['duplicate ref', (findings: any[]) => {
+      const finding = findings.find((candidate) => candidate.messageRef === '8');
+      const ref = expectedV13('8').provenancePolicy.optionalClinicalRefs[0];
+      finding.relatedClinicalRefs = [structuredClone(ref), structuredClone(ref)];
+    }],
+    ['wrong excerpt', (findings: any[]) => {
+      const finding = findings.find((candidate) => candidate.messageRef === '8');
+      finding.excerpt = 'dificultad para tragar';
+      finding.occurrenceIndex = 0;
+    }],
+    ['wrong occurrence/span', (findings: any[]) => {
+      const finding = findings.find((candidate) => candidate.messageRef === '8');
+      finding.occurrenceIndex = 1;
+    }],
+    ['wrong messageRef', (findings: any[]) => {
+      const finding = findings.find((candidate) => candidate.messageRef === '8');
+      finding.messageRef = '10';
+    }],
+    ['wrong domain', (findings: any[]) => {
+      const finding = findings.find((candidate) => candidate.messageRef === '8');
+      finding.domain = 'PRM';
+    }],
+    ['wrong findingType', (findings: any[]) => {
+      const finding = findings.find((candidate) => candidate.messageRef === '8');
+      finding.findingType = 'CONTRADICTORY';
+    }],
+    ['wrong claimForm', (findings: any[]) => {
+      const finding = findings.find((candidate) => candidate.messageRef === '8');
+      finding.claimForm = 'ASSERTION';
+    }],
+  ])('rejects ref 8 %s fail-closed', async (_label, mutate) => {
+    expect((await runC3V13((findings) => mutate(findings))).decision).not.toBe('ACCEPT');
+  });
+
+  it('rejects duplicate ref 8 findings even when both exact literals are valid', async () => {
+    const result = await runC3V13((findings, request) => {
+      const second = providerResult(c3V13, request, { 8: 1 }).findings.find(
+        (finding) => finding.messageRef === '8',
+      )!;
+      findings.push(second);
+    });
+    expect(result.decision).not.toBe('ACCEPT');
+  });
+
+  it('keeps malformed literal spans rejected by expectation /3 validation', () => {
+    for (const field of ['excerptStart', 'excerptEnd'] as const) {
+      const source = expectedV13('8');
+      const first = source.literalAlternatives[0];
+      const draft = {
+        ...structuredClone(source),
+        literalAlternatives: [{
+          ...structuredClone(first),
+          [field]: first[field] + (field === 'excerptStart' ? 1 : -1),
+        }, ...structuredClone(source.literalAlternatives.slice(1))],
+      } as PharmaceuticalD3ExpectedD2FindingV3;
+      expect(() => validatePharmaceuticalD3ExpectedD2FindingV3(c3V13.context, draft))
+        .toThrow();
+    }
+  });
+
+  it('preserves the /12 rejection and accepts the same observed empty provenance under /13', async () => {
+    const historical = await runC3V12((findings) => setRefs(findings, '8', []));
+    const corrected = await runC3V13((findings) => setRefs(findings, '8', []));
+    expect(PHARMACEUTICAL_D3_HISTORICAL_RESULT_V12).toMatchObject({
+      matrixVersion: 'pharmaceutical-d3-live-matrix/12',
+      matrixFingerprint: '00afc0adcf5f35b6e14a63a6c47a7e3778a2d53cd4ca1384f904ad34448e2b33',
+      decision: 'REJECT',
+      fixtureId: 'C3',
+      run: 1,
+      failure: { mismatchSubtype: 'MISSING_REQUIRED' },
+    });
+    expect(historical).toMatchObject({
+      decision: 'REJECT',
+      summaries: [{ failure: { metadata: { mismatchSubtype: 'MISSING_REQUIRED' } } }],
+    });
+    expect(corrected.decision).toBe('ACCEPT');
+  });
+
+  it('keeps absence-based and contrast-based provenance policies coherent', () => {
+    expect(refKeys(expectedV13('2').provenancePolicy.requiredClinicalRefs)).toEqual([]);
+    expect(refKeys(expectedV13('2').provenancePolicy.optionalClinicalRefs)).toEqual([
+      'CONCLUSION:conclusion_d3000000-0000-4000-8000-000000000013',
+    ]);
+    expect(refKeys(expectedV13('8').provenancePolicy.requiredClinicalRefs)).toEqual([]);
+    expect(refKeys(expectedV13('8').provenancePolicy.optionalClinicalRefs)).toEqual([
+      'CONCLUSION:conclusion_d3000000-0000-4000-8000-000000000008',
+      'CONCLUSION:conclusion_d3000000-0000-4000-8000-000000000009',
+    ]);
+    expect(refKeys(expectedV13('9').provenancePolicy.requiredClinicalRefs)).toEqual([
+      'CONCLUSION:conclusion_d3000000-0000-4000-8000-000000000013',
+    ]);
+    expect(refKeys(expectedV13('11').provenancePolicy.requiredClinicalRefs)).toEqual([
+      'RELATION:conclusion_d3000000-0000-4000-8000-000000000005',
+    ]);
+  });
+
+  it('changes /12→/13 only in matrix identity and the C3 ref 8 provenance policy', () => {
+    const stable = (
+      matrix: typeof PHARMACEUTICAL_D3_LIVE_MATRIX_V12 | typeof PHARMACEUTICAL_D3_LIVE_MATRIX_V13,
+    ) => {
+      const { matrixVersion: _matrixVersion, fingerprint: _fingerprint, fixtures, ...rest } = matrix;
+      return {
+        ...rest,
+        fixtures: fixtures.map((fixture) => ({
+          ...fixture,
+          expectedD2: fixture.expectedD2.map((finding) =>
+            fixture.fixtureId === 'C3' && finding.semanticClassification.messageRef === '8'
+              ? { ...finding, provenancePolicy: '<versioned>' }
+              : finding),
+        })),
+      };
+    };
+    expect(stable(PHARMACEUTICAL_D3_LIVE_MATRIX_V13))
+      .toEqual(stable(PHARMACEUTICAL_D3_LIVE_MATRIX_V12));
+    expect(PHARMACEUTICAL_D3_LIVE_MATRIX_FINGERPRINT_V13)
+      .toBe('1870641f03ee00e172d18b704119bc1de8834629e6cd631a3a4c513fe23a3c43');
+    expect(PHARMACEUTICAL_D3_CANDIDATE_REGISTRATION_V13).toMatchObject({
+      matrixVersion: 'pharmaceutical-d3-live-matrix/13',
+      matrixFingerprint: PHARMACEUTICAL_D3_LIVE_MATRIX_FINGERPRINT_V13,
+      model: 'gpt-5.6-terra',
+      status: 'PENDING LIVE ACCEPTANCE',
+    });
+    expect(calculatePharmaceuticalD3CallBudgetV1(PHARMACEUTICAL_D3_LIVE_MATRIX_V13))
+      .toEqual({
+        ...calculatePharmaceuticalD3CallBudgetV1(PHARMACEUTICAL_D3_LIVE_MATRIX_V12),
+      });
+    expect(PHARMACEUTICAL_D3_LIVE_MATRIX_V13.d2RequestFingerprints)
+      .toEqual(PHARMACEUTICAL_D3_LIVE_MATRIX_V12.d2RequestFingerprints);
   });
 });

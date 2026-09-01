@@ -385,3 +385,34 @@ Matrix `/12`:
 El delta `/11`→`/12` se limita a identidad/fingerprint de matriz, prompt D2 `/5`, fingerprints D2 derivados y versión diagnóstica. Fixtures, transcripts, authority, relationships, `allowedClinicalRefs`, semántica clínica, expectations, comparator, provider, validator, D1, governance, Terra, orden, repeticiones, gate 100%, stop-early, sampling, tokens, timeouts y budget 82 (D1 61 + D2 21) permanecen intactos.
 
 M6-D3R27 — **CLOSED / COMPLETE**. M6-D3B — **NOT CLOSED — READY FOR PROMPT-V5 MATRIX-12 LIVE ACCEPTANCE FROM SMOKE**. La aceptación real de `/12` requiere autorización independiente. Cero OpenAI/live en este incremento; progreso sin cambios: M6 46% / proyecto 49.37%.
+
+## 16. M6-D3R29 — provenance de ausencia para C3 ref 8
+
+Matrix `/12` permanece históricamente **REJECT**. En C3 ref 8, la clasificación semántica y los dos spans literales fueron correctos, pero el output observado conservó `relatedClinicalRefs=[]` y la expectation exigía C009. D3R28 cerró la causa como `EXPECTATION PROVENANCE POLICY OVERCONSTRAINED`: el finding afirma que una barrera de dificultad para tragar no está sustentada por la autoridad suministrada. Esa ausencia puede expresarse sin provenance positiva; C008 y C009 son referencias contextuales compatibles, pero ninguna es condición necesaria del finding.
+
+Matrix `/13` preregistra para ref 8:
+
+- clasificación fija `ADHERENCE / UNSUPPORTED / CONCLUSION` y `messageRef=8`;
+- los dos spans exactos ya auditados, sin normalización;
+- `requiredClinicalRefs=[]`;
+- `optionalClinicalRefs=[C008,C009]`;
+- cualquier otra ref, duplicado, identidad, literal o span no registrado permanece forbidden y fail-closed.
+
+Las policies coherentes de C3 quedan: ref 2 ausencia-based (`required=[]`, C013 optional); ref 8 ausencia-based (`required=[]`, C008/C009 optional); ref 9 contrast-based (C013 required); ref 11 contrast-based (R005 required). Ref 7 y todas las demás expectations permanecen intactas.
+
+Identidades de `/13`:
+
+- matrix: `pharmaceutical-d3-live-matrix/13`;
+- fingerprint: `1870641f03ee00e172d18b704119bc1de8834629e6cd631a3a4c513fe23a3c43`;
+- candidate: `gpt-5.6-terra`;
+- prompt D2 `/5`; request D2 `/2`; C3 request fingerprint `2346d967f0e68ef542cb7c38f303f58e68851b76678fe7c24c69567783336ce1`;
+- provider `/2`; expectation/comparator `/3`; diagnostic `/1`;
+- repeticiones, gate 100%, stop-early y budget 82 (61 D1 + 21 D2), sin cambios.
+
+El delta `/12`→`/13` se limita a identidad/fingerprint y a la provenance policy de C3 ref 8. Matrix `/12` no se reevalúa ni reclasifica; `/1`, `/4`–`/12` conservan `REJECT` y `/2`–`/3`, `INCONCLUSIVE`.
+
+Validación offline de R29: 20 tests nuevos de policy/comparator/invariancia, incluidos los ocho productos exactos de ref 8; D1 142/142, D2 228/228, D3 harness 100/100 y suite completa 2931 PASS / 25 SKIPPED. TypeScript y `git diff --check`: PASS.
+
+M6-D3R29 — **CLOSED / COMPLETE**. M6-D3B — **NOT CLOSED — READY FOR MATRIX-13 LIVE ACCEPTANCE FROM SMOKE**. `/13` queda **PENDING LIVE ACCEPTANCE** y no se afirma aceptación live.
+
+Criterio de salida: si `/13` se rechaza por una nueva variación de provenance que no revele un defecto contractual claro, pequeño y demostrable, no se iniciará automáticamente `/14`; se recomendará mantener M6-D3B **OPEN / VALIDATION DEBT** y continuar el roadmap independiente. Cero OpenAI/live en este incremento; progreso sin cambios: M6 46% / proyecto 49.37%.

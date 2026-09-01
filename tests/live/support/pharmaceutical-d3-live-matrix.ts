@@ -177,6 +177,7 @@ export const PHARMACEUTICAL_D3_LIVE_MATRIX_VERSION_V9 = 'pharmaceutical-d3-live-
 export const PHARMACEUTICAL_D3_LIVE_MATRIX_VERSION_V10 = 'pharmaceutical-d3-live-matrix/10' as const;
 export const PHARMACEUTICAL_D3_LIVE_MATRIX_VERSION_V11 = 'pharmaceutical-d3-live-matrix/11' as const;
 export const PHARMACEUTICAL_D3_LIVE_MATRIX_VERSION_V12 = 'pharmaceutical-d3-live-matrix/12' as const;
+export const PHARMACEUTICAL_D3_LIVE_MATRIX_VERSION_V13 = 'pharmaceutical-d3-live-matrix/13' as const;
 export const PHARMACEUTICAL_D3_D2_EXPECTATION_VERSION_V3 =
   'pharmaceutical-d3-d2-expectation/3' as const;
 export const PHARMACEUTICAL_D3_D2_COMPARATOR_VERSION_V3 =
@@ -532,6 +533,17 @@ export type PharmaceuticalD3LiveMatrixV12 = Readonly<
     fingerprint: Readonly<{
       algorithm: 'sha256';
       canonicalization: 'pharmaceutical-d3-live-matrix-v12/1';
+      value: string;
+    }>;
+  }
+>;
+
+export type PharmaceuticalD3LiveMatrixV13 = Readonly<
+  Omit<PharmaceuticalD3LiveMatrixV12, 'matrixVersion' | 'fingerprint'> & {
+    matrixVersion: typeof PHARMACEUTICAL_D3_LIVE_MATRIX_VERSION_V13;
+    fingerprint: Readonly<{
+      algorithm: 'sha256';
+      canonicalization: 'pharmaceutical-d3-live-matrix-v13/1';
       value: string;
     }>;
   }
@@ -1577,6 +1589,33 @@ function fixtureWithD2ExpectationsV3(
   return { ...fixture, expectedD2 };
 }
 
+function fixtureWithC3Ref8OptionalProvenanceV13(
+  fixture: PharmaceuticalD3LiveFixtureV3,
+): PharmaceuticalD3LiveFixtureV3 {
+  if (fixture.fixtureId !== 'C3') return fixture;
+  const expectedD2 = validatePharmaceuticalD3ExpectedD2SetV3(
+    fixture.context,
+    fixture.expectedD2.map((finding) => {
+      if (finding.semanticClassification.messageRef !== validateSessionMessageIdV2('8')) {
+        return finding;
+      }
+      const optionalClinicalRefs = [
+        ...finding.provenancePolicy.optionalClinicalRefs,
+        ...finding.provenancePolicy.requiredClinicalRefs,
+      ].map((ref) => structuredClone(ref)).sort((left, right) =>
+        pharmaceuticalD2ClinicalRefKey(left).localeCompare(pharmaceuticalD2ClinicalRefKey(right)));
+      return validatePharmaceuticalD3ExpectedD2FindingV3(fixture.context, {
+        ...finding,
+        provenancePolicy: {
+          requiredClinicalRefs: [],
+          optionalClinicalRefs,
+        },
+      });
+    }),
+  );
+  return { ...fixture, expectedD2 };
+}
+
 function fixtureWithExactD2ExpectationsV2(
   fixture: PharmaceuticalD3LiveFixtureV1,
 ): PharmaceuticalD3LiveFixtureV1 {
@@ -2354,6 +2393,47 @@ export const PHARMACEUTICAL_D3_CANDIDATE_REGISTRATION_V12 = Object.freeze({
   status: 'PENDING LIVE ACCEPTANCE' as const,
 });
 
+export const PHARMACEUTICAL_D3_HISTORICAL_RESULT_V12 = Object.freeze({
+  matrixVersion: PHARMACEUTICAL_D3_LIVE_MATRIX_VERSION_V12,
+  matrixFingerprint: PHARMACEUTICAL_D3_LIVE_MATRIX_FINGERPRINT_V12,
+  model: PHARMACEUTICAL_D3_LIVE_MODEL_V7,
+  decision: 'REJECT' as const,
+  fixtureId: 'C3' as const,
+  run: 1 as const,
+  failure: Object.freeze({
+    code: 'EXPECTATION_MISMATCH' as const,
+    path: 'd2.findings[2].relatedClinicalRefs' as const,
+    mismatchSubtype: 'MISSING_REQUIRED' as const,
+    missingClinicalRef: 'CONCLUSION:conclusion_d3000000-0000-4000-8000-000000000009' as const,
+  }),
+  reason: 'C3 ref 8 used valid absence-based provenance []; matrix /12 incorrectly required C009',
+});
+
+const matrixCoreV13 = {
+  ...matrixCoreV12,
+  matrixVersion: PHARMACEUTICAL_D3_LIVE_MATRIX_VERSION_V13,
+  fixtures: matrixCoreV12.fixtures.map(fixtureWithC3Ref8OptionalProvenanceV13),
+};
+export const PHARMACEUTICAL_D3_LIVE_MATRIX_FINGERPRINT_V13 =
+  '1870641f03ee00e172d18b704119bc1de8834629e6cd631a3a4c513fe23a3c43';
+if (sha256(matrixCoreV13) !== PHARMACEUTICAL_D3_LIVE_MATRIX_FINGERPRINT_V13) {
+  throw new Error(`Pharmaceutical D3 matrix /13 fingerprint is ${sha256(matrixCoreV13)}`);
+}
+export const PHARMACEUTICAL_D3_LIVE_MATRIX_V13: PharmaceuticalD3LiveMatrixV13 = deepFreeze({
+  ...matrixCoreV13,
+  fingerprint: {
+    algorithm: 'sha256',
+    canonicalization: 'pharmaceutical-d3-live-matrix-v13/1',
+    value: PHARMACEUTICAL_D3_LIVE_MATRIX_FINGERPRINT_V13,
+  },
+});
+export const PHARMACEUTICAL_D3_CANDIDATE_REGISTRATION_V13 = Object.freeze({
+  ...PHARMACEUTICAL_D3_CANDIDATE_REGISTRATION_V12,
+  matrixVersion: PHARMACEUTICAL_D3_LIVE_MATRIX_VERSION_V13,
+  matrixFingerprint: PHARMACEUTICAL_D3_LIVE_MATRIX_FINGERPRINT_V13,
+  status: 'PENDING LIVE ACCEPTANCE' as const,
+});
+
 export function pharmaceuticalD3FixtureV1(
   fixtureId: PharmaceuticalD3FixtureIdV1,
 ): PharmaceuticalD3LiveFixtureV1 {
@@ -2365,7 +2445,7 @@ export function pharmaceuticalD3FixtureV1(
 }
 
 export function calculatePharmaceuticalD3CallBudgetV1(
-  matrix: PharmaceuticalD3LiveMatrixV2 | PharmaceuticalD3LiveMatrixV3 | PharmaceuticalD3LiveMatrixV4 | PharmaceuticalD3LiveMatrixV5 | PharmaceuticalD3LiveMatrixV6 | PharmaceuticalD3LiveMatrixV7 | PharmaceuticalD3LiveMatrixV8 | PharmaceuticalD3LiveMatrixV9 | PharmaceuticalD3LiveMatrixV10 | PharmaceuticalD3LiveMatrixV11 | PharmaceuticalD3LiveMatrixV12 =
+  matrix: PharmaceuticalD3LiveMatrixV2 | PharmaceuticalD3LiveMatrixV3 | PharmaceuticalD3LiveMatrixV4 | PharmaceuticalD3LiveMatrixV5 | PharmaceuticalD3LiveMatrixV6 | PharmaceuticalD3LiveMatrixV7 | PharmaceuticalD3LiveMatrixV8 | PharmaceuticalD3LiveMatrixV9 | PharmaceuticalD3LiveMatrixV10 | PharmaceuticalD3LiveMatrixV11 | PharmaceuticalD3LiveMatrixV12 | PharmaceuticalD3LiveMatrixV13 =
     PHARMACEUTICAL_D3_LIVE_MATRIX_V6,
 ): PharmaceuticalD3CallBudgetV1 {
   const byFixture = Object.fromEntries(matrix.fixtures.map((fixture) => {
@@ -2963,8 +3043,20 @@ export async function runPharmaceuticalD3AcceptanceV7(
   return runPharmaceuticalD3Acceptance(PHARMACEUTICAL_D3_LIVE_MATRIX_V12, runtimeFactory, selection);
 }
 
+export async function runPharmaceuticalD3AcceptanceV8(
+  runtimeFactory: PharmaceuticalD3LiveRuntimeFactoryV1,
+  configuredModels: Readonly<{ d1: unknown; d2: unknown }>,
+  selection?: Readonly<{
+    fixtureId?: Exclude<PharmaceuticalD3FixtureIdV1, 'Z0'>;
+    run?: number;
+  }>,
+) {
+  validatePharmaceuticalD3ModelSelectionV8(configuredModels);
+  return runPharmaceuticalD3Acceptance(PHARMACEUTICAL_D3_LIVE_MATRIX_V13, runtimeFactory, selection);
+}
+
 async function runPharmaceuticalD3Acceptance(
-  matrix: PharmaceuticalD3LiveMatrixV6 | PharmaceuticalD3LiveMatrixV7 | PharmaceuticalD3LiveMatrixV8 | PharmaceuticalD3LiveMatrixV9 | PharmaceuticalD3LiveMatrixV10 | PharmaceuticalD3LiveMatrixV11 | PharmaceuticalD3LiveMatrixV12,
+  matrix: PharmaceuticalD3LiveMatrixV6 | PharmaceuticalD3LiveMatrixV7 | PharmaceuticalD3LiveMatrixV8 | PharmaceuticalD3LiveMatrixV9 | PharmaceuticalD3LiveMatrixV10 | PharmaceuticalD3LiveMatrixV11 | PharmaceuticalD3LiveMatrixV12 | PharmaceuticalD3LiveMatrixV13,
   runtimeFactory: PharmaceuticalD3LiveRuntimeFactoryV1,
   selection?: Readonly<{
     fixtureId?: Exclude<PharmaceuticalD3FixtureIdV1, 'Z0'>;
@@ -3034,7 +3126,7 @@ export function buildPharmaceuticalD3EvidenceArtifactV1(
   commitHash: string,
   summaries: readonly PharmaceuticalD3SafeRunSummaryV1[],
   decision: PharmaceuticalD3FinalDecisionV1,
-  matrix: PharmaceuticalD3LiveMatrixV6 | PharmaceuticalD3LiveMatrixV7 | PharmaceuticalD3LiveMatrixV8 | PharmaceuticalD3LiveMatrixV9 | PharmaceuticalD3LiveMatrixV10 | PharmaceuticalD3LiveMatrixV11 | PharmaceuticalD3LiveMatrixV12 = PHARMACEUTICAL_D3_LIVE_MATRIX_V6,
+  matrix: PharmaceuticalD3LiveMatrixV6 | PharmaceuticalD3LiveMatrixV7 | PharmaceuticalD3LiveMatrixV8 | PharmaceuticalD3LiveMatrixV9 | PharmaceuticalD3LiveMatrixV10 | PharmaceuticalD3LiveMatrixV11 | PharmaceuticalD3LiveMatrixV12 | PharmaceuticalD3LiveMatrixV13 = PHARMACEUTICAL_D3_LIVE_MATRIX_V6,
 ): string {
   const observedModels = [...new Set(summaries.flatMap((summary) => summary.responseModels))];
   return [
@@ -3053,7 +3145,7 @@ export function buildPharmaceuticalD3EvidenceArtifactV1(
     `- D2 expectation: \`${matrix.contractVersions.d2Expectation}\``,
     `- Batch plan: \`${matrix.contractVersions.batchPlan}\``,
     `- Requested model: \`${matrix.model}\``,
-    ...(matrix.matrixVersion === PHARMACEUTICAL_D3_LIVE_MATRIX_VERSION_V7 || matrix.matrixVersion === PHARMACEUTICAL_D3_LIVE_MATRIX_VERSION_V8 || matrix.matrixVersion === PHARMACEUTICAL_D3_LIVE_MATRIX_VERSION_V9 || matrix.matrixVersion === PHARMACEUTICAL_D3_LIVE_MATRIX_VERSION_V10 || matrix.matrixVersion === PHARMACEUTICAL_D3_LIVE_MATRIX_VERSION_V11 || matrix.matrixVersion === PHARMACEUTICAL_D3_LIVE_MATRIX_VERSION_V12
+    ...(matrix.matrixVersion === PHARMACEUTICAL_D3_LIVE_MATRIX_VERSION_V7 || matrix.matrixVersion === PHARMACEUTICAL_D3_LIVE_MATRIX_VERSION_V8 || matrix.matrixVersion === PHARMACEUTICAL_D3_LIVE_MATRIX_VERSION_V9 || matrix.matrixVersion === PHARMACEUTICAL_D3_LIVE_MATRIX_VERSION_V10 || matrix.matrixVersion === PHARMACEUTICAL_D3_LIVE_MATRIX_VERSION_V11 || matrix.matrixVersion === PHARMACEUTICAL_D3_LIVE_MATRIX_VERSION_V12 || matrix.matrixVersion === PHARMACEUTICAL_D3_LIVE_MATRIX_VERSION_V13
       ? [`- Model policy: \`${PHARMACEUTICAL_SEMANTIC_MODEL_POLICY_VERSION_V1}\``]
       : []),
     `- Observed models: ${observedModels.map((model) => `\`${model}\``).join(', ') || 'none'}`,
