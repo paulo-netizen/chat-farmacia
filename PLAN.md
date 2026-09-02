@@ -21,13 +21,13 @@ La fuente canónica del progreso, los porcentajes, los pesos M0–M11 y el check
 - M10 — Analítica y revisión docente: **NOT STARTED**.
 - M11 — Hardening y observabilidad final: **NOT STARTED**.
 
-El repositorio dispone de una suite automatizada amplia. M6-A, M6-B, M6-C, M6-D1, M6-D2, la preparación offline M6-D3A y los refinamientos versionados hasta M6-D3R29 quedaron validados con contratos estrictos, tests automatizados y TypeScript correcto.
+El repositorio dispone de una suite automatizada amplia. M6-A, M6-B, M6-C, M6-D1, M6-D2, la preparación offline M6-D3A y los refinamientos versionados hasta M6-D3R29 quedaron validados con contratos estrictos, tests automatizados y TypeScript correcto. M6-D3R30 congela el gate live no superado como deuda de validación visible y desbloquea trabajo independiente.
 
 ## Próximo frente funcional
 
-M6-D3R29 — **CLOSED / COMPLETE**, exclusivamente offline: matrix `/12` permanece `REJECT`; D3R28 cerró la causa como `EXPECTATION PROVENANCE POLICY OVERCONSTRAINED` para C3 ref 8. El finding de ausencia de soporte puede llevar provenance vacía o C008/C009 como refs opcionales; ninguna es obligatoria. Matrix `/13` preregistra `required=[]` y `optional=[C008,C009]` sin cambiar identidad semántica, literales, prompt `/5`, request `/2`, provider `/2`, expectation/comparator `/3`, diagnostic `/1`, D1, governance ni budget 82. M6-D3B queda **NOT CLOSED — READY FOR MATRIX-13 LIVE ACCEPTANCE FROM SMOKE**. Progreso sin cambios: M6 46% / proyecto 49.37%.
+M6-D3R30 — **CLOSED / COMPLETE**, exclusivamente documental: matrix `/13` queda históricamente `REJECT`. C3 run 1 produjo en ref 9 una nueva variación del modelo: se esperaba `PROFESSIONAL_RESPONSE / UNSUPPORTED / RECOMMENDATION` con C013 y se observó `ADHERENCE / UNSUPPORTED / RECOMMENDATION` con C010; el literal fue correcto. No existe `SMALL_CLEAR_CONTRACT_DEFECT`. M6-D3B queda **OPEN / VALIDATION DEBT**; el gate 100% no se rebaja, no se crea `/14` y M6-D3/M6-D permanecen `PARTIAL`. Progreso sin cambios: M6 46% / proyecto 49.37%.
 
-Para evitar un ciclo indefinido de matrices, si `/13` se rechaza por una nueva variación de provenance que no corresponda a un defecto contractual claro, pequeño y demostrable, no se iniciará automáticamente `/14`: se recomendará mantener M6-D3B **OPEN / VALIDATION DEBT** y continuar el roadmap independiente.
+La siguiente tarea independiente recomendada es **M6-E0 — auditoría del contrato versionado de scoring farmacéutico** (0%): delimitar inputs D1/D2, reglas pedagógicas, tratamiento review-only de `UNSUPPORTED`, weights/thresholds, trazabilidad y fail-closed antes de implementar un scorer. Depende de M6-A/B/C y de los contratos offline D1/D2 ya cerrados; puede avanzar sin afirmar que D3B superó aceptación live.
 
 M6-D3R24 — **CLOSED / COMPLETE**, exclusivamente offline: matrix `/10` permanece `REJECT` por `RELATED_CLINICAL_REFS ACCEPTANCE CONTRACT OVERCONSTRAINED`. D3R23 concluyó `A. SUFFICIENT`; expectation `pharmaceutical-d3-d2-expectation/3` separa clasificación semántica exacta, `ONE_OF` de spans literales exactos y provenance required/optional/forbidden, con comparator `/3` fail-closed. Matrix `/11` queda **PENDING LIVE ACCEPTANCE** con Terra. Prompt D2 `/4`, request D2 `/2`, provider `/2`, validator, claimId, D1 y governance permanecen intactos. M6-D3B queda **NOT CLOSED — READY FOR EXPECTATION-V3 MATRIX-11 LIVE ACCEPTANCE FROM SMOKE**. Progreso sin cambios: M6 46% / proyecto 49.37%.
 
@@ -37,7 +37,7 @@ M6-D3R18 — **CLOSED / COMPLETE**, exclusivamente offline: aclaración de ident
 
 M6-D3R16 — **CLOSED / COMPLETE**: request `pharmaceutical-d2-semantic-request/2` con proyección positiva y trazable barrera → assessment → adherencia → medicationRefs. Matrix `/8` con Terra terminó `REJECT`; `/6` Sol y `/7` Terra permanecen `REJECT`. M6-D3B sigue **NOT CLOSED**; la preparación actual corresponde a D3R18 y matrix `/9`. No cambia el prompt D2 `/3`, la semántica clínica ni el progreso M6 46% / proyecto 49.37%. Validación offline: 2793 PASS / 25 SKIPPED; TypeScript y diff-check PASS.
 
-El milestone funcional activo es **M6 — Evaluación farmacéutica/PRM–RNM/adherencia**. M6-A aporta la referencia clínica farmacéutica canónica; M6-B cierra identidad, targets y evidencia; M6-C prepara el contexto determinista; M6-D1 y D2 aportan las adjudicaciones farmacéuticas. M6-D3 conserva como históricos `/1` `REJECT`, `/2`–`/3` `INCONCLUSIVE` y `/4`–`/12` `REJECT`. D3R29 corrige exclusivamente la provenance policy preregistrada de C3 ref 8 y crea `/13`. La futura aceptación M6-D3B requiere autorización independiente y comienza desde SMOKE bajo `/13` con Terra explícito; no se afirma aceptación live.
+El milestone funcional activo es **M6 — Evaluación farmacéutica/PRM–RNM/adherencia**. M6-A aporta la referencia clínica farmacéutica canónica; M6-B cierra identidad, targets y evidencia; M6-C prepara el contexto determinista; M6-D1 y D2 aportan las adjudicaciones farmacéuticas. M6-D3 conserva como históricos `/1` `REJECT`, `/2`–`/3` `INCONCLUSIVE` y `/4`–`/13` `REJECT`. M6-D3B queda `OPEN / VALIDATION DEBT`; no se abrirá otra muestra o matrix sin una estrategia arquitectónica materialmente nueva. El roadmap continúa con la auditoría M6-E0 de scoring farmacéutico.
 
 Antes de implementar cada incremento de M6:
 
@@ -59,7 +59,7 @@ M2 Editor docente estructurado ── M3 Generador,      │
 
 M4 Runtime seguro del paciente [CLOSED]
 M5 Motor de protocolos SPFA [CLOSED]
-  └─ M6 Evaluación farmacéutica/PRM–RNM/adherencia [PARTIAL — A/B/C/D1/D2/D3A/D3R2/D3R4/D3R6/D3R8/D3R10/D3R14/D3R16/D3R18/D3R20/D3R24/D3R27/D3R29 CLOSED]
+  └─ M6 Evaluación farmacéutica/PRM–RNM/adherencia [PARTIAL — A/B/C/D1/D2/D3A + refinamientos offline CLOSED; D3B VALIDATION DEBT; M6-E0 NEXT]
        ├─ M7 Evaluación de comunicación
        └─ M8 Cuestionario post-caso
             └─ M9 Resultados y feedback
@@ -104,7 +104,7 @@ M0/M1 y M2/M3 pueden cerrarse en paralelo, pero su deuda pendiente debe resolver
 
 ### M6–M11
 
-- M6: referencia clínica, identidad de contenidos esenciales, targets atómicos, contratos de evidencia candidata, preparación determinista del contexto, lanes D1/D2 completas, hardening D3A, matrices históricas `/1`–`/5`, contrato provider D2 excerpt + ocurrencia de D3R6 y alternatives canónicas exactas de D3R10 en matriz `/6`; pendientes nueva aceptación live D3B desde SMOKE, scoring, persistencia e integración;
+- M6: referencia clínica, identidad de contenidos esenciales, targets atómicos, contratos de evidencia candidata, preparación determinista del contexto y lanes D1/D2 completas; M6-D3B queda `OPEN / VALIDATION DEBT` tras `/13` `REJECT`; pendientes auditoría/implementación de scoring, persistencia e integración, sin crear automáticamente `/14`;
 - M7: evaluación de la comunicación farmacéutico-paciente;
 - M8: cuestionario post-caso;
 - M9: resultados globales y feedback;

@@ -2,7 +2,7 @@
 
 ## 1. Estado y alcance
 
-M6-D3A congeló la primera matriz previa a la aceptación live de las lanes farmacéuticas D1 y D2. M6-D3R2 versionó la precisión de evidencia D1; `/2` y `/3` quedaron `INCONCLUSIVE`. M6-D3R6 movió la resolución UTF-16 al servidor; `/4` quedó `REJECT`. Las matrices `/5`–`/11` también conservan sus resultados históricos `REJECT`. En `/11`, C3 ref 7 llegó con identidad semántica y literal correctas, pero incluyó R005, ref válida para otra proposición y forbidden para ref 7: **PROMPT/PROVIDER PROVENANCE SELECTION GAP**. Expectation `/3` y comparator `/3` permanecen sound. D3R27 preserva `/1`–`/11` y crea `/12`, pendiente de live, con prompt D2 `/5` proposition-local y diagnóstico estructurado seguro `/1`. No se reclasifica ningún histórico.
+M6-D3A congeló la primera matriz previa a la aceptación live de las lanes farmacéuticas D1 y D2. Las matrices `/1`–`/13` conservan sus resultados históricos: `/2` y `/3` son `INCONCLUSIVE`; `/1` y `/4`–`/13` son `REJECT`. Matrix `/13` agotó el criterio de salida preregistrado al producir una nueva variación de dominio/provenance sin revelar un defecto contractual claro, pequeño y demostrable. M6-D3R30 congela M6-D3B como **OPEN / VALIDATION DEBT**, suspende nuevas iteraciones de matrices y mantiene el gate exacto del 100%. No se reclasifica ningún histórico.
 
 Histórico inmutable `/1`:
 
@@ -197,11 +197,13 @@ No invalidan por sí solos: erratas documentales, logging allowlisted no materia
 - M6-D3R20: **CLOSED / COMPLETE**, exclusivamente offline.
 - M6-D3R24: **CLOSED / COMPLETE**, exclusivamente offline.
 - M6-D3R27: **CLOSED / COMPLETE**, exclusivamente offline.
-- M6-D3B: **NOT CLOSED — READY FOR PROMPT-V5 MATRIX-12 LIVE ACCEPTANCE FROM SMOKE**.
+- M6-D3R29: **CLOSED / COMPLETE**, exclusivamente offline.
+- M6-D3R30: **CLOSED / COMPLETE**, exclusivamente documental.
+- M6-D3B: **OPEN / VALIDATION DEBT**.
 - M6-D3: **PARTIAL**.
 - M6-D: **PARTIAL**.
 
-No se ejecuta OpenAI en D3R27 y no se cierra M6-D. `/1`, `/4`–`/11` conservan `REJECT`; `/2` y `/3`, `INCONCLUSIVE`; `/12` queda `PENDING LIVE ACCEPTANCE`. M6 sigue en 46% y el proyecto en 49.37%. No se afirma aceptación live.
+El estado canónico actual está registrado en §17. M6-D3 y M6-D permanecen abiertos; M6 sigue en 46% y el proyecto en 49.37%. No se afirma aceptación live.
 
 ## 10. Validación offline M6-D3R14
 
@@ -416,3 +418,29 @@ Validación offline de R29: 20 tests nuevos de policy/comparator/invariancia, in
 M6-D3R29 — **CLOSED / COMPLETE**. M6-D3B — **NOT CLOSED — READY FOR MATRIX-13 LIVE ACCEPTANCE FROM SMOKE**. `/13` queda **PENDING LIVE ACCEPTANCE** y no se afirma aceptación live.
 
 Criterio de salida: si `/13` se rechaza por una nueva variación de provenance que no revele un defecto contractual claro, pequeño y demostrable, no se iniciará automáticamente `/14`; se recomendará mantener M6-D3B **OPEN / VALIDATION DEBT** y continuar el roadmap independiente. Cero OpenAI/live en este incremento; progreso sin cambios: M6 46% / proyecto 49.37%.
+
+## 17. M6-D3R30 — congelación de M6-D3B como validation debt
+
+Matrix `/13` permanece históricamente **REJECT**. En C3 run 1, ref 9 esperaba `PROFESSIONAL_RESPONSE / UNSUPPORTED / RECOMMENDATION` con C013 como provenance requerida. El resultado observado conservó literal, finding type y claim form, pero clasificó el dominio como `ADHERENCE` y seleccionó C010: faltó C013 y apareció C010 como forbidden. La clasificación cerrada es `NEW_PROVENANCE_VARIATION_OR_MODEL_ERROR`; no existe `SMALL_CLEAR_CONTRACT_DEFECT`.
+
+Se aplica el criterio de salida preregistrado:
+
+- M6-D3B: **OPEN / VALIDATION DEBT**;
+- acceptance gate: se conserva en 100% y no se considera alcanzado;
+- matrix `/14`: **NO CREADA**;
+- nuevas iteraciones de matrices: suspendidas;
+- M6-D3 y M6-D: permanecen **PARTIAL / OPEN**;
+- progreso: M6 46% y proyecto 49.37%, sin incremento.
+
+Debt record:
+
+- debt: `M6-D3B pharmaceutical semantic live acceptance`;
+- current blocker: clasificación semántica/provenance estocástica bajo un gate exacto del 100%;
+- last matrix: `/13`;
+- last failure: C3 ref 9, mismatch de dominio semántico y provenance proposition-local inválida;
+- decision: pausar nuevas iteraciones de matrices;
+- revisit criteria: reabrir solo ante una estrategia arquitectónica nueva —mayor determinismo server-owned, reducción de decisiones delegadas al LLM, nueva estrategia de adjudicación semántica o evidencia de un modelo/configuración materialmente distintos—, nunca solo para probar otra muestra.
+
+Este debt bloquea el cierre del evaluador semántico farmacéutico D2. No constituye un fallo general del patient chat, de los controles de rol del paciente, de los controles anti-hallucination, de M5 SPFA ni de los módulos independientes ya cerrados.
+
+Los históricos quedan inmutables: `/1` `REJECT`, `/2`–`/3` `INCONCLUSIVE` y `/4`–`/13` `REJECT`. No se ejecutó OpenAI ni live en D3R30.
