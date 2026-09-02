@@ -27,7 +27,15 @@ El repositorio dispone de una suite automatizada amplia. M6-A, M6-B, M6-C, M6-D1
 
 M6-D3R30 — **CLOSED / COMPLETE**, exclusivamente documental: matrix `/13` queda históricamente `REJECT`. C3 run 1 produjo en ref 9 una nueva variación del modelo: se esperaba `PROFESSIONAL_RESPONSE / UNSUPPORTED / RECOMMENDATION` con C013 y se observó `ADHERENCE / UNSUPPORTED / RECOMMENDATION` con C010; el literal fue correcto. No existe `SMALL_CLEAR_CONTRACT_DEFECT`. M6-D3B queda **OPEN / VALIDATION DEBT**; el gate 100% no se rebaja, no se crea `/14` y M6-D3/M6-D permanecen `PARTIAL`. Progreso sin cambios: M6 46% / proyecto 49.37%.
 
-La siguiente tarea independiente recomendada es **M6-E0 — auditoría del contrato versionado de scoring farmacéutico** (0%): delimitar inputs D1/D2, reglas pedagógicas, tratamiento review-only de `UNSUPPORTED`, weights/thresholds, trazabilidad y fail-closed antes de implementar un scorer. Depende de M6-A/B/C y de los contratos offline D1/D2 ya cerrados; puede avanzar sin afirmar que D3B superó aceptación live.
+M6-E0 — **AUDIT COMPLETED**. M6-E1 — **CLOSED / COMPLETE**, exclusivamente contratos versionados, canonicalización y validación estructural offline. D1 será la única fuente de crédito; D2 queda review-only, sin puntos negativos ni defaults pedagógicos. Scoring engine: **NOT IMPLEMENTED**. Configuración pedagógica: **REQUIRED / NOT YET APPROVED**. No se presupone aceptación live D3B. M6-E1F1: **COMPLETE**, sin reconstruir possible desde pesos; validación `STRUCTURAL_ONLY`. Validación tras F1: 156/156 tests E1, TypeScript `--incremental false` y diff-check PASS. Validación anterior a F1: 493/493 con contratos upstream relacionados y suite 3060 PASS / 25 SKIPPED. No hay peso de progreso asignado a E1: M6 46% / proyecto 49.37% permanecen intactos.
+
+### Open decisions — configuración pedagógica M6-E
+
+- Plan puntuable aprobado: partición, dominios/aplicabilidad y resolución explícita de grupos upstream solapados.
+- Pesos por unidad y sus versiones: configuración obligatoria, sin valores clínicos por defecto.
+- Rounding aprobado: escala y modo explícitos; `UNCONFIGURED` bloquea un input calculable.
+- Thresholds: `NO_THRESHOLDS` explícito para esta versión; no se inventa un aprobado. Configuraciones futuras definidas requieren nueva autorización de reglas.
+- La validación de resultados E1 es estructural, no una verificación de la aritmética del futuro scorer. UI, feedback, persistencia, agregación y revisión docente implementada quedan fuera de alcance.
 
 M6-D3R24 — **CLOSED / COMPLETE**, exclusivamente offline: matrix `/10` permanece `REJECT` por `RELATED_CLINICAL_REFS ACCEPTANCE CONTRACT OVERCONSTRAINED`. D3R23 concluyó `A. SUFFICIENT`; expectation `pharmaceutical-d3-d2-expectation/3` separa clasificación semántica exacta, `ONE_OF` de spans literales exactos y provenance required/optional/forbidden, con comparator `/3` fail-closed. Matrix `/11` queda **PENDING LIVE ACCEPTANCE** con Terra. Prompt D2 `/4`, request D2 `/2`, provider `/2`, validator, claimId, D1 y governance permanecen intactos. M6-D3B queda **NOT CLOSED — READY FOR EXPECTATION-V3 MATRIX-11 LIVE ACCEPTANCE FROM SMOKE**. Progreso sin cambios: M6 46% / proyecto 49.37%.
 
@@ -37,7 +45,7 @@ M6-D3R18 — **CLOSED / COMPLETE**, exclusivamente offline: aclaración de ident
 
 M6-D3R16 — **CLOSED / COMPLETE**: request `pharmaceutical-d2-semantic-request/2` con proyección positiva y trazable barrera → assessment → adherencia → medicationRefs. Matrix `/8` con Terra terminó `REJECT`; `/6` Sol y `/7` Terra permanecen `REJECT`. M6-D3B sigue **NOT CLOSED**; la preparación actual corresponde a D3R18 y matrix `/9`. No cambia el prompt D2 `/3`, la semántica clínica ni el progreso M6 46% / proyecto 49.37%. Validación offline: 2793 PASS / 25 SKIPPED; TypeScript y diff-check PASS.
 
-El milestone funcional activo es **M6 — Evaluación farmacéutica/PRM–RNM/adherencia**. M6-A aporta la referencia clínica farmacéutica canónica; M6-B cierra identidad, targets y evidencia; M6-C prepara el contexto determinista; M6-D1 y D2 aportan las adjudicaciones farmacéuticas. M6-D3 conserva como históricos `/1` `REJECT`, `/2`–`/3` `INCONCLUSIVE` y `/4`–`/13` `REJECT`. M6-D3B queda `OPEN / VALIDATION DEBT`; no se abrirá otra muestra o matrix sin una estrategia arquitectónica materialmente nueva. El roadmap continúa con la auditoría M6-E0 de scoring farmacéutico.
+El milestone funcional activo es **M6 — Evaluación farmacéutica/PRM–RNM/adherencia**. M6-A aporta la referencia clínica farmacéutica canónica; M6-B cierra identidad, targets y evidencia; M6-C prepara el contexto determinista; M6-D1 y D2 aportan las adjudicaciones farmacéuticas. M6-D3 conserva como históricos `/1` `REJECT`, `/2`–`/3` `INCONCLUSIVE` y `/4`–`/13` `REJECT`. M6-D3B queda `OPEN / VALIDATION DEBT`; no se abrirá otra muestra o matrix sin una estrategia arquitectónica materialmente nueva. M6-E0 está auditado y M6-E1 introduce únicamente [contratos de scoring y validación estructural](docs/v2/19_PHARMACEUTICAL_SCORING_CONTRACT.md), sin motor numérico ni configuración pedagógica aprobada.
 
 Antes de implementar cada incremento de M6:
 
@@ -59,7 +67,7 @@ M2 Editor docente estructurado ── M3 Generador,      │
 
 M4 Runtime seguro del paciente [CLOSED]
 M5 Motor de protocolos SPFA [CLOSED]
-  └─ M6 Evaluación farmacéutica/PRM–RNM/adherencia [PARTIAL — A/B/C/D1/D2/D3A + refinamientos offline CLOSED; D3B VALIDATION DEBT; M6-E0 NEXT]
+  └─ M6 Evaluación farmacéutica/PRM–RNM/adherencia [PARTIAL — A/B/C/D1/D2/D3A + refinamientos offline CLOSED; D3B VALIDATION DEBT; E0 AUDITED; E1 CONTRACTS]
        ├─ M7 Evaluación de comunicación
        └─ M8 Cuestionario post-caso
             └─ M9 Resultados y feedback
