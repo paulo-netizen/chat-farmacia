@@ -1,14 +1,19 @@
-# 19 — Pharmaceutical scoring contracts (M6-E1)
+# 19 — Pharmaceutical scoring contracts and deterministic engine (M6-E1/E2)
 
 ## Estado y alcance
 
 M6-E0: **AUDIT COMPLETED**. M6-E1: **CLOSED / COMPLETE**, contratos y validación estructural offline.
-Scoring engine: **NOT IMPLEMENTED**. Configuración pedagógica: **REQUIRED / NOT YET APPROVED**.
-No existe función productiva que calcule o agregue una nota. Los únicos resultados de ejemplo son fixtures sintéticos de tests.
+M6-E2: **CLOSED / COMPLETE**, motor determinista genérico.
+Scoring engine: **IMPLEMENTED / CONFIGURATION-GATED**. Configuración pedagógica: **REQUIRED / NOT YET APPROVED**.
+Production pedagogical profiles: **NOT APPROVED / NOT INSTALLED**. M6-E-PED1 y PED2A: **AUDIT COMPLETED**;
+M6-E-PED2: **OPEN / NOT FROZEN / TEACHER APPROVAL REQUIRED**.
+El motor calcula únicamente sobre snapshots aprobados server-owned. Los únicos planes/pesos usados para probarlo
+son sintéticos test-only: no se convierten fixtures M6/D3/SPFA en rúbricas académicas productivas.
+La aplicación todavía no dispone de una nota académica productiva integrada.
 
 M6-D3B permanece **OPEN / VALIDATION DEBT**; M6-D3 / M6-D, **PARTIAL / OPEN**.
 Matrix `/13` sigue históricamente `REJECT`; no se crea `/14` ni se reinterpreta ningún histórico.
-M6 sigue en **46%**, proyecto **49.37%**: no hay ponderación explícita de E1 que autorice sumar progreso.
+M6 sigue en **46%**, proyecto **49.37%**: no hay ponderación explícita de E1/E2 que autorice sumar progreso.
 
 ## Contratos y versiones
 
@@ -34,7 +39,7 @@ Policy, plan, weights, thresholds y rounding tienen `ref: { id, version }` indep
 - Fuente automática: `VALIDATED_D1_ONLY`.
 - `CORRECTLY_DEMONSTRATED → CREDIT`.
 - `INCORRECT_OR_CONTRADICTED → NO_CREDIT`.
-- `UNCERTAIN → NO_CONFIRMED_CREDIT_REVIEW_REQUIRED`; conserva denominador para el futuro scorer.
+- `UNCERTAIN → NO_CONFIRMED_CREDIT_REVIEW_REQUIRED`; conserva denominador en unidades aplicables.
 - `NOT_DEMONSTRATED → NO_CREDIT`.
 - `STRUCTURAL_NO_STUDENT_CANDIDATES → NO_CREDIT_STRUCTURAL`: nunca se fabrica un verdict o una ejecución semántica.
 - D2 `CONTRADICTORY` / `UNSUPPORTED → REVIEW_ONLY`. Las tres claim forms no modifican aritmética.
@@ -132,7 +137,7 @@ Flags mínimos: UNCERTAIN_D1 (targetRef), CONTRADICTORY_D2 / UNSUPPORTED_D2 (cla
 UPSTREAM_VALIDATION_DEBT (lane). INCORRECT_D1 es una preferencia adicional explícita.
 No hay severidad safety ni penalización asociada a estos flags.
 
-## Resultados y receipt: solo estructura
+## Validación E1 de resultados y receipt: solo estructura
 
 `PharmaceuticalSessionScoreV2` es el sobre `{ result, fingerprint, receipt }`.
 result admite SCORED, PROVISIONAL_REVIEW_REQUIRED, NOT_SCORABLE e INVALID.
@@ -148,11 +153,81 @@ Se preservan todos los flags. SCORED no puede ocultar revisión obligatoria.
 **Límite deliberado:** el validador no agrega earned/possible, no aplica ALL_OF/ONE_OF para generar puntos,
 no calcula normalizedScore ni redondea. No certifica equivalencia aritmética entre desglose y total.
 `validationScope: STRUCTURAL_ONLY` es obligatorio en result y receipt; esta validación no es autorización de publicación académica.
-La verificación numérica por reconstrucción pertenece al futuro scorer, todavía NOT IMPLEMENTED.
+El cálculo numérico pertenece exclusivamente al scorer E2; no se ha reintroducido aritmética de scoring en E1.
 
 El receipt contiene rulesVersion, todos los source bindings, inputFingerprint y resultFingerprint.
 El fingerprint del resultado cubre el cuerpo canónico (incluidas fuentes/flags), excluyendo el propio receipt para evitar circularidad.
 Se valida la igualdad exacta del receipt reconstruido; no se permiten campos libres con prompts/respuestas/secretos.
+
+## M6-E2 — motor determinista configuration-gated
+
+API pura en `lib/cases/v2/calculate-pharmaceutical-session-score.ts`:
+
+```ts
+calculatePharmaceuticalSessionScoreV2(input, configuration, source)
+// configuration = { policy, plan, weights, thresholds, rounding }
+// source: PharmaceuticalScoreSourceV2, witnesses exclusivamente server-owned
+// returns PharmaceuticalSessionScoreV2 = { result, fingerprint, receipt }
+```
+
+El resultado representa el **Subscore de demostración farmacéutica sobre objetivos canónicos del caso**,
+no una evaluación farmacéutica integral. No cambia DTO/UI ni agrega SPFA, comunicación, cuestionario o safety.
+No usa IO, reloj, aleatoriedad, lookup mutable ni conocimiento externo. La reconstrucción estructural upstream
+E1 verifica las fuentes; el scorer no interpreta semánticamente texto ni vuelve a adjudicar mensajes.
+
+Antes de calcular valida input persistido, configuración y aprobación, bindings/fingerprints, cobertura del plan,
+pesos exactos y witnesses reconstruidos D1/D2. No confía en un hash declarado ni en JSON de aprobación del cliente.
+Sin configuración aprobada/configurada: `PEDAGOGICAL_CONFIGURATION_REQUIRED`. Fuentes inválidas fallan con
+errores tipados E1, sin resultado numérico parcial. D2 `NOT_PROVIDED / NOT_REQUESTED` es distinto de un fallo
+o `PROVIDED` incompleto: estos últimos no se sustituyen por un set vacío.
+
+| Regla | Cálculo E2 |
+|---|---|
+| SINGLE | Un miembro exacto; crédito 1 solo para CORRECTLY_DEMONSTRATED. |
+| ALL_OF | Crédito 1 si todos son CORRECTLY_DEMONSTRATED; en otro caso 0, sin crédito parcial. |
+| ONE_OF | Crédito 1 si al menos uno es CORRECTLY_DEMONSTRATED; nunca se multiplica por miembros correctos. |
+| Otros outcomes D1 | Crédito 0, también shells STRUCTURAL_NO_STUDENT_CANDIDATES; no se fabrica verdict. |
+| APPLICABLE | possible = peso; earned = peso si crédito 1, si no 0. |
+| NOT_APPLICABLE | earned y possible = 0, exclusivamente por plan aprobado; no redistribuye pesos. |
+| D2, cualquiera de sus claim forms | Sin efecto numérico; CONTRADICTORY/UNSUPPORTED únicamente añaden revisión. |
+
+Los acumuladores son BigInt con denominador común `10^weights.scale`. Totales, unidades y dominios se serializan
+como fracciones exactas reducidas. No se cuentan de nuevo targets/medicamentos/PRM/RNM/barreras; solo unidades
+y pesos explícitos. Una conclusión negativa, incluido `REFERRAL_NEED = not_required`, no implica NOT_APPLICABLE.
+
+Con possible > 0 se calcula exactamente `100 × earned / possible`. Rounding debe estar configurado/aprobado;
+se aplica una sola vez, al normalizedScore final. Se ejecuta el modo explícito HALF_UP, HALF_EVEN o DOWN y escala
+0–18, sin redondeos intermedios ni defaults. Solo al serializar el decimal ya redondeado se convierte al `number`
+finito 0–100 exigido por E1; la representación final tiene la precisión IEEE-754 de ese campo, no la de los
+acumuladores exactos. No se añaden normalizedDomainScore ni academic pass/fail. Solo NO_THRESHOLDS es utilizable
+bajo rules/1; DEFINED sigue bloqueado.
+
+Estado, en este orden:
+
+1. possible = 0: NOT_SCORABLE, normalizedScore null y cero exacto, incluso si hay review flags (se conservan).
+2. possible > 0 con cualquier flag obligatorio/preferencia configurada: PROVISIONAL_REVIEW_REQUIRED.
+3. possible > 0 sin flags: SCORED. No equivale a aprobación académica ni LIVE_ACCEPTED.
+
+Los flags canónicos reconstruidos E1 se preservan literalmente: UNCERTAIN_D1 por target, CONTRADICTORY_D2 /
+UNSUPPORTED_D2 por claim e UPSTREAM_VALIDATION_DEBT por lane. INCORRECT_D1 solo si reviewIncorrectD1 es true.
+No se duplican al calcular; no se pueden borrar/promover flags en un input persistido. La deuda D3B fuerza
+provisional si es calculable, sin penalizar al alumno ni cambiar la aritmética.
+
+Se conserva el shape E1 exacto: unit contributions contienen IDs, domain, operator, applicability y memberOutcomes
+(estos llevan targetRef y estado semántico/estructural), earned/possible; no se inventa un campo creditState ni
+flags por unidad. Las señales se vinculan mediante targetRef/claimId en result.reviewFlags. Domain breakdown
+contiene todas y solo las unidades de cada dominio presente, incluidos dominios con possible 0.
+
+El receipt conserva sources (policy/plan/weights/rounding/thresholds, sesión/caso, targets/expectations/contexto,
+transcript, D1 y D2), inputFingerprint y resultFingerprint. La derivación se audita con los bindings del plan/pesos,
+outcomes por unidad y flags del result; no se agregan campos no contemplados por E1 ni texto raw al receipt.
+SHA-256 cubre el result canónico con fuentes y flags, no el propio receipt; después se valida el sobre con
+`validatePharmaceuticalSessionScoreV2`. Snapshots y permutations de arrays canónicos reproducen el mismo resultado;
+cambios materiales de outcome, configuración, aplicabilidad, rounding, review preference o deuda cambian su huella.
+
+**Coverage profile:** no es precondición matemática adicional. Plan/weights aprobados bastan para calcular;
+el perfil de cobertura sigue pendiente para interpretación/comparabilidad académica en PED2. No se amplían schemas.
+La arquitectura curricular prevista CASE_PROFILE_DOMAIN_BUDGET no instala perfiles docentes ni cifras en E2.
 
 ## Canonicalización y errores
 
@@ -166,6 +241,21 @@ UNVALIDATED_SOURCE, INVALID_NUMERIC_STATE, PEDAGOGICAL_CONFIGURATION_REQUIRED e 
 Mensajes de error: código y path estructural únicamente, sin valores ni causas raw upstream.
 
 ## Validación y trabajo pendiente
+
+Validación M6-E2: **98/98 tests nuevos del scorer**, **156/156 E1**, **142/142 D1**, **228/228 D2**.
+Suite completa: **3185 PASS / 25 SKIPPED**, 78 archivos PASS / 5 SKIPPED. TypeScript `--incremental false`
+y diff-check PASS. Cero OpenAI/live/DB: gates explícitamente desactivados; 7 live y 18 PostgreSQL omitidos.
+La primera invocación multi-worker necesitó fijar minWorkers=1 junto a maxWorkers=2;
+el primer arranque de la suite completa fue bloqueado por EPERM del sandbox antes de ejecutar tests.
+La repetición offline autorizada con esos límites completó la suite sin cambios de código por esos problemas.
+Check adicional de lint: `next lint --no-cache` solicita configurar ESLint (no hay configuración existente),
+por lo que no se ejecutó lint ni se aceptó el setup. Queda explícito como limitación preexistente, fuera de E2.
+
+Cobertura E2: SINGLE (5), ALL_OF/ONE_OF y no doble conteo (14), applicability/NOT_SCORABLE (6),
+aritmética exacta/rounding/desglose (21), revisión/D2/deuda (9), receipt/fingerprints/frontera E1 (9),
+precondiciones negativas/adversariales (34). Todas las configuraciones son test-only; el caso básico tiene
+tres unidades artificiales 50/30/20. Los casos agrupados respetan relaciones clínicas upstream con unidades
+relacionales explícitas de peso cero; ampliar miembros/medicamentos no amplía el presupuesto de la unidad.
 
 Validación tras M6-E1F1: **156/156 tests E1** (129 previos + 27 de frontera estructural).
 Validación anterior a F1: **493/493 incluyendo contratos upstream relacionados**,
@@ -181,5 +271,6 @@ reproducibilidad, sensibilidad de fingerprints, inmutabilidad, resultados/receip
 No se cambian fixtures ni contratos D1/D2, matrices históricas, runtime, API o DB.
 
 Pendiente: aprobación de plan/unidades/dominios/aplicabilidad y pesos; rounding; autorización de umbrales futuros si se desean.
-No existe una política clínica por defecto. Scorer, verificación aritmética, persistencia, liberación de feedback,
-UI docente, agregación global y safety/hard-fail quedan para incrementos posteriores explícitos.
+No existe una política clínica por defecto. El cálculo E2 se mantiene separado de la validación estructural E1.
+Persistencia, integración productiva, liberación de feedback, UI docente, agregación global y safety/hard-fail
+quedan para incrementos posteriores explícitos y no se consideran implementados por este motor.
