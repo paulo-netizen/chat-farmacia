@@ -33,6 +33,8 @@ M6-E2 — **CLOSED / COMPLETE**: motor puro y determinista sobre configuración 
 
 ### Open decisions — configuración pedagógica M6-E
 
+M6-E3 — **CLOSED / COMPLETE — OFFLINE INTEGRATION COMPLETE**, implementación local completa para revisión, no publicada; **NO INDEPENDENT WEIGHT**. Composición server-owned con testigos internos D1/D2, prevalidación E1 y scorer E2, sin IO ni perfiles productivos. Validación: 35/35 E3; 500/500 selección relacionada D1/D2/E1/E2/E3; suite 3220 PASS / 25 SKIPPED; TypeScript `--incremental false` y diff-check PASS. M6-E global permanece PARTIAL; PED2 y D3B abiertos; M6 46% / proyecto 49.37%. Véase [pipeline offline](docs/v2/20_PHARMACEUTICAL_SESSION_PIPELINE.md). Sin staging/commit/push ni aceptación live.
+
 - Plan puntuable aprobado: partición, dominios/aplicabilidad y resolución explícita de grupos upstream solapados.
 - Pesos por unidad y sus versiones: configuración obligatoria, sin valores clínicos por defecto.
 - Rounding aprobado: escala y modo explícitos; `UNCONFIGURED` bloquea un input calculable.

@@ -46,7 +46,8 @@ export const scoringGroupIdSchema = z.string().regex(/^pharm_expectation_group_[
 export const scoringIntegerStringSchema = z.string().regex(/^(0|[1-9][0-9]{0,39})$/);
 export const scoringApprovalSchema = z.enum(['APPROVED', 'UNAPPROVED']);
 
-export type DeepScoringReadonly<T> = T extends readonly (infer U)[] ? readonly DeepScoringReadonly<U>[]
+// Branded primitive IDs remain primitives, not mapped string method objects.
+export type DeepScoringReadonly<T> = T extends string | number | boolean | bigint | symbol | null | undefined ? T
   : T extends object ? { readonly [K in keyof T]: DeepScoringReadonly<T[K]> } : T;
 
 /** JSON-only, key-sorted canonicalization; array order is defined by each contract. */

@@ -1,4 +1,5 @@
 import type { PharmaceuticalAdjudicationContextSetV2 } from './pharmaceutical-adjudication-context-types';
+import { freezeScoring } from './pharmaceutical-scoring-contract-utils';
 import {
   buildPharmaceuticalD1SemanticBatchRequestsV2,
 } from './build-pharmaceutical-d1-semantic-request';
@@ -135,9 +136,19 @@ export async function adjudicatePharmaceuticalD1ContextV2(
   runtime: PharmaceuticalD1SemanticRuntimeV2,
   allocateExecutionId: AllocatePharmaceuticalSemanticExecutionIdV2,
 ): Promise<PharmaceuticalTargetSemanticAdjudicationSetV2> {
+  return (await adjudicatePharmaceuticalD1ContextWithWitnessesV2(context, runtime, allocateExecutionId)).set;
+}
+
+/** Internal server-owned witnesses; never a client DTO. Shares the legacy execution path. */
+export async function adjudicatePharmaceuticalD1ContextWithWitnessesV2(
+  context: PharmaceuticalAdjudicationContextSetV2,
+  runtime: PharmaceuticalD1SemanticRuntimeV2,
+  allocateExecutionId: AllocatePharmaceuticalSemanticExecutionIdV2,
+) {
+  context = freezeScoring(context);
   let requests: readonly PharmaceuticalD1SemanticBatchRequestV2[];
   try {
-    requests = buildPharmaceuticalD1SemanticBatchRequestsV2(context);
+    requests = freezeScoring(buildPharmaceuticalD1SemanticBatchRequestsV2(context));
   } catch (cause) {
     throw pharmaceuticalD1SemanticErrorV2(
       'INTERNAL_VALIDATION_ERROR',
@@ -164,7 +175,7 @@ export async function adjudicatePharmaceuticalD1ContextV2(
         cause,
       );
     }
-    const receipt = runtimeReceipt(rawReceipt, batchIndex);
+    const receipt = runtimeReceipt(structuredClone(rawReceipt), batchIndex);
 
     let providerResult: ReturnType<typeof validatePharmaceuticalD1ProviderBatchResultV1>;
     try {
@@ -222,11 +233,12 @@ export async function adjudicatePharmaceuticalD1ContextV2(
       context,
       acceptedBatches,
     );
-    return validatePharmaceuticalTargetSemanticAdjudicationSetV2(
+    const set = validatePharmaceuticalTargetSemanticAdjudicationSetV2(
       result,
       context,
       acceptedBatches,
     );
+    return freezeScoring({ set, acceptedBatches });
   } catch (cause) {
     throw pharmaceuticalD1SemanticErrorV2(
       'INTERNAL_VALIDATION_ERROR',

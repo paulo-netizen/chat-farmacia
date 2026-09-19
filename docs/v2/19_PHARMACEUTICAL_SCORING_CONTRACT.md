@@ -4,6 +4,11 @@
 
 M6-E0: **AUDIT COMPLETED**. M6-E1: **CLOSED / COMPLETE**, contratos y validación estructural offline.
 M6-E2: **CLOSED / COMPLETE**, motor determinista genérico.
+M6-E3: **CLOSED / COMPLETE — OFFLINE INTEGRATION COMPLETE**, implementación local para revisión,
+no publicada; **NO INDEPENDENT WEIGHT**. [Pipeline y testigos internos](20_PHARMACEUTICAL_SESSION_PIPELINE.md).
+M6-E global: **PARTIAL**, pendientes PED2/configuración e integración académica productiva.
+Verificación E3: 35/35; selección relacionada 500/500; suite 3220 PASS / 25 SKIPPED;
+TypeScript `--incremental false` y diff-check PASS. No cambia la validación estructural E1 ni el cálculo E2.
 Scoring engine: **IMPLEMENTED / CONFIGURATION-GATED**. Configuración pedagógica: **REQUIRED / NOT YET APPROVED**.
 Production pedagogical profiles: **NOT APPROVED / NOT INSTALLED**. M6-E-PED1 y PED2A: **AUDIT COMPLETED**;
 M6-E-PED2: **OPEN / NOT FROZEN / TEACHER APPROVAL REQUIRED**.

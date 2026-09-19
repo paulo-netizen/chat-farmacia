@@ -6,7 +6,7 @@
 - **Commit funcional de referencia:** `3bae1167fef0f584a79a432edbcbc0a5e4a52ac6` (`Complete M6-D2 pharmaceutical claim adjudication`).
 - **Progreso global:** **49.37%**.
 - **M5:** **CLOSED / COMPLETE**.
-- **Suite actual:** **3185 PASS / 25 SKIPPED** (M6-E2).
+- **Suite actual:** **3220 PASS / 25 SKIPPED** (M6-E3, verificación local pendiente de revisión/publicación).
 - **TypeScript:** **PASS**.
 
 Este documento es la fuente canónica del estado y del progreso global del proyecto. [`PLAN.md`](../../PLAN.md) conserva el roadmap técnico y el orden de ejecución, sin mantener una segunda tabla de porcentajes.
@@ -120,6 +120,12 @@ Configuración pedagógica: **REQUIRED / NOT YET APPROVED**. Production pedagogi
 
 Validación E2: 98/98 scorer, 156/156 contratos E1, 142/142 regresiones D1 y 228/228 D2; suite **3185 PASS / 25 SKIPPED** (7 live + 18 PostgreSQL omitidos), TypeScript `--incremental false` y diff-check PASS; cero live/OpenAI/DB. No se modifica la deuda D3B ni los históricos. M6 **46%** / proyecto **49.37%** sin cambios: PLAN no asigna ponderación independiente a E2. Véanse el [contrato y motor de scoring farmacéutico](19_PHARMACEUTICAL_SCORING_CONTRACT.md), el [modelo de evaluación](04_EVALUATION_MODEL.md) y el [registro live](18_PHARMACEUTICAL_SEMANTIC_LIVE_ACCEPTANCE.md).
 
+M6-E3 — **CLOSED / COMPLETE — OFFLINE INTEGRATION COMPLETE**, implementación local completa para revisión,
+sin publicación. **NO INDEPENDENT WEIGHT**. M6-E global **PARTIAL**; PED2 abierto y perfiles productivos
+no aprobados/no instalados; D3B **OPEN / VALIDATION DEBT**. Pipeline real con dependencias falsas:
+35/35 E3, 500/500 selección relacionada, suite 3220 PASS / 25 SKIPPED; TypeScript y diff-check PASS.
+Sin cambios en pesos/progreso: M6 46% / proyecto 49.37%. Véase [M6-E3](20_PHARMACEUTICAL_SESSION_PIPELINE.md).
+
 ### M7 — Evaluación de comunicación
 
 **Objetivo:** evaluar la comunicación farmacéutico-paciente mediante criterios trazables.
@@ -157,9 +163,12 @@ Pendiente: controles operativos, telemetría, privacidad/retención, configuraci
 
 ## Proyección con M0–M3 sin cambios
 
+La fila «Actual» se corrige de 49.25% a 49.37%: era una referencia desactualizada al estado presente,
+no un snapshot histórico. Las proyecciones posteriores y los registros históricos se conservan.
+
 | Punto de la ruta | Progreso global proyectado |
 |---|---:|
-| Actual | 49.25% |
+| Actual | 49.37% |
 | Tras M6 | 55.85% |
 | Tras M7 | 62.85% |
 | Tras M8 | 69.85% |

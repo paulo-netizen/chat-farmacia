@@ -1,4 +1,5 @@
 import type { PharmaceuticalAdjudicationContextSetV2 } from './pharmaceutical-adjudication-context-types';
+import { freezeScoring } from './pharmaceutical-scoring-contract-utils';
 import {
   buildPharmaceuticalClinicalClaimFindingSetV2,
   validatePharmaceuticalClinicalClaimFindingSetV2,
@@ -161,6 +162,20 @@ export async function adjudicatePharmaceuticalD2ClaimsV2(
   requestContractVersion: PharmaceuticalD2SemanticRequestV2['contractVersion'] = 'pharmaceutical-d2-semantic-request/1',
   promptVersion: string = PHARMACEUTICAL_D2_CLAIM_PROMPT_VERSION_V3,
 ): Promise<PharmaceuticalD2ClaimAdjudicationV2> {
+  return (await adjudicatePharmaceuticalD2ClaimsWithWitnessesV2(
+    context, runtime, allocateExecutionId, requestContractVersion, promptVersion,
+  )).adjudication;
+}
+
+/** Internal validation sources, not serialized scoring output. */
+export async function adjudicatePharmaceuticalD2ClaimsWithWitnessesV2(
+  context: PharmaceuticalAdjudicationContextSetV2,
+  runtime: PharmaceuticalD2SemanticRuntimeV2,
+  allocateExecutionId: AllocatePharmaceuticalD2SemanticExecutionIdV2,
+  requestContractVersion: PharmaceuticalD2SemanticRequestV2['contractVersion'] = 'pharmaceutical-d2-semantic-request/1',
+  promptVersion: string = PHARMACEUTICAL_D2_CLAIM_PROMPT_VERSION_V3,
+) {
+  context = freezeScoring(context);
   let request: PharmaceuticalD2SemanticRequestV2;
   try {
     switch (requestContractVersion) {
@@ -183,6 +198,7 @@ export async function adjudicatePharmaceuticalD2ClaimsV2(
     );
   }
 
+  request = freezeScoring(request);
   if (request.studentMessages.messages.length === 0) {
     const providerResult = emptyProviderResult();
     try {
@@ -190,7 +206,7 @@ export async function adjudicatePharmaceuticalD2ClaimsV2(
         request,
         providerResult,
       );
-      return Object.freeze({ findingSet, executions: [] as const });
+      return freezeScoring({ adjudication: { findingSet, executions: [] as const }, request, providerResult });
     } catch (cause) {
       throw pharmaceuticalD2SemanticErrorV2(
         'INTERNAL_VALIDATION_ERROR',
@@ -215,7 +231,7 @@ export async function adjudicatePharmaceuticalD2ClaimsV2(
       cause,
     );
   }
-  const receipt = runtimeReceipt(rawReceipt);
+  const receipt = runtimeReceipt(structuredClone(rawReceipt));
 
   try {
     validatePharmaceuticalD2ProviderResultV2(
@@ -244,10 +260,10 @@ export async function adjudicatePharmaceuticalD2ClaimsV2(
       request,
       receipt.providerResult,
     );
-    return Object.freeze({
+    return freezeScoring({ adjudication: {
       findingSet: validatedFindingSet,
-      executions: Object.freeze([execution]) as readonly [PharmaceuticalD2SemanticExecutionMetadataV2],
-    });
+      executions: [execution] as readonly [PharmaceuticalD2SemanticExecutionMetadataV2],
+    }, request, providerResult: receipt.providerResult });
   } catch (cause) {
     throw pharmaceuticalD2SemanticErrorV2(
       'INTERNAL_VALIDATION_ERROR',
