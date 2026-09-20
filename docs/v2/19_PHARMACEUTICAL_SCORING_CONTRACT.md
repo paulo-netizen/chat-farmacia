@@ -4,8 +4,8 @@
 
 M6-E0: **AUDIT COMPLETED**. M6-E1: **CLOSED / COMPLETE**, contratos y validación estructural offline.
 M6-E2: **CLOSED / COMPLETE**, motor determinista genérico.
-M6-E3: **CLOSED / COMPLETE — OFFLINE INTEGRATION COMPLETE**, implementación local para revisión,
-no publicada; **NO INDEPENDENT WEIGHT**. [Pipeline y testigos internos](20_PHARMACEUTICAL_SESSION_PIPELINE.md).
+M6-E3: **CLOSED / COMPLETE — OFFLINE INTEGRATION COMPLETE**, publicado en Git mediante
+`11e10724b8ca1032c29edf6f85553e28395ab62b`; no despliegue ni activación académica; **NO INDEPENDENT WEIGHT**. [Pipeline y testigos internos](20_PHARMACEUTICAL_SESSION_PIPELINE.md).
 M6-E global: **PARTIAL**, pendientes PED2/configuración e integración académica productiva.
 Verificación E3: 35/35; selección relacionada 500/500; suite 3220 PASS / 25 SKIPPED;
 TypeScript `--incremental false` y diff-check PASS. No cambia la validación estructural E1 ni el cálculo E2.
@@ -18,7 +18,11 @@ La aplicación todavía no dispone de una nota académica productiva integrada.
 
 M6-D3B permanece **OPEN / VALIDATION DEBT**; M6-D3 / M6-D, **PARTIAL / OPEN**.
 Matrix `/13` sigue históricamente `REJECT`; no se crea `/14` ni se reinterpreta ningún histórico.
-M6 sigue en **46%**, proyecto **49.37%**: no hay ponderación explícita de E1/E2 que autorice sumar progreso.
+La regularización interna aprobada reconoce 10 puntos de E por capacidad técnica E1/E2/E3:
+M6 **56%**, proyecto **50.57%**; fuente canónica [PROJECT_STATUS](PROJECT_STATUS.md).
+Los 46% / 49.37% originales permanecen como históricos, no como estado actual.
+M6-E4 [diseño de persistencia](21_PHARMACEUTICAL_EVALUATION_PERSISTENCE_DESIGN.md): **DESIGN COMPLETE**,
+sin peso independiente ni persistencia implementada. No cambia reglas de scoring ni aprobación pedagógica.
 
 ## Contratos y versiones
 

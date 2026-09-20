@@ -4,9 +4,10 @@
 
 - **Fecha del baseline:** 28 de agosto de 2026.
 - **Commit funcional de referencia:** `3bae1167fef0f584a79a432edbcbc0a5e4a52ac6` (`Complete M6-D2 pharmaceutical claim adjudication`).
-- **Progreso global:** **49.37%**.
+- **Progreso global actual:** **50.57%**, regularización interna M6 aprobada el 19 de septiembre de 2026; baseline e históricos conservados.
+- **Último checkpoint funcional publicado:** `11e10724b8ca1032c29edf6f85553e28395ab62b` (M6-E3). Publicación Git, no despliegue ni activación académica.
 - **M5:** **CLOSED / COMPLETE**.
-- **Suite actual:** **3220 PASS / 25 SKIPPED** (M6-E3, verificación local pendiente de revisión/publicación).
+- **Última suite ejecutada:** **3220 PASS / 25 SKIPPED** (evidencia histórica de M6-E3 publicado; no repetida en E4 documental).
 - **TypeScript:** **PASS**.
 
 Este documento es la fuente canónica del estado y del progreso global del proyecto. [`PLAN.md`](../../PLAN.md) conserva el roadmap técnico y el orden de ejecución, sin mantener una segunda tabla de porcentajes.
@@ -29,13 +30,13 @@ Los pesos y porcentajes se expresan como fracciones para el cálculo; por ejempl
 | M3 | Generador, auditor y publicación | PARTIAL | 55% | 11% | 6.05% |
 | M4 | Runtime seguro del paciente | CLOSED | 100% | 10% | 10.00% |
 | M5 | Motor de protocolos SPFA | CLOSED | 100% | 15% | 15.00% |
-| M6 | Evaluación farmacéutica/PRM–RNM/adherencia | PARTIAL | 46% | 12% | 5.52% |
+| M6 | Evaluación farmacéutica/PRM–RNM/adherencia | PARTIAL | 56% | 12% | 6.72% |
 | M7 | Evaluación de comunicación | NOT STARTED | 0% | 7% | 0.00% |
 | M8 | Cuestionario post-caso | NOT STARTED | 0% | 7% | 0.00% |
 | M9 | Resultados y feedback | NOT STARTED | 0% | 5% | 0.00% |
 | M10 | Analítica y revisión docente | NOT STARTED | 0% | 4% | 0.00% |
 | M11 | Hardening y observabilidad final | NOT STARTED | 0% | 3% | 0.00% |
-| **Total** |  |  |  | **100%** | **49.37%** |
+| **Total** |  |  |  | **100%** | **50.57%** |
 
 ## Regla estable de progreso
 
@@ -44,6 +45,38 @@ Los pesos y porcentajes se expresan como fracciones para el cálculo; por ejempl
 - El porcentaje global no debe disminuir mientras el alcance permanezca estable.
 - Los pesos no se recalculan por el mero paso del tiempo o por reestimar esfuerzo.
 - Cualquier recalibración exige documentar primero un cambio real y explícito de alcance.
+
+### Excepción puntual aprobada — desglose interno M6
+
+El usuario autoriza completar la medición interna sin cambio de alcance. No se inventa una ampliación
+para justificar esta excepción: siguen fijos los pesos globales y los 46 puntos internos ya acreditados.
+Se reconocen 10 puntos por capacidad técnica conjunta E1/E2/E3 previamente completada, no por trabajo
+funcional desarrollado en este incremento documental. Son pesos de progreso del proyecto, NO de notas.
+
+| Entregable M6 | Peso interno | Acreditado | Procedencia / gate pendiente |
+|---|---:|---:|---|
+| A — referencia clínica | 12 | 12 | Reconstrucción histórica ahora ratificada: checkpoint `58750a47e57e0b09dc06dba84495f5c0304e8ea0` registra M6 al 12% tras A |
+| B — targets/evidencia | 12 | 12 | Existente: B1 4 + B2 8 |
+| C — contexto | 10 | 10 | Existente |
+| D — adjudicación/aceptación | 14 | 12 | Existente: D1A 3 + D1B 4 + D2A 2 + D2B 2 + D3A 1; D3B 2 pendiente |
+| E — scoring | 16 | 10 | Nueva asignación: capacidad conjunta E1/E2/E3 10; configuración pedagógica real aprobada 6 pendiente |
+| Personalización | 4 | 0 | Nueva asignación; criterios docentes y aceptación de adaptación individual |
+| Seguridad de la actuación | 6 | 0 | Nueva asignación; criterios, evidencia y revisión de actuaciones críticas |
+| Seguimiento | 4 | 0 | Nueva asignación; evaluar desempeño, no solo conservar episodios |
+| Informe | 3 | 0 | Nueva asignación; captura/evaluación de informe, sin volver a puntuar targets B |
+| Coherencia entrevista–conclusión | 5 | 0 | Nueva asignación; distinguir exploración, conclusión y acierto casual |
+| Persistencia/lifecycle | 8 | 0 | Nueva asignación; implementación y aceptación, no cierre del diseño E4 |
+| Integración productiva del subresultado | 6 | 0 | Nueva asignación; fuentes/configuración autorizadas y entrega segura |
+| **Total** | **100** | **56** | **44 pendientes** |
+
+No doble cómputo: E3 permanece **NO INDEPENDENT WEIGHT**; constituye evidencia de composición del
+entregable técnico padre E. E4 también carece de peso independiente. Ni reutilizar A/B/C/D ni completar
+E4 suma otros puntos. Los 8 de persistencia permanecen íntegramente pendientes. Los futuros cierres
+se acreditan por entregables aceptados, no tests, líneas ni esfuerzo; subdividir puntos pendientes requiere
+registro previo. D3B conserva sus 2 puntos pendientes y el gate 100%, sin reclasificar matrices.
+
+Cálculo: `12 + 12 + 10 + 12 + 10 = 56`; aporte M6 `12 × 0.56 = 6.72`;
+otros milestones `43.85`; global `43.85 + 6.72 = 50.57%`.
 
 ## Estado resumido de los milestones
 
@@ -100,7 +133,7 @@ El cierre corresponde al commit `b2879cec7824968bcc0b6e3bca80852fa9cf3359`. Véa
 ### M6 — Evaluación farmacéutica/PRM–RNM/adherencia
 
 **Objetivo:** evaluar razonamiento farmacéutico, PRM/RNM, adherencia, barreras e intervención con evidencia.
-**Estado:** **PARTIAL — 46%**.
+**Estado:** **PARTIAL — 56%**, regularización aprobada anterior; no cambio de alcance.
 
 Completado: M6-A, proyección clínica farmacéutica canónica; M6-B, identidad, targets y evidencia; M6-C, contexto determinista; M6-D1/D2, contratos, runtimes y adjudicación farmacéutica; M6-D3A y refinamientos offline hasta M6-D3R29. Matrix `/13` terminó `REJECT`: C3 ref 9 conservó literal, `UNSUPPORTED` y `RECOMMENDATION`, pero Terra clasificó `ADHERENCE` con C010 en vez de `PROFESSIONAL_RESPONSE` con C013. M6-D3R30 registra el resultado como deuda de validación sin alterar D1/D2 ni históricos. `UNSUPPORTED` significa únicamente no sustentado por la autoridad suministrada y queda como señal futura de revisión, nunca como falsedad, safety o penalización automática. Los informes históricos siguen siendo válidos, pero no reciben IDs ni targets de contenido sintéticos.
 
@@ -120,11 +153,20 @@ Configuración pedagógica: **REQUIRED / NOT YET APPROVED**. Production pedagogi
 
 Validación E2: 98/98 scorer, 156/156 contratos E1, 142/142 regresiones D1 y 228/228 D2; suite **3185 PASS / 25 SKIPPED** (7 live + 18 PostgreSQL omitidos), TypeScript `--incremental false` y diff-check PASS; cero live/OpenAI/DB. No se modifica la deuda D3B ni los históricos. M6 **46%** / proyecto **49.37%** sin cambios: PLAN no asigna ponderación independiente a E2. Véanse el [contrato y motor de scoring farmacéutico](19_PHARMACEUTICAL_SCORING_CONTRACT.md), el [modelo de evaluación](04_EVALUATION_MODEL.md) y el [registro live](18_PHARMACEUTICAL_SEMANTIC_LIVE_ACCEPTANCE.md).
 
-M6-E3 — **CLOSED / COMPLETE — OFFLINE INTEGRATION COMPLETE**, implementación local completa para revisión,
-sin publicación. **NO INDEPENDENT WEIGHT**. M6-E global **PARTIAL**; PED2 abierto y perfiles productivos
+M6-E3 — **CLOSED / COMPLETE — OFFLINE INTEGRATION COMPLETE**, publicado en Git mediante
+`11e10724b8ca1032c29edf6f85553e28395ab62b`, sin despliegue ni activación académica. **NO INDEPENDENT WEIGHT**. M6-E global **PARTIAL**; PED2 abierto y perfiles productivos
 no aprobados/no instalados; D3B **OPEN / VALIDATION DEBT**. Pipeline real con dependencias falsas:
 35/35 E3, 500/500 selección relacionada, suite 3220 PASS / 25 SKIPPED; TypeScript y diff-check PASS.
-Sin cambios en pesos/progreso: M6 46% / proyecto 49.37%. Véase [M6-E3](20_PHARMACEUTICAL_SESSION_PIPELINE.md).
+Al cierre original de E3: M6 46% / proyecto 49.37%; la regularización aprobada posterior reconoce
+M6 **56%** / proyecto **50.57%**. Véase [M6-E3](20_PHARMACEUTICAL_SESSION_PIPELINE.md).
+
+M6-E4 — **DESIGN COMPLETE**, documental, **NO INDEPENDENT WEIGHT**. [Diseño de persistencia y reutilización](21_PHARMACEUTICAL_EVALUATION_PERSISTENCE_DESIGN.md).
+Persistencia NO IMPLEMENTADA; próximos contratos puros M6-P1 propuestos. E4 no añade progreso.
+
+Responsabilidades aprobadas: M6 evalúa personalización, seguridad, seguimiento, informe y coherencia;
+M7 calidad comunicativa; M8 cuestionario/captura; M9 agregación/presentación; M10 interfaz de revisión/override;
+M1/M2/M3 versiones, autoría y casos aprobados. Interfaces e invariantes en E4; no se aprueban rúbricas,
+perfiles, pesos académicos, penalizaciones ni reglas clínicas nuevas.
 
 ### M7 — Evaluación de comunicación
 
@@ -163,12 +205,13 @@ Pendiente: controles operativos, telemetría, privacidad/retención, configuraci
 
 ## Proyección con M0–M3 sin cambios
 
-La fila «Actual» se corrige de 49.25% a 49.37%: era una referencia desactualizada al estado presente,
-no un snapshot histórico. Las proyecciones posteriores y los registros históricos se conservan.
+En E3 se corrigió la fila «Actual» obsoleta de 49.25% a 49.37%; no era un snapshot histórico.
+La regularización interna aprobada posterior la actualiza a 50.57%. Las proyecciones de cierre
+y los registros históricos se conservan.
 
 | Punto de la ruta | Progreso global proyectado |
 |---|---:|
-| Actual | 49.37% |
+| Actual | 50.57% |
 | Tras M6 | 55.85% |
 | Tras M7 | 62.85% |
 | Tras M8 | 69.85% |

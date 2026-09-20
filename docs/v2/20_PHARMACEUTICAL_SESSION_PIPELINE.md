@@ -1,10 +1,12 @@
 # M6-E3 — Offline pharmaceutical session pipeline integration
 
-M6-E3: **CLOSED / COMPLETE — OFFLINE INTEGRATION COMPLETE**. Implementación local completa para
-revisión, sin commit ni publicación. **NO INDEPENDENT WEIGHT**.
+M6-E3: **CLOSED / COMPLETE — OFFLINE INTEGRATION COMPLETE**. Publicado en Git mediante
+`11e10724b8ca1032c29edf6f85553e28395ab62b`. No implica despliegue ni activación académica. **NO INDEPENDENT WEIGHT**.
 M6-E permanece **PARTIAL**. E1/E2 siguen CLOSED / COMPLETE; E1 STRUCTURAL_ONLY.
 PED2 OPEN / NOT FROZEN / TEACHER APPROVAL REQUIRED; perfiles productivos NOT APPROVED / NOT INSTALLED.
-D3B OPEN / VALIDATION DEBT. M6 46% / proyecto 49.37%; ningún histórico live se modifica.
+D3B OPEN / VALIDATION DEBT. Estado actual aprobado: M6 56% / proyecto 50.57%; ningún histórico live se modifica.
+La regularización reconoce trabajo E1/E2/E3 ya completado dentro de E, no puntos propios E3.
+[E4](21_PHARMACEUTICAL_EVALUATION_PERSISTENCE_DESIGN.md) es diseño documental sin peso; persistencia todavía no implementada.
 
 ## API server-owned
 
@@ -54,7 +56,7 @@ no se convierten en perfiles docentes. Los runtimes falsos ejercitan los orquest
 La integración offline no demuestra aceptación semántica live, aprobación docente, integración de nota
 académica, persistencia, API/UI ni workflow de publicación. D3B no se reabre; no hay matrix /14.
 
-## Verificación
+## Verificación histórica de E3 — no reejecutada en E4 documental
 
 - E3: 35/35 PASS, composición real con runtimes falsos; compatibilidad de variantes, aislamiento de
   mutaciones, testigos manipulados, configuración ausente/no aprobada/no configurada, bindings,
@@ -67,6 +69,7 @@ académica, persistencia, API/UI ni workflow de publicación. D3B no se reabre; 
   Gates explícitamente desactivados: 7 live y 18 PostgreSQL. Cero OpenAI real y cero DB.
   Primer arranque bloqueado por EPERM del sandbox antes de tests; repetición autorizada fuera
   del sandbox, con los mismos gates offline. No se modificó tooling.
-- `git diff --check`: PASS. Revisión local del diff; revisión del usuario y publicación pendientes.
+- `git diff --check`: PASS. Revisión final y checkpoint E3 completados, posteriormente publicados en Git.
 - Lint no ejecutado: limitación interactiva preexistente documentada en E2; no se configura ESLint.
-- Sin staging/commit/push. Progreso intacto. Se corrigió solo la fila Actual 49.25% obsoleta a 49.37%.
+- Durante la implementación original no hubo staging/commit/push; el checkpoint y push fueron posteriores.
+  Entonces se corrigió la fila Actual obsoleta 49.25% a 49.37%; la regularización aprobada posterior la lleva a 50.57%.
