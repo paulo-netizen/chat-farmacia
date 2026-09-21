@@ -120,16 +120,16 @@ evaluaciones y revisiones inmutables, sin controlar desde el cliente la autorida
 suministran versiones retenidas/aprobadas, no valores mutables reconstruidos al leer.
 Estas interfaces son trabajo posterior, no contratos ya implementados ni nuevas reglas pedagógicas.
 
-## 5. Único siguiente incremento propuesto
+## 5. M6-P1 — implementación local de la frontera pura
 
-**M6-P1 — contratos puros del registro y lifecycle farmacéutico** (identificador propuesto, no iniciado).
+**M6-P1 — contratos puros del registro y lifecycle farmacéutico**: **IMPLEMENTATION COMPLETE — LOCAL / READY FOR REVIEW**. No checkpoint ni publicación Git todavía; ningún siguiente incremento iniciado.
 
 - Objetivo: tipar manifest/identidad/estado y validar registros que referencian resultados y fuentes
   existentes; implementar transiciones puras con reloj/IDs inyectados, idempotencia y fencing.
 - Reutilizar `pharmaceutical-scoring-types.ts`, tipos canónicos D1/D2, salida E3 y patrones de
   `spfa-evaluation-lifecycle-types.ts`, sin modificar sus semánticas ni duplicar schemas clínicos.
-- Cambios previstos: módulos nuevos de tipos de registro, validador y transiciones bajo `lib/cases/v2/`,
-  tests unitarios/integración offline correspondientes y documentación. Los nombres se fijarán al implementar.
+- Implementación: `pharmaceutical-evaluation-record-types.ts`, `pharmaceutical-evaluation-record-utils.ts`,
+  `pharmaceutical-evaluation-artifacts.ts` y `pharmaceutical-evaluation-lifecycle.ts`, bajo `lib/cases/v2/`.
 - Aceptación: versiones/bindings estrictos; conflictos idempotentes rechazados; stale token rechazado;
   completed inmutable; FAILED sin payload; D2 ausente/vacío/fallo diferenciados; deuda/provisionalidad
   intactas; fuentes/corruptelas simuladas fail-closed; sin derivar scores ni elevar aceptación semántica.
@@ -142,8 +142,52 @@ Estas interfaces son trabajo posterior, no contratos ya implementados ni nuevas 
   **Ninguna decisión humana pendiente bloquea P1.** Retención, archivo de testigos y permisos de
   reevaluación/publicación deberán resolverse antes de las capacidades productivas correspondientes.
 
-## Verificación documental
+### Contrato local y límites concretos
+
+- `pharmaceutical-evaluation-record/1`, schemaVersion `2.0`: intención separada de intentos y estados
+  `PENDING / EVALUATING / COMPLETED / FAILED`. UUIDs, tiempos UTC canónicos con milisegundos y tokens
+  explícitos; sin reloj global, random, IO, retries ni fallback. Tiempo de completion estrictamente
+  anterior a lease expiry; la igualdad ya es expiración. La repetición de una completion ya confirmada
+  acepta únicamente el mismo resultado y worker original, sin volver a ejecutar semántica.
+- `create/claim/complete/fail/expirePharmaceuticalEvaluation…V2` producen estados nuevos congelados.
+  `validatePharmaceuticalEvaluationRecordV2` comprueba historia, revisión, fencing, fuentes y resultado.
+  `supersedesEvaluationId` exige al crear una evaluación previa terminal y compatible; no concede
+  autorización. El adaptador deberá conservar su FK/disponibilidad y aplicar permisos.
+- Canonicalizaciones operacionales `/1`: `pharmaceutical-evaluation-intent-v2`,
+  `pharmaceutical-evaluation-record-v2`, `pharmaceutical-execution-plan-v2`,
+  `pharmaceutical-evaluation-sources-v2`, `pharmaceutical-evaluation-result-v2`.
+  SHA-256 del JSON canónico `[canonicalization, core]`, claves ordenadas, arrays con orden material,
+  sin hash propio en preimagen. El digest estable excluye evaluationId, attemptId, worker, tiempos,
+  revisión y fencing; incluye intención, fuentes/configuración y plan efectivo. Fingerprints previos intactos.
+- Manifest obligatorio: versiones aplicación/scorer/runtime/SDK, modelo solicitado allowlisted,
+  parámetros y versiones actuales D1/D2. `responseModel` se comprueba contra el solicitado, nunca lo
+  reemplaza. Rutas sin llamadas explícitas para D1 sin batches, D2 no solicitado y D2 sin mensajes student.
+- Dos referencias de artefacto, SOURCES y RESULT, contienen versión y fingerprint; el resolutor inyectado
+  obtiene instancias existentes por valor, previamente cargadas por el futuro adaptador. Ausencia,
+  corrupción o versión desconocida fallan cerradas, sin resolver `latest`. No hay almacén implementado.
+  Las fuentes reutilizan la reconstrucción del contexto/configuración vigente y el envelope del runtime;
+  no se añade una segunda validación clínica integral del paciente. El resultado se comprueba en su forma
+  canónica existente, con referencias/literales/bindings y receipt, sin reconstruir respuestas del provider.
+- Los límites numéricos son estructurales, no suma de pesos ni recálculo de earned/possible/normalizedScore.
+  Un test muestra que un escritor capaz de reescribir coherentemente resultado y hashes no queda
+  autenticado ni su aritmética certificada. E1 y sus testigos obligatorios no se debilitan.
+- Estados provisionales, deuda, NOT_SCORABLE y D2 vacío legítimo sobreviven como COMPLETED operacional;
+  FAILED no admite resultado. Recuperación conserva intentos previos; no repite llamadas automáticamente.
+  Son propuestas CAS, no exclusión mutua: dos lectores de un mismo estado pueden producir propuestas
+  rivales. Solo el adaptador transaccional podrá aceptar una y rechazar la obsoleta atómicamente.
+- Errores únicamente tipados/seguros; no texto clínico, prompts, raw responses ni archivo de testigos.
+  Fuentes internas server-only, sin DTO público. P1 no demuestra autenticación, retención, concurrencia
+  PostgreSQL ni replay completo; tampoco integra todavía el freeze/almacenamiento productivo con E3.
+
+## Verificación
 
 E4 no ejecuta suite, TypeScript, DB ni OpenAI. La evidencia histórica E3 (35 tests, selección 500,
 suite 3220 PASS / 25 SKIPPED) permanece en [su documento](20_PHARMACEUTICAL_SESSION_PIPELINE.md).
 La finalización de diseño no declara cierre de persistencia, M6-E, M6 ni aceptación del evaluador D2.
+
+P1 sí ejecutó validación offline: **54/54** tests nuevos con E3 real y runtimes falsos/configuración
+sintética; **610/610** selección relacionada; suite **3274 PASS / 25 SKIPPED**, TypeScript
+`--noEmit --incremental false` y diff-check PASS. Los flags live/DB se fijaron a 0; no se ejecutaron
+OpenAI ni PostgreSQL. Las carreras son simulaciones de estados/tokens, no tests de concurrencia real.
+Persistencia PostgreSQL **NOT IMPLEMENTED**; los 8 puntos permanecen sin acreditar; M6 **56%**,
+proyecto **50.57%**, M6/M6-E PARTIAL, PED2 abierto y D3B OPEN / VALIDATION DEBT.

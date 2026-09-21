@@ -7,7 +7,7 @@
 - **Progreso global actual:** **50.57%**, regularización interna M6 aprobada el 19 de septiembre de 2026; baseline e históricos conservados.
 - **Último checkpoint funcional publicado:** `11e10724b8ca1032c29edf6f85553e28395ab62b` (M6-E3). Publicación Git, no despliegue ni activación académica.
 - **M5:** **CLOSED / COMPLETE**.
-- **Última suite ejecutada:** **3220 PASS / 25 SKIPPED** (evidencia histórica de M6-E3 publicado; no repetida en E4 documental).
+- **Última suite ejecutada:** **3274 PASS / 25 SKIPPED** (M6-P1 local, offline; pendiente de checkpoint/publicación Git). Evidencia histórica E3: 3220 PASS / 25 SKIPPED.
 - **TypeScript:** **PASS**.
 
 Este documento es la fuente canónica del estado y del progreso global del proyecto. [`PLAN.md`](../../PLAN.md) conserva el roadmap técnico y el orden de ejecución, sin mantener una segunda tabla de porcentajes.
@@ -161,7 +161,18 @@ Al cierre original de E3: M6 46% / proyecto 49.37%; la regularización aprobada 
 M6 **56%** / proyecto **50.57%**. Véase [M6-E3](20_PHARMACEUTICAL_SESSION_PIPELINE.md).
 
 M6-E4 — **DESIGN COMPLETE**, documental, **NO INDEPENDENT WEIGHT**. [Diseño de persistencia y reutilización](21_PHARMACEUTICAL_EVALUATION_PERSISTENCE_DESIGN.md).
-Persistencia NO IMPLEMENTADA; próximos contratos puros M6-P1 propuestos. E4 no añade progreso.
+Persistencia PostgreSQL **NOT IMPLEMENTED**. E4 no añade progreso.
+
+M6-P1 — **IMPLEMENTATION COMPLETE — LOCAL / READY FOR REVIEW**, sin checkpoint ni publicación Git todavía.
+Contratos operacionales internos, manifest e intención versionados, artefactos resueltos offline y lifecycle
+puro con idempotencia, lease/fencing, historial y reevaluación sin overwrite. Reutiliza resultado/receipt E3;
+no archiva testigos/prompts/raw ni calcula scores. La lectura comprueba estructura, bindings e integridad,
+no autenticidad del escritor ni replay completo. Ownership y supersedes no son autorización.
+54/54 P1; selección relacionada 610/610; suite **3274 PASS / 25 SKIPPED** (7 live y 18 PostgreSQL omitidos);
+TypeScript `--noEmit --incremental false` y diff-check PASS. Cero OpenAI/live/DB.
+CAS/atomicidad real, autenticación, retención e integración productiva siguen pendientes. P1 no acredita
+automáticamente los 8 puntos de persistencia: **M6 56% / proyecto 50.57%**. M6/M6-E PARTIAL, PED2 abierto,
+perfiles productivos no aprobados/no instalados y D3B OPEN / VALIDATION DEBT. No se inicia otro incremento.
 
 Responsabilidades aprobadas: M6 evalúa personalización, seguridad, seguimiento, informe y coherencia;
 M7 calidad comunicativa; M8 cuestionario/captura; M9 agregación/presentación; M10 interfaz de revisión/override;

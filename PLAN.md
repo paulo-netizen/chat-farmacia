@@ -25,9 +25,14 @@ El repositorio dispone de una suite automatizada amplia. M6-A, M6-B, M6-C, M6-D1
 
 ## Estado vigente y próximo frente funcional
 
+M6-P1 — **IMPLEMENTATION COMPLETE — LOCAL / READY FOR REVIEW**, contratos puros de registro/lifecycle bajo persistencia, sin peso independiente. Sin checkpoint ni publicación Git todavía.
+Intención/idempotencia, manifest obligatorio, resolutor offline de artefactos, validación estructural/integridad y transiciones con lease/fencing; composición real E3 con runtimes falsos. No recalcula scores ni reconstruye provider responses.
+Evidencia local: 54/54 P1; selección relacionada 610/610; suite 3274 PASS / 25 SKIPPED; TypeScript `--noEmit --incremental false` y diff-check PASS. Live/DB desactivados.
+Sin migraciones ni compatibilidad de tablas que resolver en P1: no modifica M5 ni APIs E3. Persistencia PostgreSQL **NOT IMPLEMENTED**; autenticación, retención, atomicidad/concurrencia real y replay completo no demostrados. No acredita los 8 puntos; 56% / 50.57% intactos. No se inicia el siguiente incremento.
+
 M6 **PARTIAL — 56%** / proyecto **50.57%**, según la regularización interna aprobada en [PROJECT_STATUS](docs/v2/PROJECT_STATUS.md#excepción-puntual-aprobada--desglose-interno-m6). No cambia el alcance ni los pesos globales. E3 está publicado en Git (`11e10724b8ca1032c29edf6f85553e28395ab62b`), no desplegado ni activado académicamente. M6-E sigue PARTIAL; PED2 abierto y perfiles no aprobados/no instalados; D3B OPEN / VALIDATION DEBT.
 
-M6-E4 — **DESIGN COMPLETE**, exclusivamente documental, **NO INDEPENDENT WEIGHT**. [Persistencia y reutilización](docs/v2/21_PHARMACEUTICAL_EVALUATION_PERSISTENCE_DESIGN.md). Persistencia no implementada; no acredita sus 8 puntos. Próximo incremento propuesto: **M6-P1 — contratos puros del registro/lifecycle farmacéutico**, sin DB ni ejecución semántica.
+M6-E4 — **DESIGN COMPLETE**, exclusivamente documental, **NO INDEPENDENT WEIGHT**. [Persistencia y reutilización](docs/v2/21_PHARMACEUTICAL_EVALUATION_PERSISTENCE_DESIGN.md). P1 implementa localmente su frontera pura; persistencia PostgreSQL no implementada, sin acreditar sus 8 puntos.
 
 ## Registros históricos de cierre — no son instrucciones de ejecución vigentes
 
