@@ -2,7 +2,7 @@
 
 ## Estado y frontera
 
-**DESIGN COMPLETE — NO INDEPENDENT WEIGHT**. Persistencia **NOT IMPLEMENTED**.
+**DESIGN COMPLETE — NO INDEPENDENT WEIGHT**. Persistencia P2 **IMPLEMENTED LOCALLY / PENDING REVIEW**, no integrada ni desplegada.
 Diseño documental sobre E3 publicado en `11e10724b8ca1032c29edf6f85553e28395ab62b`.
 No implica despliegue, aprobación pedagógica ni aceptación semántica. M6/M6-E siguen PARTIAL;
 PED2 abierto; perfiles productivos no aprobados/no instalados; D3B OPEN / VALIDATION DEBT.
@@ -66,8 +66,8 @@ Esta decisión no bloquea contratos puros del registro, pero sí una promesa fut
 
 ## 3. Persistencia y lifecycle elegidos
 
-Se propone almacenamiento PostgreSQL separado: evaluaciones lógicas, intentos y artefactos protegidos.
-Nombres de tablas se concretarán en el incremento de migración, no en este diseño.
+Se define almacenamiento PostgreSQL separado: evaluaciones lógicas, intentos y artefactos protegidos.
+P2 concreta sus tablas en la migración 0004 (sección de implementación al final).
 Reutilizar de M5 transacciones, freeze, lease, compare-and-swap y recuperación; **no reutilizar su tabla**:
 `session_evaluation_records_v2` es SPFA-specific y UNIQUE(session_id), incompatible con historial farmacéutico
 de reevaluaciones. No alterar M5 ni su migration 0003.
@@ -122,7 +122,7 @@ Estas interfaces son trabajo posterior, no contratos ya implementados ni nuevas 
 
 ## 5. M6-P1 — implementación local de la frontera pura
 
-**M6-P1 — contratos puros del registro y lifecycle farmacéutico**: **IMPLEMENTATION COMPLETE — LOCAL / READY FOR REVIEW**. No checkpoint ni publicación Git todavía; ningún siguiente incremento iniciado.
+**M6-P1 — contratos puros del registro y lifecycle farmacéutico**: **COMPLETE / PUBLISHED IN GIT**, checkpoint `66d3e22074d31bc2ad35af08d98bda04c1bd5020`. No despliegue.
 
 - Objetivo: tipar manifest/identidad/estado y validar registros que referencian resultados y fuentes
   existentes; implementar transiciones puras con reloj/IDs inyectados, idempotencia y fencing.
@@ -164,7 +164,7 @@ Estas interfaces son trabajo posterior, no contratos ya implementados ni nuevas 
   reemplaza. Rutas sin llamadas explícitas para D1 sin batches, D2 no solicitado y D2 sin mensajes student.
 - Dos referencias de artefacto, SOURCES y RESULT, contienen versión y fingerprint; el resolutor inyectado
   obtiene instancias existentes por valor, previamente cargadas por el futuro adaptador. Ausencia,
-  corrupción o versión desconocida fallan cerradas, sin resolver `latest`. No hay almacén implementado.
+  corrupción o versión desconocida fallan cerradas, sin resolver `latest`. P1 no implementó almacén; P2 lo añade separadamente.
   Las fuentes reutilizan la reconstrucción del contexto/configuración vigente y el envelope del runtime;
   no se añade una segunda validación clínica integral del paciente. El resultado se comprueba en su forma
   canónica existente, con referencias/literales/bindings y receipt, sin reconstruir respuestas del provider.
@@ -189,5 +189,102 @@ P1 sí ejecutó validación offline: **54/54** tests nuevos con E3 real y runtim
 sintética; **610/610** selección relacionada; suite **3274 PASS / 25 SKIPPED**, TypeScript
 `--noEmit --incremental false` y diff-check PASS. Los flags live/DB se fijaron a 0; no se ejecutaron
 OpenAI ni PostgreSQL. Las carreras son simulaciones de estados/tokens, no tests de concurrencia real.
-Persistencia PostgreSQL **NOT IMPLEMENTED**; los 8 puntos permanecen sin acreditar; M6 **56%**,
+En ese checkpoint P1 la persistencia PostgreSQL no estaba implementada; los 8 puntos permanecen sin acreditar; M6 **56%**,
 proyecto **50.57%**, M6/M6-E PARTIAL, PED2 abierto y D3B OPEN / VALIDATION DEBT.
+
+## M6-P2 — adaptador PostgreSQL local
+
+Nuevo incremento: **IMPLEMENTATION COMPLETE — LOCAL / READY FOR REVIEW**, pendiente de checkpoint/publicación Git.
+No cambia P1, D1/D2, E1/E2/E3 ni la autorización académica. No inicia otro incremento.
+
+- Migración aditiva **0004**: `pharmaceutical_evaluations_v2` (intención/header sin lista de intentos),
+  `pharmaceutical_evaluation_attempts_v2` (historial), `pharmaceutical_evaluation_artifacts_v2` (fuentes/resultado).
+  UUIDs; owner bigint decimal sin paso por `number`; sesión UUID y case version `casever_…` existentes.
+  Unicidad `(owner_id, session_id, idempotency_key)`; FKs restrictivas a sesión/owner/versión/original/artefactos.
+  Concordancia de columnas indexadas y payload por CHECK; validación P1 completa del registro al leer.
+  Triggers protegen completed/artefactos/intentos terminales; constraints diferidas ligan header e historia.
+  No cascadas de borrado ni modificaciones de tablas SPFA/migraciones históricas.
+- Los payloads de artefactos usan **json, no jsonb**: preservan el orden que requiere la serialización
+  de fingerprints D1 existentes. La primera prueba real detectó la pérdida de ese orden con jsonb;
+  el roundtrip corregido mantiene hashes/contratos y resultados originales, sin recanonicalizar D1.
+- `createPharmaceuticalEvaluationPostgresV2(database)` exige dependencia DB explícita; no importa
+  `lib/db`, no lee `DATABASE_URL` ni configura conexiones implícitas. API: `create`, `read`, `claim`,
+  `complete`, `fail`, `expire`; recuperación = expire confirmado + claim explícito posterior.
+  No ejecuta adjudicación, retries, scoring ni llamadas externas. Claim recibe duración de lease explícita;
+  no renueva automáticamente un claim repetido: leer el estado permite recuperar la identidad vigente.
+- Todas las operaciones reciben `{ownerId, sessionId}` desde una frontera autenticada del servidor.
+  Consultan propiedad **real** en DB bajo bloqueo de sesión, luego registro acotado por owner/session.
+  Un ID no prueba autorización. Ausente/ajeno devuelve el mismo `NOT_AVAILABLE`; SQL/conexión sanitizados.
+  RLS activado sin políticas cliente y privilegios retirados de PUBLIC/anon/authenticated. La conexión
+  privilegiada y su despliegue permanecen responsabilidad del servidor; no es una nueva API/autenticación.
+- Locks ordenados sesión → evaluación; serialización de creación/claims; CAS de revision y comprobación
+  P1 de attempt/worker/fence; `clock_timestamp()` después de esperar locks, nunca hora inicial del cliente.
+  Completion/fail comprueban además lease en UPDATE SQL. Resultado e historia se confirman en una sola
+  transacción; cualquier error revierte ambos. Completion compatible devuelve el mismo registro, otra
+  carga falla. No se mantiene transacción durante E3 ni se promete exactly-once externo.
+- Fuentes y resultados existentes se copian antes de await; se cargan por valor antes del resolver P1
+  síncrono. Hash/version/binding inválido o fuente ausente falla cerrado, sin latest ni regeneración.
+  `COMPLETED` conserva deuda/provisionalidad/NOT_SCORABLE, no aprobación. D2 no pedido, vacío válido y
+  error siguen diferenciados. No se recalculan scores ni se reconstruyen respuestas/testigos.
+
+### Evidencia PostgreSQL y aislamiento
+
+PostgreSQL **17.10**, contenedor nuevo `chatusal-m6-p2-20260925`, loopback **55439**, DB
+`chatusal_m6_p2_disposable`. Identidad/label/puerto y DB vacía comprobados antes de migrar; marca de
+aislamiento comprobada por los tests antes de migraciones y TRUNCATE. Gate separado
+`RUN_PHARMACEUTICAL_P2_POSTGRES=1`; sin fallback de conexión ni acceso a bases de aplicación.
+Contenedor independiente `chatusal-m6-p2-m5-20260925`, loopback **55433/55434**, exclusivamente para
+regresiones M5 secuenciales con 0001–0004 aplicadas. Ninguna base preexistente fue utilizada.
+
+**26/26 P2 PostgreSQL real**: migración fresca, E3 real con runtimes falsos, lectura desde otro pool,
+creación/conflicto/claims concurrentes, fencing, expiración/recuperación, lock wait hasta vencimiento,
+lease revisado en escritura, rollback inducido después del artefacto, completion repetida/conflictiva,
+inmutabilidad/historia, aislamiento, fuentes/resultados ausentes/corruptos y estados D2/score/deuda.
+**M5 PostgreSQL real: 8/8 G3 + 10/10 G4**, sin cambiar M5. No se cuentan skipped como aceptación.
+Los fallos inducidos y la corrupción privilegiada se limitan a fixtures de estas bases desechables.
+Alcance de la evidencia de privilegios: las pruebas funcionales/concurrencia usan `postgres`
+(superusuario); prueban el adaptador y las restricciones activas, no permisos de un rol productivo.
+El test de acceso directo usa `SET ROLE p2_unprivileged` y demuestra rechazo de SELECT en las tres
+tablas. Los REVOKE ALL y ausencia de políticas cliente se verifican además por inspección de 0004;
+no se presenta esto como prueba de configuración de roles/Supabase en producción. Un superusuario
+puede desactivar triggers: la corrupción inducida comprueba detección al leer, no resistencia al DBA.
+Tras la verificación final del 26 de septiembre, ambos contenedores y sus volúmenes sintéticos fueron
+eliminados. No se conservaron credenciales, dumps ni logs en el repositorio. Repetir PG exige crear y
+verificar otra vez el destino local desechable indicado; no se permite sustituirlo por una base compartida.
+
+Offline final: **12/12 P2**; selección relacionada inicial **443/443** (antes del último test de error
+de clonación, incluido después en la suite completa). Suite final **3286 PASS / 51 SKIPPED**:
+7 live + 18 PG M5 + 26 PG P2 desactivados en la ejecución offline. TypeScript
+`--noEmit --incremental false` y `git diff --check`: PASS. No OpenAI/live ni bases ajenas.
+
+### Criterios del entregable y límites pendientes
+
+| Criterio de persistencia/lifecycle | Evidencia P2 | Pendiente |
+|---|---|---|
+| Guardar y recuperar fuentes/resultado/manifest | Tablas separadas, FK, json, hashes y roundtrip E3 | Integración del freeze con fuentes reales de sesión y coordinador E3 |
+| Idempotencia, intentos e historial | Unique + locks/CAS + pruebas de conflictos y fencing | Revisión del incremento; no garantía exactly-once de proveedor |
+| Atomicidad y recuperación | Rollback real, lease posbloqueo y en UPDATE; expire/claim conserva historia | Cableado operativo y autorización para nuevas ejecuciones |
+| Protección y ownership | Consulta DB, errores seguros, RLS/revokes, aislamiento probado | Credenciales/roles de despliegue, permisos de reevaluación/publicación y DTOs autorizados |
+| Versiones y artefactos disponibles | Fuentes por valor, FK restrictivas, read fail-closed | Retención/borrado aprobado y conservación de releases referenciadas |
+| Reutilización/auditoría | Lectura estructural/integridad sin alterar score/aceptación | Replay completo y archivo de testigos **no autorizados ni implementados** |
+
+No se implementa una retención indefinida: se impide borrado accidental de registros referenciados;
+una política de supresión requiere diseño/autorización posterior. No hay raw provider responses,
+prompts, testigos, API/UI, perfiles productivos ni nota académica activada. Los 8 puntos quedan
+**pendientes de decisión en revisión**; M6 **56%**, proyecto **50.57%** intactos.
+
+### Clasificación para revisar el cierre de los 8 puntos
+
+- **Persistencia/lifecycle (8 puntos):** revisión y aceptación de las garantías implementadas;
+  cerrar la evidencia extremo a extremo de E4 §3.2 de que las fuentes congeladas son precisamente
+  las consumidas por E3, y concretar la disponibilidad del artefacto de release referenciado (E4 §1).
+  P2 demuestra roundtrip y composición sintética, no ese freeze coordinado de una sesión real.
+  Estos pendientes no se trasladan a otros entregables para declarar cerrado el almacenamiento.
+- **Integración productiva (entregable separado de 6 puntos):** cablear coordinador, frontera de
+  identidad autenticada, configuración autorizada y DTO/entrega segura; desplegar la migración.
+  Que el cableado sea posterior no elimina la obligación anterior de demostrar el freeze correcto.
+- **Permisos/políticas operativas posteriores:** aprobar quién puede reevaluar/publicar, provisionar
+  roles/credenciales del despliegue y concretar retención/supresión antes del uso productivo (E4 §§1,3).
+  No se autoriza retención indefinida. Replay completo/archivo de testigos requieren decisión separada
+  (E4 §2), no son una capacidad P2 ni se añaden como gate nuevo de sus pruebas.
+La clasificación no altera los pesos de PROJECT_STATUS ni acredita progreso en este checkpoint.

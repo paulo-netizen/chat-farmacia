@@ -25,14 +25,19 @@ El repositorio dispone de una suite automatizada amplia. M6-A, M6-B, M6-C, M6-D1
 
 ## Estado vigente y próximo frente funcional
 
-M6-P1 — **IMPLEMENTATION COMPLETE — LOCAL / READY FOR REVIEW**, contratos puros de registro/lifecycle bajo persistencia, sin peso independiente. Sin checkpoint ni publicación Git todavía.
+M6-P2 — **IMPLEMENTATION COMPLETE — LOCAL / READY FOR REVIEW**, nuevo incremento de persistencia, sin peso independiente. Adaptador `pharmaceutical-evaluation-postgres.ts` con conexión explícita y migración aditiva `0004_v2_pharmaceutical_evaluation_persistence.sql`: evaluaciones, intentos y artefactos separados; creación idempotente, lectura validada, claim, completion, fail y expiración/recuperación explícita. Sin cambios de tablas ni semántica M5.
+Ownership se comprueba contra la sesión en DB; identidad autenticada y autorización de reevaluación proceden del llamador server-owned. Tiempo PostgreSQL posterior a bloqueos y control de lease en la escritura; resultados/históricos inmutables y transacción atómica. Artefactos `json` preservan la serialización sensible al orden de fingerprints D1 existentes; metadata operacional `jsonb` con concordancia SQL/P1. No cambia ningún hash ni contrato anterior.
+Evidencia real local: **26/26 PostgreSQL P2**, **8/8 M5-G3 + 10/10 M5-G4**, con migraciones 0001–0004 en contenedores exclusivos verificados. Offline: **12/12 P2**, selección inicial **443/443**, suite final **3286 PASS / 51 SKIPPED**, TypeScript `--noEmit --incremental false` y diff-check PASS. Los skipped incluyen 26 PG P2, 18 PG M5 y 7 live; PG se validó aparte, no OpenAI. Detalle y criterios pendientes en [E4/P2](docs/v2/21_PHARMACEUTICAL_EVALUATION_PERSISTENCE_DESIGN.md#m6-p2--adaptador-postgresql-local).
+No API, ejecución semántica, publicación académica ni replay completo. Pendientes integración del freeze/E3, permisos productivos/retención y revisión del entregable. No acredita automáticamente los 8 puntos de persistencia; 56% / 50.57% intactos.
+
+M6-P1 — **COMPLETE / PUBLISHED IN GIT** (`66d3e22074d31bc2ad35af08d98bda04c1bd5020`), contratos puros de registro/lifecycle bajo persistencia, sin peso independiente; no despliegue.
 Intención/idempotencia, manifest obligatorio, resolutor offline de artefactos, validación estructural/integridad y transiciones con lease/fencing; composición real E3 con runtimes falsos. No recalcula scores ni reconstruye provider responses.
 Evidencia local: 54/54 P1; selección relacionada 610/610; suite 3274 PASS / 25 SKIPPED; TypeScript `--noEmit --incremental false` y diff-check PASS. Live/DB desactivados.
-Sin migraciones ni compatibilidad de tablas que resolver en P1: no modifica M5 ni APIs E3. Persistencia PostgreSQL **NOT IMPLEMENTED**; autenticación, retención, atomicidad/concurrencia real y replay completo no demostrados. No acredita los 8 puntos; 56% / 50.57% intactos. No se inicia el siguiente incremento.
+P1 no modificó M5 ni APIs E3 y no implementó persistencia. P2 añade ahora la frontera PostgreSQL local; retención, integración productiva y replay completo siguen pendientes. Los 8 puntos no se acreditan automáticamente.
 
 M6 **PARTIAL — 56%** / proyecto **50.57%**, según la regularización interna aprobada en [PROJECT_STATUS](docs/v2/PROJECT_STATUS.md#excepción-puntual-aprobada--desglose-interno-m6). No cambia el alcance ni los pesos globales. E3 está publicado en Git (`11e10724b8ca1032c29edf6f85553e28395ab62b`), no desplegado ni activado académicamente. M6-E sigue PARTIAL; PED2 abierto y perfiles no aprobados/no instalados; D3B OPEN / VALIDATION DEBT.
 
-M6-E4 — **DESIGN COMPLETE**, exclusivamente documental, **NO INDEPENDENT WEIGHT**. [Persistencia y reutilización](docs/v2/21_PHARMACEUTICAL_EVALUATION_PERSISTENCE_DESIGN.md). P1 implementa localmente su frontera pura; persistencia PostgreSQL no implementada, sin acreditar sus 8 puntos.
+M6-E4 — **DESIGN COMPLETE**, exclusivamente documental, **NO INDEPENDENT WEIGHT**. [Persistencia y reutilización](docs/v2/21_PHARMACEUTICAL_EVALUATION_PERSISTENCE_DESIGN.md). P1 aporta contratos puros y P2 la implementación PostgreSQL local pendiente de revisión/publicación, sin acreditar sus 8 puntos.
 
 ## Registros históricos de cierre — no son instrucciones de ejecución vigentes
 
@@ -68,7 +73,7 @@ M6-D3R16 — **CLOSED / COMPLETE**: request `pharmaceutical-d2-semantic-request/
 
 ## Alcance vigente
 
-El milestone funcional activo es **M6 — Evaluación farmacéutica/PRM–RNM/adherencia**. M6-A aporta la referencia clínica farmacéutica canónica; M6-B cierra identidad, targets y evidencia; M6-C prepara el contexto determinista; M6-D1 y D2 aportan las adjudicaciones farmacéuticas. M6-D3 conserva como históricos `/1` `REJECT`, `/2`–`/3` `INCONCLUSIVE` y `/4`–`/13` `REJECT`. M6-D3B queda `OPEN / VALIDATION DEBT`; no se abrirá otra muestra o matrix sin una estrategia arquitectónica materialmente nueva. M6-E0 está auditado; E1 aporta contratos/validación estructural y E2 el [motor genérico de scoring](docs/v2/19_PHARMACEUTICAL_SCORING_CONTRACT.md); E3 compone el pipeline offline publicado y E4 define persistencia, todavía no implementada. Sigue sin configuración pedagógica productiva aprobada.
+El milestone funcional activo es **M6 — Evaluación farmacéutica/PRM–RNM/adherencia**. M6-A aporta la referencia clínica farmacéutica canónica; M6-B cierra identidad, targets y evidencia; M6-C prepara el contexto determinista; M6-D1 y D2 aportan las adjudicaciones farmacéuticas. M6-D3 conserva como históricos `/1` `REJECT`, `/2`–`/3` `INCONCLUSIVE` y `/4`–`/13` `REJECT`. M6-D3B queda `OPEN / VALIDATION DEBT`; no se abrirá otra muestra o matrix sin una estrategia arquitectónica materialmente nueva. M6-E0 está auditado; E1 aporta contratos/validación estructural y E2 el [motor genérico de scoring](docs/v2/19_PHARMACEUTICAL_SCORING_CONTRACT.md); E3 compone el pipeline offline publicado, E4 define persistencia, P1 aporta contratos publicados y P2 añade el adaptador PostgreSQL local pendiente de revisión/publicación. Sigue sin configuración pedagógica productiva aprobada.
 
 Responsabilidades aprobadas: M6 personalización/seguridad/seguimiento/informe/coherencia farmacéuticos; M7 comunicación; M8 cuestionario; M9 agregación/presentación; M10 interfaz de revisión; M1/M2/M3 versiones/autoría/casos aprobados. No se aprueban reglas clínicas ni pesos académicos. Las interfaces canónicas de E4 evitan dependencias circulares.
 
@@ -137,7 +142,7 @@ M0/M1 y M2/M3 pueden cerrarse en paralelo, pero su deuda pendiente debe resolver
 
 ### M6–M11
 
-- M6: referencia clínica, identidad, targets, contexto y lanes D1/D2 completas; E1 contratos, E2 scoring genérico configuration-gated y E3 integración offline publicada; E4 diseño completo sin persistencia implementada; M6-D3B queda `OPEN / VALIDATION DEBT` tras `/13` `REJECT`; pendientes aprobación pedagógica/perfiles productivos, persistencia e integración, sin crear automáticamente `/14`;
+- M6: referencia clínica, identidad, targets, contexto y lanes D1/D2 completas; E1 contratos, E2 scoring genérico configuration-gated y E3 integración offline publicada; E4 diseño completo, P1 contratos publicados y P2 persistencia local pendiente de revisión/publicación; M6-D3B queda `OPEN / VALIDATION DEBT` tras `/13` `REJECT`; pendientes aprobación pedagógica/perfiles productivos, aceptación del entregable de persistencia e integración, sin crear automáticamente `/14`;
 - M7: evaluación de la comunicación farmacéutico-paciente;
 - M8: cuestionario post-caso;
 - M9: resultados globales y feedback;
