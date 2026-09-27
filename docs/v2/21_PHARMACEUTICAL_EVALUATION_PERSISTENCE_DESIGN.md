@@ -2,7 +2,7 @@
 
 ## Estado y frontera
 
-**DESIGN COMPLETE — NO INDEPENDENT WEIGHT**. Persistencia P2 **IMPLEMENTED LOCALLY / PENDING REVIEW**, no integrada ni desplegada.
+**DESIGN COMPLETE — NO INDEPENDENT WEIGHT**. Persistencia P2 **COMPLETE / PUBLISHED IN GIT**, no desplegada. P3 añade coordinación local, no integración académica productiva.
 Diseño documental sobre E3 publicado en `11e10724b8ca1032c29edf6f85553e28395ab62b`.
 No implica despliegue, aprobación pedagógica ni aceptación semántica. M6/M6-E siguen PARTIAL;
 PED2 abierto; perfiles productivos no aprobados/no instalados; D3B OPEN / VALIDATION DEBT.
@@ -194,7 +194,7 @@ proyecto **50.57%**, M6/M6-E PARTIAL, PED2 abierto y D3B OPEN / VALIDATION DEBT.
 
 ## M6-P2 — adaptador PostgreSQL local
 
-Nuevo incremento: **IMPLEMENTATION COMPLETE — LOCAL / READY FOR REVIEW**, pendiente de checkpoint/publicación Git.
+Incremento **COMPLETE / PUBLISHED IN GIT**, checkpoint `79c030ba08bdcfb70579c9668a966e0d5f0ef225`. No desplegado.
 No cambia P1, D1/D2, E1/E2/E3 ni la autorización académica. No inicia otro incremento.
 
 - Migración aditiva **0004**: `pharmaceutical_evaluations_v2` (intención/header sin lista de intentos),
@@ -288,3 +288,119 @@ prompts, testigos, API/UI, perfiles productivos ni nota académica activada. Los
   No se autoriza retención indefinida. Replay completo/archivo de testigos requieren decisión separada
   (E4 §2), no son una capacidad P2 ni se añaden como gate nuevo de sus pruebas.
 La clasificación no altera los pesos de PROJECT_STATUS ni acredita progreso en este checkpoint.
+
+## M6-P3 — captura congelada y coordinación E3/P2
+
+**REVIEWED / LOCAL CHECKPOINT — NOT PUBLISHED**. P3 aún no tiene commit publicado.
+Base P2 publicada: `79c030ba08bdcfb70579c9668a966e0d5f0ef225`. No nueva migración,
+endpoint, UI, perfil docente, cliente OpenAI, ejecución live ni despliegue. E3/P1/P2 y contratos
+D1/D2 mantienen sus APIs/semánticas. M6/M6-E PARTIAL, PED2 abierto, D3B OPEN / VALIDATION DEBT.
+
+### Fuentes y consistencia
+
+- `capture-pharmaceutical-evaluation-sources.ts` es server-only. Recibe identidad autenticada
+  desde el servidor, consulta ownership real y versión fijada a la sesión. Ausente/ajena no se distinguen.
+  Solo admite sesiones `finished`, versión `PUBLISHED/ARCHIVED` y snapshot SPFA ya existente.
+  No invoca claim M5 (que cerraría la sesión), no finaliza/reabre sesiones ni crea snapshots sustitutos.
+- Bajo el mismo lock de sesión que usa el trigger de mensajes de 0003, valida el transcript congelado,
+  su hash y bindings y lo compara íntegramente con los mensajes persistidos ordenados por fecha/ID.
+  Las escrituras compiten por ese lock y son rechazadas en una sesión finalizada. Las garantías requieren
+  las restricciones/triggers previstos, no una conexión administrativa capaz de desactivarlos.
+- Resuelve el contenido Generated versionado con los resolutores existentes; construye referencia
+  clínica, targets, expectativas explícitas, candidatos y contexto con sus builders/validadores reales.
+  Configuración y semanticAcceptance proceden del servidor; no hay snapshot cliente autoritativo,
+  configuración pedagógica por defecto ni consulta a `latest`.
+- Se copian entradas antes del primer await. P2 conserva las fuentes por valor y verifica su integridad.
+  Después del claim, el coordinador **lee de P2**, verifica registro/referencia y alimenta E3 desde esa
+  representación persistida. No vuelve a resolver caso, transcript ni configuración durante E3.
+
+### Manifest, idempotencia y fallos
+
+- `coordinate-pharmaceutical-evaluation.ts` compone captura → create → claim → lectura verificada
+  → E3 real → complete → lectura verificada. Todas las transacciones terminan antes de E3.
+- `bindPharmaceuticalEvaluationExecutionV2` vincula una única configuración congelada al manifest y
+  al argumento efectivo de los adaptadores D1/D2 inyectados. No acepta un manifest independiente de un
+  runtime opaco; rechaza bindings ajenos y respuesta con modelo distinto. Modelo/tokens/timeout no se
+  releen del entorno. Los adaptadores server-owned deben honrar esa configuración y declarar versiones
+  runtime/SDK reales; no se pretende probar mediante tipos que una función arbitraria diga la verdad.
+  No se instancian clientes ni se cambian los defaults/runtimes existentes.
+- `COMPLETED` se lee sin adjudicar otra vez. `EVALUATING` (también expirado) y `FAILED` devuelven
+  `NOT_EXECUTED`; no expire/claim automático. CAS decide cuál de dos peticiones ejecuta.
+  Un error de claim devuelve `CLAIM_OUTCOME_UNKNOWN`, sin repetir claim ni ejecutar especulativamente.
+- Fallo E3 intenta registrar FAILED con código seguro; fallo de esa escritura se distingue mediante
+  `FAILURE_WRITE_UNCONFIRMED`. No fabrica resultado ni marca fallido un intento posterior.
+  Un fallo de lectura/integridad tras claim detiene E3; el intento puede necesitar resolución operativa.
+- Si complete falla, nunca se llama a fail ni se repite E3: se comprueba un posible resultado ya
+  confirmado. Si sigue incierto, `COMPLETION_UNCONFIRMED` entrega una capacidad **opaca, privada y en
+  memoria** para `recoverCompletion`, que únicamente reenvía el mismo resultado y worker a P2.
+  No contiene testigos ni raw responses y no es un DTO cliente. Perder el proceso pierde la capacidad;
+  una lectura posterior aún recupera un resultado confirmado. No existe garantía exactly-once del proveedor.
+  Recuperar escritura no autoriza una ejecución semántica nueva ni reevaluación/publicación académica.
+
+### Disponibilidad de implementación: comprobación reproducible
+
+No se atribuye P3 al commit P2. El código nuevo corresponde al checkpoint local que contiene esta
+sección; su SHA se entrega en el informe Git, sin autorreferencia circular. Todas las versiones de aplicación/runtime/SDK usadas en los tests
+están marcadas `P1-SYNTHETIC-TEST-ONLY/1`: no representan una release productiva P3.
+
+Se ha comprobado por lectura de objetos Git que la base `79c030ba08bdcfb70579c9668a966e0d5f0ef225`
+existe como commit y conserva E3 y las dependencias declaradas. `package-lock.json` tiene blob
+`2214e6189d32a559181db080d0fd2b98a01a66dc` (126644 bytes), lockfileVersion 3; `package.json`
+tiene blob `cdfb8430f415041fb5ebf96a34f0c6dcd598f946`. Ninguno cambia en P3.
+Versiones resueltas: OpenAI SDK 4.104.0, pg 8.16.3, TypeScript 5.9.3, Vitest 2.1.9.
+Esto demuestra disponibilidad local del código base/lockfile, no conservación remota de P3 ni
+disponibilidad perpetua de los tarballs del registro.
+
+Checklist reproducible de disponibilidad tras publicación (pendiente desde otro clon):
+
+1. Con el SHA real, `git cat-file -e <SHA>^{commit}` y `git cat-file -e <SHA>:<ruta>` para los dos
+   módulos P3, E3, P1/P2, migraciones 0001–0004 y pruebas. `git ls-tree <SHA> package.json package-lock.json`
+   identifica los blobs; `git show <SHA>:package-lock.json` permite verificar versiones, resolved/integrity.
+2. Desde otro clon limpio del repositorio autorizado, fetch del checkpoint publicado y repetir esas
+   comprobaciones: un SHA anotado sin objetos disponibles NO satisface la disponibilidad.
+3. Restaurar dependencias del lockfile con `npm ci --ignore-scripts` en un checkout **desechable** y
+   verificar versiones/integridad. Este paso requiere red/caché disponible y no se declara demostrado
+   aquí ni instala nada en producción. El lockfile conserva la declaración, no archiva los paquetes.
+4. Vincular el manifest productivo al SHA verificado y a versiones efectivas del adaptador/SDK/scorer.
+   Si hay cambios locales, no usar el SHA anterior como identidad de esos cambios.
+
+No se crea plataforma de releases, tags ni archivo de prompts/testigos/datos clínicos. Disponibilidad
+del código para auditoría sigue siendo distinta de replay completo, no autorizado ni implementado.
+
+### Evidencia local P3 y criterios de los 8 puntos
+
+- Offline P3: **28/28** (9 captura + 19 coordinación), builders/E3 reales y runtimes falsos.
+  Regresión relacionada P1/P2/E1/E2/E3: **383/383**. Suite **3314 PASS / 67 SKIPPED**;
+  omitidos 7 live + 18 PG M5 + 26 PG P2 + 16 PG P3. TypeScript sin incremental PASS.
+- Revisión final acotada: saneadas las excepciones de validación/clonado de entradas del coordinador
+  y binding mediante `INVALID_CONFIGURATION`, sin valores ni claves recibidos. Dos regresiones nuevas
+  cubren claves privadas de comando y valores privados del modelo. **30/30 offline P3** (9 + 21) y
+  TypeScript sin incremental PASS. Las cifras anteriores se conservan como evidencia previa; no se
+  afirma una nueva ejecución de suite completa ni PostgreSQL tras este ajuste localizado.
+- PostgreSQL real P3: **16/16**, contenedor exclusivo `chatusal-m6-p3-20260927`, PostgreSQL 17.10,
+  loopback 55440, base y marcador `chatusal_m6_p3_disposable` / `chatusal-m6-p3-20260927-disposable`.
+  Sin fallback de URL/PG env. Caso/transcript/configuración sintéticos válidos, resolutores reales.
+  Pruebas como superusuario demuestran coordinación/triggers/atomicidad, no nuevos permisos productivos;
+  la evidencia limitada de roles restringidos de P2 sigue identificada como tal.
+  Al terminar se eliminó únicamente el contenedor P3 verificado y su volumen sintético; no quedan
+  datos de esas pruebas. No se conectó a `farmacia_db` ni se aplicaron migraciones fuera del contenedor.
+- Igualdad de fuentes capturadas/almacenadas y fingerprint del contexto consumido; resultado recuperado
+  por otra conexión; locks NOWAIT disponibles durante E3; writer concurrente al freeze rechazado.
+  Dos solicitudes: **3 llamadas falsas D1 + 1 D2**, no dos evaluaciones. Repetición completed: **0 adicionales**.
+  Claim confirmado con respuesta perdida: **0 llamadas** incluso al repetir la solicitud.
+  Completion incierta recuperada: **0 adjudicaciones adicionales**. Fallos D1/D2, stale worker y
+  expire/recovery conservan historia y no publican resultados ficticios.
+
+| Criterio aprobado | Evidencia acumulada / aportación P3 | Pendiente real |
+|---|---|---|
+| Fuentes/resultados/manifest conservados | P2 json/FK/hashes + P3 captura DB y E3 desde lectura persistida; revisión local satisfactoria | Publicación P3; aceptación del entregable |
+| Freeze consistente | Snapshot M5 validado contra mensajes bajo lock compartido con writer; no cierre implícito | Integrar solo en flujo autorizado; sesiones activas no admitidas |
+| Idempotencia, CAS, historial y atomicidad | P1/P2 + concurrencia P3, workers obsoletos y write recovery separado | Resolución operativa de ejecuciones inciertas; no exactly-once |
+| Ownership y protección | Verificación DB owner/sesión; fuentes internas, sin endpoint | Roles/credenciales de despliegue, DTOs y permisos productivos |
+| Versiones disponibles | Fuentes por valor y checkpoint local con base/lockfile | Verificar artefacto P3 publicado desde otro clon y restaurabilidad de dependencias |
+| Reutilización/auditoría | Lectura verificada sin nuevos calls ni recalcular scores | Replay/testigos fuera de alcance; retención/supresión por autorizar |
+
+No se trasladan los pendientes de freeze/disponibilidad a otro entregable para forzar cierre. La
+captura extremo a extremo queda demostrada localmente; disponibilidad remota exacta del código P3 exige
+publicación y comprobación desde otro clon. Integración académica, reevaluación, retención y despliegue siguen aparte.
+No se acredita automáticamente persistencia ni peso independiente a P3: **M6 56% / proyecto 50.57%**.

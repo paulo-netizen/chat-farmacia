@@ -5,9 +5,9 @@
 - **Fecha del baseline:** 28 de agosto de 2026.
 - **Commit funcional de referencia:** `3bae1167fef0f584a79a432edbcbc0a5e4a52ac6` (`Complete M6-D2 pharmaceutical claim adjudication`).
 - **Progreso global actual:** **50.57%**, regularización interna M6 aprobada el 19 de septiembre de 2026; baseline e históricos conservados.
-- **Último checkpoint funcional publicado:** `66d3e22074d31bc2ad35af08d98bda04c1bd5020` (M6-P1). Publicación Git, no despliegue ni activación académica. P2 es trabajo local pendiente de revisión/publicación.
+- **Último checkpoint funcional publicado:** `79c030ba08bdcfb70579c9668a966e0d5f0ef225` (M6-P2). Publicación Git, no despliegue ni activación académica. P3 tiene revisión y checkpoint local; aún no tiene commit publicado.
 - **M5:** **CLOSED / COMPLETE**.
-- **Última suite completa confirmada:** **3286 PASS / 51 SKIPPED** (M6-P2 offline: 7 live, 18 PG M5 y 26 PG P2 omitidos). PG validado aparte: 26/26 P2 y 18/18 M5. Históricos: P1 3274 PASS / 25 SKIPPED; E3 3220 PASS / 25 SKIPPED.
+- **Última suite completa confirmada:** **3314 PASS / 67 SKIPPED** (P3 offline; 7 live, 18 PG M5, 26 PG P2 y 16 PG P3 omitidos). PostgreSQL P3 validado aparte: 16/16. Evidencia histórica P2: 3286 PASS / 51 SKIPPED, 26/26 PG P2 y 18/18 PG M5; P1: 3274 PASS / 25 SKIPPED; E3: 3220 PASS / 25 SKIPPED.
 - **TypeScript:** **PASS**.
 
 Este documento es la fuente canónica del estado y del progreso global del proyecto. [`PLAN.md`](../../PLAN.md) conserva el roadmap técnico y el orden de ejecución, sin mantener una segunda tabla de porcentajes.
@@ -161,7 +161,7 @@ Al cierre original de E3: M6 46% / proyecto 49.37%; la regularización aprobada 
 M6 **56%** / proyecto **50.57%**. Véase [M6-E3](20_PHARMACEUTICAL_SESSION_PIPELINE.md).
 
 M6-E4 — **DESIGN COMPLETE**, documental, **NO INDEPENDENT WEIGHT**. [Diseño de persistencia y reutilización](21_PHARMACEUTICAL_EVALUATION_PERSISTENCE_DESIGN.md).
-E4 no añade progreso. P2 implementa localmente su adaptador PostgreSQL, sin integración productiva ni cierre automático del entregable.
+E4 no añade progreso. P2 tiene su adaptador PostgreSQL publicado en Git y P3 añade coordinación local, sin integración productiva ni cierre automático del entregable.
 
 M6-P1 — **COMPLETE / PUBLISHED IN GIT**, checkpoint `66d3e22074d31bc2ad35af08d98bda04c1bd5020`.
 Contratos operacionales internos, manifest e intención versionados, artefactos resueltos offline y lifecycle
@@ -174,18 +174,30 @@ P1 por sí solo no demostró CAS/atomicidad PostgreSQL ni autenticación. Retenc
 automáticamente los 8 puntos de persistencia: **M6 56% / proyecto 50.57%**. M6/M6-E PARTIAL, PED2 abierto,
 perfiles productivos no aprobados/no instalados y D3B OPEN / VALIDATION DEBT. No se inicia otro incremento.
 
-M6-P2 — **IMPLEMENTATION COMPLETE — LOCAL / READY FOR REVIEW**, nuevo incremento bajo persistencia sin peso independiente.
+M6-P2 — **COMPLETE / PUBLISHED IN GIT**, checkpoint `79c030ba08bdcfb70579c9668a966e0d5f0ef225`, no desplegado; incremento bajo persistencia sin peso independiente.
 Migración aditiva 0004 y adaptador server-only con dependencia DB explícita: intención/idempotencia,
 historia, fuentes/resultados, ownership real de sesión, locks/CAS, lease server-owned, completion atómica,
 fallo y expiración/claim sin adjudicación. P1/E3, scoring y aceptación semántica preservados.
 PostgreSQL real local: **26/26 P2**, regresión M5 **8/8 G3 + 10/10 G4**, en contenedores desechables
 verificados, no bases de aplicación. Selección offline inicial **443/443**; P2 final **12/12 offline**,
 suite **3286 PASS / 51 SKIPPED**, TypeScript `--noEmit --incremental false` y diff-check PASS.
-Pendiente revisión/checkpoint/publicación. No API, OpenAI/live ni activación académica; no replay completo,
+Publicado en Git, no desplegado. No API, OpenAI/live ni activación académica; no replay completo,
 archivo de testigos ni política de retención productiva. Los criterios satisfechos y pendientes constan
 en [E4/P2](21_PHARMACEUTICAL_EVALUATION_PERSISTENCE_DESIGN.md#m6-p2--adaptador-postgresql-local).
 **No se acreditan los 8 puntos automáticamente**: M6 **56%**, proyecto **50.57%**; M6/M6-E PARTIAL,
 PED2 abierto y D3B OPEN / VALIDATION DEBT intactos.
+
+M6-P3 — **REVIEWED / LOCAL CHECKPOINT — NOT PUBLISHED**, sin peso independiente.
+Captura server-only de sesión finalizada y transcript M5 congelado verificado contra mensajes persistidos;
+proyecciones canónicas y coordinación create/claim/E3/complete/read usando las fuentes recuperadas de P2.
+Sin cierres de sesión implícitos, reintentos semánticos, nuevos perfiles, cambios D1/D2 ni migraciones.
+Evidencia previa: offline P3 **28/28**, selección relacionada **383/383**, PostgreSQL P3 **16/16** en base exclusiva
+desechable y suite **3314 PASS / 67 SKIPPED**. Revisión final: saneamiento de errores de entrada,
+**30/30 offline P3** y TypeScript PASS; no se repiten suite completa ni PostgreSQL por este ajuste.
+Código P3 en este checkpoint local, sin publicación; comprobación desde otro clon y restauración de
+dependencias pendientes tras publicarlo. Base/lockfile disponibles, sin atribuir P3 al SHA P2.
+No confundir lectura íntegra con replay completo. Criterios y límites en [E4/P3](21_PHARMACEUTICAL_EVALUATION_PERSISTENCE_DESIGN.md#m6-p3--captura-congelada-y-coordinación-e3p2).
+M6 **56%** / proyecto **50.57%**, sin acreditar automáticamente los 8 puntos de persistencia.
 
 Responsabilidades aprobadas: M6 evalúa personalización, seguridad, seguimiento, informe y coherencia;
 M7 calidad comunicativa; M8 cuestionario/captura; M9 agregación/presentación; M10 interfaz de revisión/override;
