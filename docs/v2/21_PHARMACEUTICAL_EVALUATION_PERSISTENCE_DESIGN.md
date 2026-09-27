@@ -2,12 +2,15 @@
 
 ## Estado y frontera
 
-**DESIGN COMPLETE — NO INDEPENDENT WEIGHT**. Persistencia P2 **COMPLETE / PUBLISHED IN GIT**, no desplegada. P3 añade coordinación local, no integración académica productiva.
+**DESIGN COMPLETE — NO INDEPENDENT WEIGHT**. Entregable **Persistencia y lifecycle farmacéutico — CLOSED / TECHNICALLY COMPLETE**, cierre autorizado el 27 de septiembre de 2026 con P1–P3 implementados, publicados y verificados. Sin integración académica productiva ni despliegue.
 Diseño documental sobre E3 publicado en `11e10724b8ca1032c29edf6f85553e28395ab62b`.
 No implica despliegue, aprobación pedagógica ni aceptación semántica. M6/M6-E siguen PARTIAL;
 PED2 abierto; perfiles productivos no aprobados/no instalados; D3B OPEN / VALIDATION DEBT.
 La [medición canónica](PROJECT_STATUS.md#excepción-puntual-aprobada--desglose-interno-m6)
-reconoce 56% M6 / 50.57% global por trabajo anterior. Los 8 puntos de persistencia siguen pendientes.
+acredita los 8 puntos existentes de persistencia una sola vez: **64% M6 / 51.53% global**.
+P1/P2/P3 no reciben pesos independientes. **56% / 50.57%** eran correctos antes de este cierre;
+los registros P1/P2 siguientes conservan sus límites y pendientes históricos, resueltos técnicamente
+según el [registro final de cierre](#cierre-técnico-del-entregable).
 
 ## 1. Reutilización y datos conservados
 
@@ -79,7 +82,7 @@ de reevaluaciones. No alterar M5 ni su migration 0003.
    y parámetros sin alterar request fingerprints D1/D2, que mantienen sus contratos actuales.
 2. **Freeze.** Antes de ejecutar, autorizar ownership y fijar fuentes inmutables. Capturar las mismas
    copias usadas por la evaluación, no volver a leer entradas mutables después de await. La conexión
-   futura con E3 debe preservar sus APIs y evitar una segunda llamada para obtener metadata/testigos.
+   con E3 implementada por P3 preserva sus APIs y evita una segunda llamada para obtener metadata/testigos.
 3. **Claim/concurrencia.** Transacción y CAS crean un intento EVALUATING con fencing token creciente,
    start y lease expiry. Solo el titular vigente puede completar. Unique constraints más CAS evitan
    dos completions de una intención; un worker obsoleto no puede publicar.
@@ -189,7 +192,7 @@ P1 sí ejecutó validación offline: **54/54** tests nuevos con E3 real y runtim
 sintética; **610/610** selección relacionada; suite **3274 PASS / 25 SKIPPED**, TypeScript
 `--noEmit --incremental false` y diff-check PASS. Los flags live/DB se fijaron a 0; no se ejecutaron
 OpenAI ni PostgreSQL. Las carreras son simulaciones de estados/tokens, no tests de concurrencia real.
-En ese checkpoint P1 la persistencia PostgreSQL no estaba implementada; los 8 puntos permanecen sin acreditar; M6 **56%**,
+En ese checkpoint P1 la persistencia PostgreSQL no estaba implementada; los 8 puntos permanecían sin acreditar; M6 **56%**,
 proyecto **50.57%**, M6/M6-E PARTIAL, PED2 abierto y D3B OPEN / VALIDATION DEBT.
 
 ## M6-P2 — adaptador PostgreSQL local
@@ -259,6 +262,9 @@ de clonación, incluido después en la suite completa). Suite final **3286 PASS 
 
 ### Criterios del entregable y límites pendientes
 
+Estado histórico al checkpoint P2; los pendientes técnicos de freeze/coordinación y disponibilidad
+se resuelven con P3 y su recuperación independiente, según el [cierre final](#cierre-técnico-del-entregable).
+
 | Criterio de persistencia/lifecycle | Evidencia P2 | Pendiente |
 |---|---|---|
 | Guardar y recuperar fuentes/resultado/manifest | Tablas separadas, FK, json, hashes y roundtrip E3 | Integración del freeze con fuentes reales de sesión y coordinador E3 |
@@ -270,10 +276,13 @@ de clonación, incluido después en la suite completa). Suite final **3286 PASS 
 
 No se implementa una retención indefinida: se impide borrado accidental de registros referenciados;
 una política de supresión requiere diseño/autorización posterior. No hay raw provider responses,
-prompts, testigos, API/UI, perfiles productivos ni nota académica activada. Los 8 puntos quedan
-**pendientes de decisión en revisión**; M6 **56%**, proyecto **50.57%** intactos.
+prompts, testigos, API/UI, perfiles productivos ni nota académica activada. En ese checkpoint P2 los 8 puntos quedaron
+**pendientes de decisión en revisión**; histórico M6 **56%**, proyecto **50.57%**.
 
 ### Clasificación para revisar el cierre de los 8 puntos
+
+Clasificación histórica P2, conservada para trazar qué evidencia exigía el cierre; no describe una
+carencia técnica vigente tras la aceptación conjunta P1–P3.
 
 - **Persistencia/lifecycle (8 puntos):** revisión y aceptación de las garantías implementadas;
   cerrar la evidencia extremo a extremo de E4 §3.2 de que las fuentes congeladas son precisamente
@@ -287,11 +296,12 @@ prompts, testigos, API/UI, perfiles productivos ni nota académica activada. Los
   roles/credenciales del despliegue y concretar retención/supresión antes del uso productivo (E4 §§1,3).
   No se autoriza retención indefinida. Replay completo/archivo de testigos requieren decisión separada
   (E4 §2), no son una capacidad P2 ni se añaden como gate nuevo de sus pruebas.
-La clasificación no altera los pesos de PROJECT_STATUS ni acredita progreso en este checkpoint.
+La clasificación no alteró los pesos de PROJECT_STATUS ni acreditó progreso en el checkpoint P2.
 
 ## M6-P3 — captura congelada y coordinación E3/P2
 
-**REVIEWED / LOCAL CHECKPOINT — NOT PUBLISHED**. P3 aún no tiene commit publicado.
+**COMPLETE / PUBLISHED IN GIT**. Checkpoint P3 `40e97bdb51f8cc7f4dd180913734153b23b965db`,
+mensaje `Coordinate frozen pharmaceutical evaluation and persistence`; recuperación independiente verificada.
 Base P2 publicada: `79c030ba08bdcfb70579c9668a966e0d5f0ef225`. No nueva migración,
 endpoint, UI, perfil docente, cliente OpenAI, ejecución live ni despliegue. E3/P1/P2 y contratos
 D1/D2 mantienen sus APIs/semánticas. M6/M6-E PARTIAL, PED2 abierto, D3B OPEN / VALIDATION DEBT.
@@ -339,37 +349,45 @@ D1/D2 mantienen sus APIs/semánticas. M6/M6-E PARTIAL, PED2 abierto, D3B OPEN / 
 
 ### Disponibilidad de implementación: comprobación reproducible
 
-No se atribuye P3 al commit P2. El código nuevo corresponde al checkpoint local que contiene esta
-sección; su SHA se entrega en el informe Git, sin autorreferencia circular. Todas las versiones de aplicación/runtime/SDK usadas en los tests
-están marcadas `P1-SYNTHETIC-TEST-ONLY/1`: no representan una release productiva P3.
+Verificación realizada el 27 de septiembre de 2026, registrada aquí sin repetirla ni ejecutar código:
 
-Se ha comprobado por lectura de objetos Git que la base `79c030ba08bdcfb70579c9668a966e0d5f0ef225`
-existe como commit y conserva E3 y las dependencias declaradas. `package-lock.json` tiene blob
-`2214e6189d32a559181db080d0fd2b98a01a66dc` (126644 bytes), lockfileVersion 3; `package.json`
-tiene blob `cdfb8430f415041fb5ebf96a34f0c6dcd598f946`. Ninguno cambia en P3.
-Versiones resueltas: OpenAI SDK 4.104.0, pg 8.16.3, TypeScript 5.9.3, Vitest 2.1.9.
-Esto demuestra disponibilidad local del código base/lockfile, no conservación remota de P3 ni
-disponibilidad perpetua de los tarballs del registro.
+- Publicación fast-forward desde P2 `79c030ba08bdcfb70579c9668a966e0d5f0ef225`.
+  HEAD local, `origin/chatusal-v2` y consulta directa del remoto coincidieron en
+  **`40e97bdb51f8cc7f4dd180913734153b23b965db`**; árbol
+  **`bf045f53ba7f4fe03c3eb21209990b448f10abac`**. Repositorio principal limpio, ahead 0 / behind 0.
+- Clon independiente desechable obtenido desde el [repositorio remoto](https://github.com/paulo-netizen/chat-farmacia),
+  seleccionado exactamente en el [commit P3 publicado](https://github.com/paulo-netizen/chat-farmacia/commit/40e97bdb51f8cc7f4dd180913734153b23b965db).
+  Sin copia local, objetos alternativos ni repositorio de trabajo como fuente Git; no se copiaron
+  `.env` ni credenciales de aplicación. Commit, árbol y dependencias de código disponibles.
+- **`git cat-file` y `git fsck --full`: PASS**. Objetos verificados: módulos y pruebas P3, E3,
+  contratos/artefactos/lifecycle P1, adaptador P2 y migraciones 0001–0004.
+- Blobs iguales en el commit publicado y el clon, y conservados después de instalar:
+  `package.json` **`cdfb8430f415041fb5ebf96a34f0c6dcd598f946`**;
+  `package-lock.json` **`2214e6189d32a559181db080d0fd2b98a01a66dc`** (126644 bytes, lockfileVersion 3).
+- **Node 20.19.4 / npm 10.8.2**. **`npm ci --ignore-scripts`: correcto, 219 paquetes**, sin errores
+  de integridad ni cambios de archivos versionados. `npm ls --depth=0` correcto; versiones instaladas
+  contrastadas con el lockfile: OpenAI SDK 4.104.0, pg 8.16.3, TypeScript 5.9.3, Vitest 2.1.9,
+  Next 14.2.15, React/React DOM 18.3.1 y Zod 3.23.8. Checkout en HEAD separado, árbol versionado
+  limpio y `node_modules` ignorado. Los bloqueos iniciales de red del sandbox y caché `EPERM`
+  se resolvieron con permisos; no constituyeron una incompatibilidad reproducible de dependencias.
+- npm notificó **13 vulnerabilidades**; gravedad, aplicabilidad y remediación pendientes de clasificación
+  en la [deuda de seguridad M0](PROJECT_STATUS.md#m0--saneamiento-y-barreras-de-seguridad).
+  No se ejecutó `npm audit fix` ni se cambiaron dependencias.
 
-Checklist reproducible de disponibilidad tras publicación (pendiente desde otro clon):
+Esta evidencia demuestra recuperación del código publicado y restauración de dependencias con scripts
+desactivados. No certifica build completo, despliegue, roles productivos ni reproducibilidad semántica.
+Un clon recuperable no garantiza conservación indefinida del repositorio o del registro de paquetes;
+el lockfile declara los paquetes, no los archiva. No se registra una ruta temporal personal como
+ubicación permanente del artefacto. No se atribuye P3 al commit P2.
 
-1. Con el SHA real, `git cat-file -e <SHA>^{commit}` y `git cat-file -e <SHA>:<ruta>` para los dos
-   módulos P3, E3, P1/P2, migraciones 0001–0004 y pruebas. `git ls-tree <SHA> package.json package-lock.json`
-   identifica los blobs; `git show <SHA>:package-lock.json` permite verificar versiones, resolved/integrity.
-2. Desde otro clon limpio del repositorio autorizado, fetch del checkpoint publicado y repetir esas
-   comprobaciones: un SHA anotado sin objetos disponibles NO satisface la disponibilidad.
-3. Restaurar dependencias del lockfile con `npm ci --ignore-scripts` en un checkout **desechable** y
-   verificar versiones/integridad. Este paso requiere red/caché disponible y no se declara demostrado
-   aquí ni instala nada en producción. El lockfile conserva la declaración, no archiva los paquetes.
-4. Vincular el manifest productivo al SHA verificado y a versiones efectivas del adaptador/SDK/scorer.
-   Si hay cambios locales, no usar el SHA anterior como identidad de esos cambios.
-
-No se crea plataforma de releases, tags ni archivo de prompts/testigos/datos clínicos. Disponibilidad
-del código para auditoría sigue siendo distinta de replay completo, no autorizado ni implementado.
+Las versiones de aplicación/runtime/SDK de los fixtures siguen marcadas `P1-SYNTHETIC-TEST-ONLY/1`;
+no representan una release productiva. Vincular un futuro manifest productivo al SHA y versiones
+efectivas seguirá siendo parte de su integración autorizada. Replay completo y archivo de testigos
+permanecen fuera del alcance autorizado.
 
 ### Evidencia local P3 y criterios de los 8 puntos
 
-- Offline P3: **28/28** (9 captura + 19 coordinación), builders/E3 reales y runtimes falsos.
+- Offline P3 anterior al saneamiento final: **28/28** (9 captura + 19 coordinación), builders/E3 reales y runtimes falsos.
   Regresión relacionada P1/P2/E1/E2/E3: **383/383**. Suite **3314 PASS / 67 SKIPPED**;
   omitidos 7 live + 18 PG M5 + 26 PG P2 + 16 PG P3. TypeScript sin incremental PASS.
 - Revisión final acotada: saneadas las excepciones de validación/clonado de entradas del coordinador
@@ -377,7 +395,7 @@ del código para auditoría sigue siendo distinta de replay completo, no autoriz
   cubren claves privadas de comando y valores privados del modelo. **30/30 offline P3** (9 + 21) y
   TypeScript sin incremental PASS. Las cifras anteriores se conservan como evidencia previa; no se
   afirma una nueva ejecución de suite completa ni PostgreSQL tras este ajuste localizado.
-- PostgreSQL real P3: **16/16**, contenedor exclusivo `chatusal-m6-p3-20260927`, PostgreSQL 17.10,
+- PostgreSQL real P3, **anterior al saneamiento final de errores**: **16/16**, contenedor exclusivo `chatusal-m6-p3-20260927`, PostgreSQL 17.10,
   loopback 55440, base y marcador `chatusal_m6_p3_disposable` / `chatusal-m6-p3-20260927-disposable`.
   Sin fallback de URL/PG env. Caso/transcript/configuración sintéticos válidos, resolutores reales.
   Pruebas como superusuario demuestran coordinación/triggers/atomicidad, no nuevos permisos productivos;
@@ -391,16 +409,30 @@ del código para auditoría sigue siendo distinta de replay completo, no autoriz
   Completion incierta recuperada: **0 adjudicaciones adicionales**. Fallos D1/D2, stale worker y
   expire/recovery conservan historia y no publican resultados ficticios.
 
-| Criterio aprobado | Evidencia acumulada / aportación P3 | Pendiente real |
+### Cierre técnico del entregable
+
+**Persistencia y lifecycle farmacéutico — CLOSED / TECHNICALLY COMPLETE**, aceptación documental
+autorizada el 27 de septiembre de 2026. Implementación y verificación P1–P3 completas; criterios
+satisfechos con evidencia acumulada, sin nueva ejecución de tests, TypeScript, OpenAI/live o DB:
+
+| Criterio satisfecho | Evidencia acumulada / aportación P3 | Límite o pendiente productivo |
 |---|---|---|
-| Fuentes/resultados/manifest conservados | P2 json/FK/hashes + P3 captura DB y E3 desde lectura persistida; revisión local satisfactoria | Publicación P3; aceptación del entregable |
+| Contratos y lifecycle | [P1](#5-m6-p1--implementación-local-de-la-frontera-pura): contratos versionados, intención, idempotencia, lease/fencing e historia; 54/54 offline | P1 no constituye por sí solo autenticación o concurrencia DB |
+| Fuentes/resultados/manifest conservados | [P2](#m6-p2--adaptador-postgresql-local): json/FK/hashes, roundtrip y 26/26 PostgreSQL; [P3](#m6-p3--captura-congelada-y-coordinación-e3p2): E3 desde lectura persistida | Integración productiva pendiente |
 | Freeze consistente | Snapshot M5 validado contra mensajes bajo lock compartido con writer; no cierre implícito | Integrar solo en flujo autorizado; sesiones activas no admitidas |
 | Idempotencia, CAS, historial y atomicidad | P1/P2 + concurrencia P3, workers obsoletos y write recovery separado | Resolución operativa de ejecuciones inciertas; no exactly-once |
 | Ownership y protección | Verificación DB owner/sesión; fuentes internas, sin endpoint | Roles/credenciales de despliegue, DTOs y permisos productivos |
-| Versiones disponibles | Fuentes por valor y checkpoint local con base/lockfile | Verificar artefacto P3 publicado desde otro clon y restaurabilidad de dependencias |
+| Código y dependencias recuperables | [Recuperación independiente](#disponibilidad-de-implementación-comprobación-reproducible): SHA/árbol/blobs concordantes, cat-file/fsck PASS y npm ci con scripts desactivados correcto | No garantiza conservación indefinida ni build completo |
 | Reutilización/auditoría | Lectura verificada sin nuevos calls ni recalcular scores | Replay/testigos fuera de alcance; retención/supresión por autorizar |
 
-No se trasladan los pendientes de freeze/disponibilidad a otro entregable para forzar cierre. La
-captura extremo a extremo queda demostrada localmente; disponibilidad remota exacta del código P3 exige
-publicación y comprobación desde otro clon. Integración académica, reevaluación, retención y despliegue siguen aparte.
-No se acredita automáticamente persistencia ni peso independiente a P3: **M6 56% / proyecto 50.57%**.
+Los gates técnicos de freeze/consumo y disponibilidad/restauración están satisfechos; no se trasladan
+como deuda a otro entregable. La autorización de este cierre acredita **8/8 puntos** del entregable
+existente según [PROJECT_STATUS, fuente canónica](PROJECT_STATUS.md#excepción-puntual-aprobada--desglose-interno-m6):
+**M6 64%**, aporte global **7.68**, otros milestones **43.85**, proyecto **51.53%**.
+P1/P2/P3 y E4 no reciben pesos adicionales; el histórico **56% / 50.57%** fue correcto hasta este cierre.
+
+M6 y M6-E permanecen **PARTIAL**. PED2 abierto y perfiles productivos no aprobados/no instalados;
+D3B **OPEN / VALIDATION DEBT**. Integración productiva (entregable separado de 6 puntos), permisos
+de reevaluación/publicación, roles de despliegue y retención/supresión siguen pendientes. Replay completo
+y archivo de testigos quedan fuera del alcance autorizado. El cierre no certifica despliegue, build
+completo, roles productivos ni reproducibilidad semántica; no inicia otro incremento.

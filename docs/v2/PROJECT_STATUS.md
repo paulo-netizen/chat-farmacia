@@ -4,11 +4,11 @@
 
 - **Fecha del baseline:** 28 de agosto de 2026.
 - **Commit funcional de referencia:** `3bae1167fef0f584a79a432edbcbc0a5e4a52ac6` (`Complete M6-D2 pharmaceutical claim adjudication`).
-- **Progreso global actual:** **50.57%**, regularización interna M6 aprobada el 19 de septiembre de 2026; baseline e históricos conservados.
-- **Último checkpoint funcional publicado:** `79c030ba08bdcfb70579c9668a966e0d5f0ef225` (M6-P2). Publicación Git, no despliegue ni activación académica. P3 tiene revisión y checkpoint local; aún no tiene commit publicado.
+- **Progreso global actual:** **51.53%**, cierre técnico autorizado de Persistencia/lifecycle el 27 de septiembre de 2026, conforme al desglose M6 ya aprobado; baseline e históricos conservados.
+- **Último checkpoint funcional publicado:** `40e97bdb51f8cc7f4dd180913734153b23b965db` (M6-P3). Recuperación independiente y restauración de dependencias verificadas; no despliegue ni activación académica.
 - **M5:** **CLOSED / COMPLETE**.
-- **Última suite completa confirmada:** **3314 PASS / 67 SKIPPED** (P3 offline; 7 live, 18 PG M5, 26 PG P2 y 16 PG P3 omitidos). PostgreSQL P3 validado aparte: 16/16. Evidencia histórica P2: 3286 PASS / 51 SKIPPED, 26/26 PG P2 y 18/18 PG M5; P1: 3274 PASS / 25 SKIPPED; E3: 3220 PASS / 25 SKIPPED.
-- **TypeScript:** **PASS**.
+- **Última suite completa confirmada:** **3314 PASS / 67 SKIPPED**, anterior al saneamiento final de errores P3 (7 live, 18 PG M5, 26 PG P2 y 16 PG P3 omitidos). PostgreSQL P3: **16/16**, también anterior a ese saneamiento. Evidencia histórica P2: 3286 PASS / 51 SKIPPED, 26/26 PG P2 y 18/18 PG M5; P1: 3274 PASS / 25 SKIPPED; E3: 3220 PASS / 25 SKIPPED.
+- **P3 final:** **30/30 offline y TypeScript PASS**. No se ejecutan tests ni TypeScript en este cierre documental.
 
 Este documento es la fuente canónica del estado y del progreso global del proyecto. [`PLAN.md`](../../PLAN.md) conserva el roadmap técnico y el orden de ejecución, sin mantener una segunda tabla de porcentajes.
 
@@ -30,13 +30,13 @@ Los pesos y porcentajes se expresan como fracciones para el cálculo; por ejempl
 | M3 | Generador, auditor y publicación | PARTIAL | 55% | 11% | 6.05% |
 | M4 | Runtime seguro del paciente | CLOSED | 100% | 10% | 10.00% |
 | M5 | Motor de protocolos SPFA | CLOSED | 100% | 15% | 15.00% |
-| M6 | Evaluación farmacéutica/PRM–RNM/adherencia | PARTIAL | 56% | 12% | 6.72% |
+| M6 | Evaluación farmacéutica/PRM–RNM/adherencia | PARTIAL | 64% | 12% | 7.68% |
 | M7 | Evaluación de comunicación | NOT STARTED | 0% | 7% | 0.00% |
 | M8 | Cuestionario post-caso | NOT STARTED | 0% | 7% | 0.00% |
 | M9 | Resultados y feedback | NOT STARTED | 0% | 5% | 0.00% |
 | M10 | Analítica y revisión docente | NOT STARTED | 0% | 4% | 0.00% |
 | M11 | Hardening y observabilidad final | NOT STARTED | 0% | 3% | 0.00% |
-| **Total** |  |  |  | **100%** | **50.57%** |
+| **Total** |  |  |  | **100%** | **51.53%** |
 
 ## Regla estable de progreso
 
@@ -48,10 +48,12 @@ Los pesos y porcentajes se expresan como fracciones para el cálculo; por ejempl
 
 ### Excepción puntual aprobada — desglose interno M6
 
-El usuario autoriza completar la medición interna sin cambio de alcance. No se inventa una ampliación
-para justificar esta excepción: siguen fijos los pesos globales y los 46 puntos internos ya acreditados.
-Se reconocen 10 puntos por capacidad técnica conjunta E1/E2/E3 previamente completada, no por trabajo
-funcional desarrollado en este incremento documental. Son pesos de progreso del proyecto, NO de notas.
+La regularización aprobada el 19 de septiembre completó la medición interna sin cambio de alcance:
+conservó los 46 puntos acreditados y reconoció 10 por capacidad técnica conjunta E1/E2/E3.
+El cierre técnico autorizado del 27 de septiembre acredita los 8 puntos existentes de Persistencia/lifecycle
+por implementación y verificación P1–P3 completas. No cambia pesos ni alcance. La tabla refleja el estado
+actual; **56% M6 / 50.57% global** fueron correctos antes de este cierre.
+Son pesos de progreso del proyecto, NO de notas.
 
 | Entregable M6 | Peso interno | Acreditado | Procedencia / gate pendiente |
 |---|---:|---:|---|
@@ -65,18 +67,20 @@ funcional desarrollado en este incremento documental. Son pesos de progreso del 
 | Seguimiento | 4 | 0 | Nueva asignación; evaluar desempeño, no solo conservar episodios |
 | Informe | 3 | 0 | Nueva asignación; captura/evaluación de informe, sin volver a puntuar targets B |
 | Coherencia entrevista–conclusión | 5 | 0 | Nueva asignación; distinguir exploración, conclusión y acierto casual |
-| Persistencia/lifecycle | 8 | 0 | Nueva asignación; implementación y aceptación, no cierre del diseño E4 |
+| Persistencia/lifecycle | 8 | 8 | CLOSED / TECHNICALLY COMPLETE; [criterios y evidencia P1–P3](21_PHARMACEUTICAL_EVALUATION_PERSISTENCE_DESIGN.md#cierre-técnico-del-entregable) y recuperación independiente verificada |
 | Integración productiva del subresultado | 6 | 0 | Nueva asignación; fuentes/configuración autorizadas y entrega segura |
-| **Total** | **100** | **56** | **44 pendientes** |
+| **Total** | **100** | **64** | **36 pendientes** |
 
 No doble cómputo: E3 permanece **NO INDEPENDENT WEIGHT**; constituye evidencia de composición del
 entregable técnico padre E. E4 también carece de peso independiente. Ni reutilizar A/B/C/D ni completar
-E4 suma otros puntos. Los 8 de persistencia permanecen íntegramente pendientes. Los futuros cierres
+E4 suma otros puntos. P1/P2/P3 tampoco reciben pesos independientes: acreditan conjuntamente los
+8 puntos del entregable existente de persistencia, una sola vez. Los futuros cierres
 se acreditan por entregables aceptados, no tests, líneas ni esfuerzo; subdividir puntos pendientes requiere
 registro previo. D3B conserva sus 2 puntos pendientes y el gate 100%, sin reclasificar matrices.
 
-Cálculo: `12 + 12 + 10 + 12 + 10 = 56`; aporte M6 `12 × 0.56 = 6.72`;
-otros milestones `43.85`; global `43.85 + 6.72 = 50.57%`.
+Cálculo actual: `12 + 12 + 10 + 12 + 10 + 8 = 64`; aporte M6 `12 × 0.64 = 7.68`;
+otros milestones `43.85`; global `43.85 + 7.68 = 51.53%`.
+Histórico previo correcto: `56`, aporte `6.72`, global `50.57%`; el cierre añade `0.96` puntos globales.
 
 ## Estado resumido de los milestones
 
@@ -88,6 +92,11 @@ otros milestones `43.85`; global `43.85 + 6.72 = 50.57%`.
 Completado: baseline v1 reproducible; DTO público estudiantil por allowlist; retirada de la solución académica de fronteras estudiantiles; contratos factual/runtime; sesiones idempotentes y recuperables; ownership y cobertura de integración relevante.
 
 Pendiente: TLS inseguro en `lib/db.ts`; restricción explícita `role=student`; identidad de actividad/grupo/intento; modelo general de roles/RLS; deuda de flujos Legacy/editoriales; README, configuración y CI. Véanse la [especificación de seguridad](09_SECURITY_PRIVACY.md) y el [diseño de sesiones](12_SESSION_IDEMPOTENCY_AND_RESUME_DESIGN.md).
+
+Deuda de dependencias: npm notificó **13 vulnerabilidades** durante la restauración independiente
+de P3 con scripts desactivados. Gravedad, aplicabilidad y remediación pendientes de clasificación;
+no se asignan niveles de severidad en este registro. No se ejecutó `npm audit fix` ni se modificaron
+dependencias. Véase la [evidencia de restauración](21_PHARMACEUTICAL_EVALUATION_PERSISTENCE_DESIGN.md#disponibilidad-de-implementación-comprobación-reproducible).
 
 ### M1 — Versionado y base de datos v2
 
@@ -133,7 +142,7 @@ El cierre corresponde al commit `b2879cec7824968bcc0b6e3bca80852fa9cf3359`. Véa
 ### M6 — Evaluación farmacéutica/PRM–RNM/adherencia
 
 **Objetivo:** evaluar razonamiento farmacéutico, PRM/RNM, adherencia, barreras e intervención con evidencia.
-**Estado:** **PARTIAL — 56%**, regularización aprobada anterior; no cambio de alcance.
+**Estado:** **PARTIAL — 64%**, tras el cierre técnico autorizado de Persistencia/lifecycle; no cambio de alcance.
 
 Completado: M6-A, proyección clínica farmacéutica canónica; M6-B, identidad, targets y evidencia; M6-C, contexto determinista; M6-D1/D2, contratos, runtimes y adjudicación farmacéutica; M6-D3A y refinamientos offline hasta M6-D3R29. Matrix `/13` terminó `REJECT`: C3 ref 9 conservó literal, `UNSUPPORTED` y `RECOMMENDATION`, pero Terra clasificó `ADHERENCE` con C010 en vez de `PROFESSIONAL_RESPONSE` con C013. M6-D3R30 registra el resultado como deuda de validación sin alterar D1/D2 ni históricos. `UNSUPPORTED` significa únicamente no sustentado por la autoridad suministrada y queda como señal futura de revisión, nunca como falsedad, safety o penalización automática. Los informes históricos siguen siendo válidos, pero no reciben IDs ni targets de contenido sintéticos.
 
@@ -158,10 +167,12 @@ M6-E3 — **CLOSED / COMPLETE — OFFLINE INTEGRATION COMPLETE**, publicado en G
 no aprobados/no instalados; D3B **OPEN / VALIDATION DEBT**. Pipeline real con dependencias falsas:
 35/35 E3, 500/500 selección relacionada, suite 3220 PASS / 25 SKIPPED; TypeScript y diff-check PASS.
 Al cierre original de E3: M6 46% / proyecto 49.37%; la regularización aprobada posterior reconoce
-M6 **56%** / proyecto **50.57%**. Véase [M6-E3](20_PHARMACEUTICAL_SESSION_PIPELINE.md).
+M6 **56%** / proyecto **50.57%**, estado histórico anterior al cierre de Persistencia/lifecycle.
+Véase [M6-E3](20_PHARMACEUTICAL_SESSION_PIPELINE.md).
 
 M6-E4 — **DESIGN COMPLETE**, documental, **NO INDEPENDENT WEIGHT**. [Diseño de persistencia y reutilización](21_PHARMACEUTICAL_EVALUATION_PERSISTENCE_DESIGN.md).
-E4 no añade progreso. P2 tiene su adaptador PostgreSQL publicado en Git y P3 añade coordinación local, sin integración productiva ni cierre automático del entregable.
+E4 no añade progreso independiente. P1–P3 publicados y verificados sustentan el cierre técnico autorizado
+del entregable existente de Persistencia/lifecycle; la integración productiva permanece pendiente.
 
 M6-P1 — **COMPLETE / PUBLISHED IN GIT**, checkpoint `66d3e22074d31bc2ad35af08d98bda04c1bd5020`.
 Contratos operacionales internos, manifest e intención versionados, artefactos resueltos offline y lifecycle
@@ -170,8 +181,8 @@ no archiva testigos/prompts/raw ni calcula scores. La lectura comprueba estructu
 no autenticidad del escritor ni replay completo. Ownership y supersedes no son autorización.
 54/54 P1; selección relacionada 610/610; suite **3274 PASS / 25 SKIPPED** (7 live y 18 PostgreSQL omitidos);
 TypeScript `--noEmit --incremental false` y diff-check PASS. Cero OpenAI/live/DB.
-P1 por sí solo no demostró CAS/atomicidad PostgreSQL ni autenticación. Retención e integración productiva siguen pendientes. P1 no acredita
-automáticamente los 8 puntos de persistencia: **M6 56% / proyecto 50.57%**. M6/M6-E PARTIAL, PED2 abierto,
+P1 por sí solo no demostró CAS/atomicidad PostgreSQL ni autenticación. Retención e integración productiva siguen pendientes. En el checkpoint P1 no se acreditaron
+los 8 puntos de persistencia: histórico **M6 56% / proyecto 50.57%**. M6/M6-E PARTIAL, PED2 abierto,
 perfiles productivos no aprobados/no instalados y D3B OPEN / VALIDATION DEBT. No se inicia otro incremento.
 
 M6-P2 — **COMPLETE / PUBLISHED IN GIT**, checkpoint `79c030ba08bdcfb70579c9668a966e0d5f0ef225`, no desplegado; incremento bajo persistencia sin peso independiente.
@@ -184,20 +195,30 @@ suite **3286 PASS / 51 SKIPPED**, TypeScript `--noEmit --incremental false` y di
 Publicado en Git, no desplegado. No API, OpenAI/live ni activación académica; no replay completo,
 archivo de testigos ni política de retención productiva. Los criterios satisfechos y pendientes constan
 en [E4/P2](21_PHARMACEUTICAL_EVALUATION_PERSISTENCE_DESIGN.md#m6-p2--adaptador-postgresql-local).
-**No se acreditan los 8 puntos automáticamente**: M6 **56%**, proyecto **50.57%**; M6/M6-E PARTIAL,
+En el checkpoint P2 **no se acreditaron los 8 puntos**: histórico M6 **56%**, proyecto **50.57%**; M6/M6-E PARTIAL,
 PED2 abierto y D3B OPEN / VALIDATION DEBT intactos.
 
-M6-P3 — **REVIEWED / LOCAL CHECKPOINT — NOT PUBLISHED**, sin peso independiente.
+M6-P3 — **COMPLETE / PUBLISHED IN GIT**, checkpoint `40e97bdb51f8cc7f4dd180913734153b23b965db`, sin peso independiente.
 Captura server-only de sesión finalizada y transcript M5 congelado verificado contra mensajes persistidos;
 proyecciones canónicas y coordinación create/claim/E3/complete/read usando las fuentes recuperadas de P2.
 Sin cierres de sesión implícitos, reintentos semánticos, nuevos perfiles, cambios D1/D2 ni migraciones.
-Evidencia previa: offline P3 **28/28**, selección relacionada **383/383**, PostgreSQL P3 **16/16** en base exclusiva
+Evidencia anterior al saneamiento final: offline P3 **28/28**, selección relacionada **383/383**, PostgreSQL P3 **16/16** en base exclusiva
 desechable y suite **3314 PASS / 67 SKIPPED**. Revisión final: saneamiento de errores de entrada,
 **30/30 offline P3** y TypeScript PASS; no se repiten suite completa ni PostgreSQL por este ajuste.
-Código P3 en este checkpoint local, sin publicación; comprobación desde otro clon y restauración de
-dependencias pendientes tras publicarlo. Base/lockfile disponibles, sin atribuir P3 al SHA P2.
+Publicación fast-forward y recuperación independiente desde el remoto verificadas: commit y árbol
+`bf045f53ba7f4fe03c3eb21209990b448f10abac`; `git cat-file` y `git fsck --full` PASS.
+Node 20.19.4 / npm 10.8.2; `npm ci --ignore-scripts` correcto, 219 paquetes, sin errores de integridad
+ni cambios versionados. Blobs y límites constan en la [evidencia de disponibilidad](21_PHARMACEUTICAL_EVALUATION_PERSISTENCE_DESIGN.md#disponibilidad-de-implementación-comprobación-reproducible).
 No confundir lectura íntegra con replay completo. Criterios y límites en [E4/P3](21_PHARMACEUTICAL_EVALUATION_PERSISTENCE_DESIGN.md#m6-p3--captura-congelada-y-coordinación-e3p2).
-M6 **56%** / proyecto **50.57%**, sin acreditar automáticamente los 8 puntos de persistencia.
+**Persistencia y lifecycle farmacéutico — CLOSED / TECHNICALLY COMPLETE**, cierre documental autorizado
+el 27 de septiembre de 2026: P1 contratos/lifecycle, P2 persistencia/integridad/ownership/concurrencia,
+P3 captura consistente/E3 desde fuentes persistidas y recuperación del código/dependencias satisfechos.
+Se acreditan **8/8** del entregable existente: **M6 64% / proyecto 51.53%**, sin doble cómputo.
+El checkpoint y su publicación mantuvieron correctamente **56% / 50.57%** hasta esta aceptación.
+M6/M6-E siguen **PARTIAL**; PED2 abierto, perfiles productivos no aprobados, D3B **OPEN / VALIDATION DEBT**.
+Pendientes integración productiva, permisos de reevaluación/publicación y retención/supresión.
+Replay completo y archivo de testigos quedan fuera del alcance autorizado. Este cierre no certifica
+build completo, despliegue, roles productivos ni reproducibilidad semántica; no inicia otro incremento.
 
 Responsabilidades aprobadas: M6 evalúa personalización, seguridad, seguimiento, informe y coherencia;
 M7 calidad comunicativa; M8 cuestionario/captura; M9 agregación/presentación; M10 interfaz de revisión/override;
@@ -242,12 +263,12 @@ Pendiente: controles operativos, telemetría, privacidad/retención, configuraci
 ## Proyección con M0–M3 sin cambios
 
 En E3 se corrigió la fila «Actual» obsoleta de 49.25% a 49.37%; no era un snapshot histórico.
-La regularización interna aprobada posterior la actualiza a 50.57%. Las proyecciones de cierre
-y los registros históricos se conservan.
+La regularización interna aprobada posterior la actualizó a 50.57%; el cierre técnico de
+Persistencia/lifecycle la actualiza a 51.53%. Las proyecciones de cierre y los registros históricos se conservan.
 
 | Punto de la ruta | Progreso global proyectado |
 |---|---:|
-| Actual | 50.57% |
+| Actual | 51.53% |
 | Tras M6 | 55.85% |
 | Tras M7 | 62.85% |
 | Tras M8 | 69.85% |
