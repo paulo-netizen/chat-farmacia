@@ -245,6 +245,29 @@ y validez semántica de citas explícitos, aislamiento asíncrono comprobado. Ch
 TypeScript y ambos diff-check **PASS**. Implementación sin cambios; suite completa anterior reutilizada,
 no repetida. Aceptación semántica pendiente y cero puntos nuevos acreditados.
 
+M6-COV2 — **IMPLEMENTADO / REVISADO OFFLINE**, checkpoint local, no publicado.
+[Plan de seguimiento](23_FOLLOW_UP_PLAN_OFFLINE_EVALUATION.md): requisitos explícitos identificados,
+entrevista completa como fuente inicial, adjudicación semántica inyectada y citas/secuencia verificadas.
+Intención genérica, plan concretado, ausencia, captura incompleta/fallida e incertidumbre diferenciadas.
+No se exige evolución longitudinal ni se imponen plazos universales; `FollowUpEpisode` no acredita
+desempeño del alumno. Se reutilizan contratos COV1/M5 sin cambiarlos. Sin integración con E2;
+D2 sigue review-only. Validación estructural offline no acredita calidad semántica del modelo.
+Pendientes aceptación semántica docente y acuerdo explícito de cierre de Seguimiento:
+**0/4 puntos**, sin cambios de M6 **64%** / proyecto **51.53%**, M6/M6-E PARTIAL,
+PED2 abierto, perfiles productivos no aprobados y D3B OPEN / VALIDATION DEBT.
+Integración productiva, autorizaciones y retención pendientes; COV1 mantiene su aceptación semántica pendiente.
+
+Evidencia anterior COV2 (28 de septiembre, antes de la revisión): **47/47** tests nuevos, **169/169** con regresiones
+COV1/M5 (incluye los 47), TypeScript y diff-check **PASS**. Suite offline completa ejecutada una vez:
+**3406 PASS / 67 SKIPPED**, con live/PostgreSQL desactivados. No se configura ni ejecuta ESLint,
+no build/despliegue. No se presenta evidencia histórica como ejecución sobre COV2.
+
+Revisión focalizada COV2: instrucciones `/2` distinguen autoría/adopción/cita y evitan exigir la
+composición de fragmentos incompatibles o retirados; una forma temporal observada debe citar al alumno.
+Checks nuevos: **54/54 COV2**, TypeScript y ambos diff-check **PASS**. Evidencia 47/47, 169/169 y
+3406/67 conservada como anterior, sin repetir suite completa ni atribuirla a la corrección. La detección
+semántica real sigue pendiente; seguimiento **0/4**, sin puntos nuevos ni cambios de alcance productivo.
+
 ### M7 — Evaluación de comunicación
 
 **Objetivo:** evaluar la comunicación farmacéutico-paciente mediante criterios trazables.

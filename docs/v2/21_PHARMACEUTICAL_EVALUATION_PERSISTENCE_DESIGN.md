@@ -125,6 +125,10 @@ Para informe de derivación escrito, [M6-COV1](22_REFERRAL_REPORT_OFFLINE_EVALUA
 un contrato mínimo offline de entrega/contexto/evaluación con bindings y runtime explícito, separado de
 la entrevista y de E2. No incorpora persistencia ni integración productiva. Las interfaces restantes
 siguen como trabajo posterior; no se amplían M5 ni los contratos D1/D2.
+Para seguimiento, [M6-COV2](23_FOLLOW_UP_PLAN_OFFLINE_EVALUATION.md) añade el snapshot interno
+de requisitos explícitos y evaluación offline del plan expresado en la entrevista, con bindings,
+citas y secuencia. No convierte episodios en desempeño, no incorpora persistencia ni resultados
+longitudinales y no modifica COV1, M5, D1/D2 o E2. Aceptación semántica e integración pendientes.
 
 ## 5. M6-P1 — implementación local de la frontera pura
 

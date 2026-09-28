@@ -25,6 +25,8 @@ El repositorio dispone de una suite automatizada amplia. M6-A, M6-B, M6-C, M6-D1
 
 ## Estado vigente y próximo frente funcional
 
+M6-COV2 — **IMPLEMENTADO / REVISADO OFFLINE**: plan de seguimiento expresado en la entrevista, evaluado únicamente frente a elementos explícitos del caso aprobado. [Contrato, ejemplo y límites](docs/v2/23_FOLLOW_UP_PLAN_OFFLINE_EVALUATION.md). Contrato mínimo separado para requisitos identificados y evaluación, sin inferir requisitos desde `FollowUpEpisode`, sin resultados longitudinales, scoring ni plazos universales. Se reutilizan validadores de binding/citas de COV1 y el snapshot M5 sin modificarlos. Sin migraciones, persistencia, endpoints, dependencias ni configuración productiva nueva; checkpoint local, no publicado. Open decisions: aceptación semántica e integración autorizada pendientes; ninguna decisión docente adicional bloquea el recorrido sintético. M6 64% / proyecto 51.53%, M6/M6-E PARTIAL, PED2 abierto y D3B OPEN / VALIDATION DEBT. Los cuatro puntos existentes de Seguimiento no se acreditan automáticamente.
+
 M6-COV1 — **IMPLEMENTADO / REVISADO OFFLINE**, autorizado tras M6-COV0: entrega escrita de informe de derivación separada de la entrevista, vinculada a sesión/caso/transcript; cobertura y fidelidad adjudicadas mediante dependencia explícita, sin scoring. [Contrato, ejemplo y límites](docs/v2/22_REFERRAL_REPORT_OFFLINE_EVALUATION.md). Solo contrato mínimo de entrega/evaluación y pruebas sintéticas; sin migraciones, dependencias nuevas ni cambios de M5/D1/D2/E2. Checkpoint local, no publicado. M6 64% / proyecto 51.53% se mantienen; los 3 puntos de informe no se acreditan automáticamente. Aceptación semántica pendiente.
 
 ### Aprobación docente de cobertura — 27 de septiembre de 2026
