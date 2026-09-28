@@ -225,6 +225,26 @@ M7 calidad comunicativa; M8 cuestionario/captura; M9 agregación/presentación; 
 M1/M2/M3 versiones, autoría y casos aprobados. Interfaces e invariantes en E4; no se aprueban rúbricas,
 perfiles, pesos académicos, penalizaciones ni reglas clínicas nuevas.
 
+M6-COV1 — **IMPLEMENTADO / REVISADO OFFLINE**, checkpoint local, no publicado.
+La aprobación docente de las cinco capacidades está registrada en [PLAN](../../PLAN.md#aprobación-docente-de-cobertura--27-de-septiembre-de-2026);
+solo informe se implementa en este incremento. [Contrato y alcance COV1](22_REFERRAL_REPORT_OFFLINE_EVALUATION.md):
+entrega escrita identificable, evaluación por requisitos existentes y fuentes disponibles con runtime
+semántico explícito, citas/bindings verificados y resultados solo para revisión docente. Validación
+estructural offline no equivale a aceptación semántica ni integración productiva. Faltan
+validación semántica docente y acuerdo explícito de cierre del entregable; no se acreditan los 3 puntos
+de Informe. **M6 64% / proyecto 51.53%**, M6/M6-E PARTIAL, PED2 abierto, perfiles no aprobados,
+D3B OPEN / VALIDATION DEBT. Integración, permisos y retención/supresión pendientes.
+
+Evidencia anterior COV1 (27 de septiembre, antes de corregir el ejemplo y ampliar tests): **39/39** nuevos; selección relacionada **287/287** (incluye COV1);
+suite offline completa **3355 PASS / 67 SKIPPED**, ejecutada una vez con live/DB desactivados;
+TypeScript y diff-check **PASS**. Lint no completado: falta configuración ESLint y Next solicita
+configurarla; no se modifica configuración. Detalle y límites en el documento COV1 enlazado arriba.
+
+Revisión focalizada del 28 de septiembre: ejemplo corregido a «Refiere mareo», límites de exhaustividad
+y validez semántica de citas explícitos, aislamiento asíncrono comprobado. Checks nuevos: **43/43 COV1**,
+TypeScript y ambos diff-check **PASS**. Implementación sin cambios; suite completa anterior reutilizada,
+no repetida. Aceptación semántica pendiente y cero puntos nuevos acreditados.
+
 ### M7 — Evaluación de comunicación
 
 **Objetivo:** evaluar la comunicación farmacéutico-paciente mediante criterios trazables.

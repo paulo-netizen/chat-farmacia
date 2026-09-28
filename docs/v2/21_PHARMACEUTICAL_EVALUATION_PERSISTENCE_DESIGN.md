@@ -121,7 +121,10 @@ consumir esas entradas después; no se exige construir sus interfaces para defin
 M7 conserva su juicio comunicativo: no duplicarlo como puntuación clínica. M10 podrá referenciar
 evaluaciones y revisiones inmutables, sin controlar desde el cliente la autoridad clínica. M1–M3
 suministran versiones retenidas/aprobadas, no valores mutables reconstruidos al leer.
-Estas interfaces son trabajo posterior, no contratos ya implementados ni nuevas reglas pedagógicas.
+Para informe de derivación escrito, [M6-COV1](22_REFERRAL_REPORT_OFFLINE_EVALUATION.md) implementa ahora
+un contrato mínimo offline de entrega/contexto/evaluación con bindings y runtime explícito, separado de
+la entrevista y de E2. No incorpora persistencia ni integración productiva. Las interfaces restantes
+siguen como trabajo posterior; no se amplían M5 ni los contratos D1/D2.
 
 ## 5. M6-P1 — implementación local de la frontera pura
 

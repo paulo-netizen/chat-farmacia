@@ -25,6 +25,18 @@ El repositorio dispone de una suite automatizada amplia. M6-A, M6-B, M6-C, M6-D1
 
 ## Estado vigente y próximo frente funcional
 
+M6-COV1 — **IMPLEMENTADO / REVISADO OFFLINE**, autorizado tras M6-COV0: entrega escrita de informe de derivación separada de la entrevista, vinculada a sesión/caso/transcript; cobertura y fidelidad adjudicadas mediante dependencia explícita, sin scoring. [Contrato, ejemplo y límites](docs/v2/22_REFERRAL_REPORT_OFFLINE_EVALUATION.md). Solo contrato mínimo de entrega/evaluación y pruebas sintéticas; sin migraciones, dependencias nuevas ni cambios de M5/D1/D2/E2. Checkpoint local, no publicado. M6 64% / proyecto 51.53% se mantienen; los 3 puntos de informe no se acreditan automáticamente. Aceptación semántica pendiente.
+
+### Aprobación docente de cobertura — 27 de septiembre de 2026
+
+- Personalización: adaptación a circunstancias conocidas y comprobación de viabilidad, sin exigir aceptación del paciente.
+- Seguridad: criterios explícitos del caso y evidencia para revisión; D2 no autoriza penalizaciones automáticas.
+- Seguimiento: plan propuesto y elementos exigibles por caso, no resultados futuros.
+- Informe: entrega de derivación efectivamente escrita cuando sea aplicable; contenido requerido y fidelidad a información disponible.
+- Coherencia: conclusión final identificada y justificada frente a entrevista, conservando contradicciones y rectificaciones.
+
+Esta aprobación no fija pesos, umbrales ni perfiles productivos. Solo informe se implementa en COV1. Open decisions: aceptación semántica real del nuevo adjudicador y futura captura autorizada M8/integración/revisión M9–M10; no bloquean el recorrido offline con runtimes falsos. PED2 abierto, D3B OPEN / VALIDATION DEBT, M6/M6-E PARTIAL.
+
 **Persistencia y lifecycle farmacéutico — CLOSED / TECHNICALLY COMPLETE**, cierre documental autorizado el 27 de septiembre de 2026. P1–P3 implementados, publicados y verificados; se acreditan los 8 puntos del entregable existente, sin pesos independientes ni doble cómputo. Criterios, evidencias y límites en el [registro de cierre E4/P1–P3](docs/v2/21_PHARMACEUTICAL_EVALUATION_PERSISTENCE_DESIGN.md#cierre-técnico-del-entregable). No se inicia otro incremento.
 
 M6-P3 — **COMPLETE / PUBLISHED IN GIT**, checkpoint `40e97bdb51f8cc7f4dd180913734153b23b965db`: captura consistente del transcript M5 y coordinación E3/P2 desde fuentes persistidas, sin cierres/reaperturas de sesión ni reintentos semánticos automáticos. P3 final: **30/30 offline y TypeScript PASS**. Evidencia anterior al saneamiento final de errores: 28/28 P3, 383/383 relacionados, **16/16 PostgreSQL P3** y **3314 PASS / 67 SKIPPED**; no se afirma una ejecución posterior de PostgreSQL o suite completa. Recuperación independiente del commit publicado y restauración mediante `npm ci --ignore-scripts` verificadas; [objetos Git, blobs y versiones](docs/v2/21_PHARMACEUTICAL_EVALUATION_PERSISTENCE_DESIGN.md#disponibilidad-de-implementación-comprobación-reproducible). No se atribuye P3 al SHA P2.
