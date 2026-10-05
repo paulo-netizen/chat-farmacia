@@ -130,6 +130,13 @@ de requisitos explícitos y evaluación offline del plan expresado en la entrevi
 citas y secuencia. No convierte episodios en desempeño, no incorpora persistencia ni resultados
 longitudinales y no modifica COV1, M5, D1/D2 o E2. Aceptación semántica e integración pendientes.
 
+Para personalización, [M6-COV3](24_PERSONALIZATION_OFFLINE_EVALUATION.md) añade requisitos explícitos
+versionados y cadenas de circunstancia conocida/adaptación/viabilidad/respuesta a dificultades,
+con evidencia pública o de entrevista y controles de secuencia. No exige aceptación del paciente.
+Recorrido exclusivamente offline con runtime falso; no amplía persistencia ni M5 y no cambia
+COV1/COV2, D1/D2 o E2. Validez estructural distinta de soporte semántico; aceptación e integración
+pendientes, Personalización 0/4. No se incorporan replay ni archivo de testigos.
+
 ## 5. M6-P1 — implementación local de la frontera pura
 
 **M6-P1 — contratos puros del registro y lifecycle farmacéutico**: **COMPLETE / PUBLISHED IN GIT**, checkpoint `66d3e22074d31bc2ad35af08d98bda04c1bd5020`. No despliegue.

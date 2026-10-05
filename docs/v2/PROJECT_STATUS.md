@@ -5,9 +5,9 @@
 - **Fecha del baseline:** 28 de agosto de 2026.
 - **Commit funcional de referencia:** `3bae1167fef0f584a79a432edbcbc0a5e4a52ac6` (`Complete M6-D2 pharmaceutical claim adjudication`).
 - **Progreso global actual:** **51.53%**, cierre técnico autorizado de Persistencia/lifecycle el 27 de septiembre de 2026, conforme al desglose M6 ya aprobado; baseline e históricos conservados.
-- **Último checkpoint funcional publicado:** `40e97bdb51f8cc7f4dd180913734153b23b965db` (M6-P3). Recuperación independiente y restauración de dependencias verificadas; no despliegue ni activación académica.
+- **Checkpoint publicado de referencia del cierre de persistencia:** `40e97bdb51f8cc7f4dd180913734153b23b965db` (M6-P3). Recuperación independiente y restauración de dependencias verificadas; no despliegue ni activación académica.
 - **M5:** **CLOSED / COMPLETE**.
-- **Última suite completa confirmada:** **3314 PASS / 67 SKIPPED**, anterior al saneamiento final de errores P3 (7 live, 18 PG M5, 26 PG P2 y 16 PG P3 omitidos). PostgreSQL P3: **16/16**, también anterior a ese saneamiento. Evidencia histórica P2: 3286 PASS / 51 SKIPPED, 26/26 PG P2 y 18/18 PG M5; P1: 3274 PASS / 25 SKIPPED; E3: 3220 PASS / 25 SKIPPED.
+- **Suite histórica de referencia del cierre de persistencia:** **3314 PASS / 67 SKIPPED**, anterior al saneamiento final de errores P3 (7 live, 18 PG M5, 26 PG P2 y 16 PG P3 omitidos). PostgreSQL P3: **16/16**, también anterior a ese saneamiento. Evidencia histórica P2: 3286 PASS / 51 SKIPPED, 26/26 PG P2 y 18/18 PG M5; P1: 3274 PASS / 25 SKIPPED; E3: 3220 PASS / 25 SKIPPED.
 - **P3 final:** **30/30 offline y TypeScript PASS**. No se ejecutan tests ni TypeScript en este cierre documental.
 
 Este documento es la fuente canónica del estado y del progreso global del proyecto. [`PLAN.md`](../../PLAN.md) conserva el roadmap técnico y el orden de ejecución, sin mantener una segunda tabla de porcentajes.
@@ -225,7 +225,7 @@ M7 calidad comunicativa; M8 cuestionario/captura; M9 agregación/presentación; 
 M1/M2/M3 versiones, autoría y casos aprobados. Interfaces e invariantes en E4; no se aprueban rúbricas,
 perfiles, pesos académicos, penalizaciones ni reglas clínicas nuevas.
 
-M6-COV1 — **IMPLEMENTADO / REVISADO OFFLINE**, checkpoint local, no publicado.
+M6-COV1 — **IMPLEMENTADO / REVISADO OFFLINE**. Estado registrado al finalizar su revisión: checkpoint local, no publicado.
 La aprobación docente de las cinco capacidades está registrada en [PLAN](../../PLAN.md#aprobación-docente-de-cobertura--27-de-septiembre-de-2026);
 solo informe se implementa en este incremento. [Contrato y alcance COV1](22_REFERRAL_REPORT_OFFLINE_EVALUATION.md):
 entrega escrita identificable, evaluación por requisitos existentes y fuentes disponibles con runtime
@@ -245,7 +245,7 @@ y validez semántica de citas explícitos, aislamiento asíncrono comprobado. Ch
 TypeScript y ambos diff-check **PASS**. Implementación sin cambios; suite completa anterior reutilizada,
 no repetida. Aceptación semántica pendiente y cero puntos nuevos acreditados.
 
-M6-COV2 — **IMPLEMENTADO / REVISADO OFFLINE**, checkpoint local, no publicado.
+M6-COV2 — **IMPLEMENTADO / REVISADO OFFLINE**. Estado registrado al finalizar su revisión: checkpoint local, no publicado.
 [Plan de seguimiento](23_FOLLOW_UP_PLAN_OFFLINE_EVALUATION.md): requisitos explícitos identificados,
 entrevista completa como fuente inicial, adjudicación semántica inyectada y citas/secuencia verificadas.
 Intención genérica, plan concretado, ausencia, captura incompleta/fallida e incertidumbre diferenciadas.
@@ -267,6 +267,33 @@ composición de fragmentos incompatibles o retirados; una forma temporal observa
 Checks nuevos: **54/54 COV2**, TypeScript y ambos diff-check **PASS**. Evidencia 47/47, 169/169 y
 3406/67 conservada como anterior, sin repetir suite completa ni atribuirla a la corrección. La detección
 semántica real sigue pendiente; seguimiento **0/4**, sin puntos nuevos ni cambios de alcance productivo.
+
+M6-COV3 — **IMPLEMENTADO / REVISADO OFFLINE**, checkpoint local, no publicado.
+[Personalización de la intervención](24_PERSONALIZATION_OFFLINE_EVALUATION.md): requisitos explícitos
+versionados y entrevista vinculados a sesión/caso/transcript; cadenas de circunstancia conocida,
+adaptación, viabilidad y atención a dificultades cuando existan. No exige aceptación del paciente;
+identificar una barrera no demuestra adaptación. Referencias, roles, secuencia y conjunto exacto de
+criterios validados; soporte, exhaustividad y aceptación semánticos pendientes. Una validación positiva
+no certifica seguridad ni eficacia. Sin scoring ni integración con E2; comunicación reservada a M7.
+Se reutilizan validadores de COV1/COV2/M5 sin cambios funcionales en ellos ni en D1/D2.
+
+Para aceptar Personalización y sus **cuatro puntos existentes** faltan aceptación semántica docente
+y acuerdo explícito de cierre; permanecen **0/4**, sin pesos independientes para COV3.
+M6 **64%**, proyecto **51.53%**, M6/M6-E PARTIAL, PED2 abierto, perfiles productivos no aprobados
+y D3B OPEN / VALIDATION DEBT. Integración, ownership, permisos y retención pendientes;
+COV1/COV2 conservan sus pendientes semánticos. Evidencia nueva y límites en el documento enlazado;
+los resultados históricos anteriores no se presentan como ejecuciones de COV3.
+
+Evidencia anterior a la revisión COV3 (5 de octubre de 2026): **56/56** nuevos, **153/153** con regresiones COV1/COV2
+(incluye los 56), TypeScript **PASS**. Última suite offline completa: **3469 PASS / 67 SKIPPED**,
+una ejecución final con los gates live/PostgreSQL desactivados; no es ejecución actual PostgreSQL,
+build, despliegue ni aceptación semántica. No se ejecuta ni configura ESLint ni se cambian dependencias.
+
+Revisión focalizada COV3: corregidas restricciones de circunstancias para viabilidad/respuesta,
+orden de respuesta espontánea y atención mediante retirada. Instrucciones `/2`, seis regresiones nuevas;
+**62/62 COV3**, TypeScript y ambos diff-check **PASS**. Evidencia 56/56, 153/153 y 3469/67 conservada
+como anterior a la corrección, sin repetir suite completa. Sin cambios funcionales en otros módulos;
+personalización **0/4**, aceptación semántica e integración productiva pendientes.
 
 ### M7 — Evaluación de comunicación
 
