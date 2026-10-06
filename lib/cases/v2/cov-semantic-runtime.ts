@@ -7,6 +7,7 @@ import { personalizationAdjudicationSchemaV2, type PersonalizationRequestV2, typ
 import { PHARMACEUTICAL_SEMANTIC_MODELS_V1 } from './pharmaceutical-semantic-model-policy';
 import { CovExecutionSession, covSafeMetadata } from './cov-execution-session';
 import { covHash, COV_WIRE_POLICY } from './cov-experiment-policy';
+import { CovDiagnosticError, covDiagnostic, type CovDiagnosticCode } from './cov-diagnostics';
 
 // Experimental eligibility only: no live authorization or production approval is implied.
 const configSchema = z.object({
@@ -17,8 +18,10 @@ const configSchema = z.object({
 }).strict();
 export type CovRuntimeConfig = z.infer<typeof configSchema>;
 export type CovClient = { baseURL?: string; responses: Pick<OpenAI['responses'], 'parse'> };
-export class CovTransportError extends Error {
-  constructor() { super('COV_TRANSPORT_FAILURE'); this.name = 'CovTransportError'; }
+export class CovTransportError extends CovDiagnosticError {
+  constructor(code: CovDiagnosticCode = 'RUNTIME_FAILURE') {
+    super(code); this.message = 'COV_TRANSPORT_FAILURE'; this.name = 'CovTransportError';
+  }
 }
 const link = personalizationAdjudicationSchemaV2.shape.links.element;
 // Required nullable wire fields satisfy Structured Outputs; domain contract keeps optional fields.
@@ -51,7 +54,7 @@ export function projectCovRequest(capability: CovCapability, q: CovRequest, conf
     requestDigest: q.requestDigest, ...data });
   const instructions = `${q.instructions}\nOutput JSON matching the supplied schema. Optional chain fields are null when absent.`;
   const format = zodTextFormat(covProviderSchemas[capability], `cov_${capability.toLowerCase()}_result`);
-  if (Buffer.byteLength(input + instructions + JSON.stringify(format), 'utf8') > config.maxInputBytes) throw new CovTransportError();
+  if (Buffer.byteLength(input + instructions + JSON.stringify(format), 'utf8') > config.maxInputBytes) throw new CovTransportError('REQUEST_TOO_LARGE');
   const body = { model: config.model, instructions, input, text: { format }, max_output_tokens: config.maxOutputTokens, store: false, service_tier: 'default' as const, reasoning: { effort: 'medium' as const } };
   return { body, inputBytes: Buffer.byteLength(input + instructions + JSON.stringify(format), 'utf8'), requestHash: covHash(body) };
 }
@@ -74,23 +77,29 @@ function buildRuntimes(configInput: CovRuntimeConfig, client: CovClient, session
   const runtimeRef = covRuntimeRef(config);
   async function adjudicate(capability: CovCapability, request: CovRequest): Promise<unknown> {
     let reserved = false;
+    let failure: CovDiagnosticCode = 'REQUEST_INVALID';
     try {
       const q = structuredClone(request);
       const versions = { COV1: ['referral-report-request/1', 'referral-report-instructions/2'],
         COV2: ['follow-up-plan-request/1', 'follow-up-plan-instructions/3'],
         COV3: ['personalization-request/2', 'personalization-instructions/3'] };
       if (q.runtimeRef !== runtimeRef || q.contractVersion !== versions[capability][0] ||
-        q.instructionsVersion !== versions[capability][1]) throw new CovTransportError();
+        q.instructionsVersion !== versions[capability][1]) throw new CovTransportError('REQUEST_INVALID');
       const projected = projectCovRequest(capability, q, config);
       if (session && client.baseURL !== COV_WIRE_POLICY.endpoint) throw new CovTransportError();
+      failure = 'RESERVATION_FAILED';
       if (session) { session.reserve(projected.requestHash, config); reserved = true; }
+      failure = 'RUNTIME_FAILURE';
       const response = await client.responses.parse(projected.body, { timeout: config.timeoutMs, maxRetries: 0 });
+      failure = 'METADATA_FAILED';
       if (session) session.metadata(response);
+      failure = 'RESPONSE_ENVELOPE_INVALID';
       const usage = covSafeMetadata(response);
       if ((session && (response.service_tier !== 'default' || usage.inputTokens === undefined || usage.outputTokens === undefined)) || response.status !== 'completed' || response.model !== config.model || response.error ||
-        response.output.some(item => item.type === 'message' && item.content.some(c => c.type === 'refusal'))) throw new CovTransportError();
+        response.output.some(item => item.type === 'message' && item.content.some(c => c.type === 'refusal'))) throw new CovTransportError('RESPONSE_ENVELOPE_INVALID');
+      failure = 'PROVIDER_SCHEMA_INVALID';
       const result = covProviderSchemas[capability].parse(response.output_parsed);
-      if (result.requestDigest !== q.requestDigest) throw new CovTransportError();
+      if (result.requestDigest !== q.requestDigest) throw new CovTransportError('REQUEST_DIGEST_MISMATCH');
       if (capability === 'COV3') {
         const parsed = covProviderSchemas.COV3.parse(result);
         return personalizationAdjudicationSchemaV2.parse({ ...parsed, links: parsed.links.map(item =>
@@ -99,9 +108,9 @@ function buildRuntimes(configInput: CovRuntimeConfig, client: CovClient, session
       return result;
     } catch (error) {
       if (session) {
-        try { if (reserved) session.metadata(error); session.stop(); } catch { throw new CovTransportError(); }
+        try { if (reserved) session.metadata(error); session.stop(); } catch { throw new CovTransportError('STOP_RECORD_FAILED'); }
       }
-      throw new CovTransportError();
+      throw new CovTransportError(covDiagnostic(error, failure).code);
     }
   }
   return {

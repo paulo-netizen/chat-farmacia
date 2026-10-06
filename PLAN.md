@@ -26,23 +26,27 @@ El repositorio dispone de una suite automatizada amplia. M6-A, M6-B, M6-C, M6-D1
 ## Estado vigente y próximo frente funcional
 
 Primer lote COV (6 de octubre de 2026): controles publicados en `04776b25fd8df1f1005b011e05c46e61052e626f`.
-El usuario autoriza ahora Terra/Standard/medium y los doce ejemplos con **máximo conjunto de 3 USD**,
-incluidos auxiliares. **BLOCKED_BEFORE_API**: no se pudo verificar gratuidad ni tarifa del conteo oficial;
-se cumple la instrucción de no ejecutarlo con coste desconocido. Cero solicitudes de conteo/inferencia,
-cero gasto y cero reservas inciertas. La autorización no requiere ratificación; falta resolver precio
-del conteo, medir entradas exactas y justificar el máximo conjunto. Sin cambios clínicos ni puntos.
-Detalle del intento y expectativas sin observaciones en [documento 25](docs/v2/25_COV_SEMANTIC_CALIBRATION.md).
+Autorización ampliada a **15 EUR totales**, con aceptación expresa de tarifa desconocida de los doce
+conteos. **STOPPED_TECHNICAL_FAILURE**: doce conteos confirmados; dos inferencias enviadas (R1
+válida, R2 `INVALID_ADJUDICATION`), diez omitidas, sin reintentos. Coste de inferencias calculado
+0,0212198 USD; coste de conteos y total facturado desconocidos. Reserva duradera 0,203830 USD;
+sin inferencias de uso perdido. El sublímite operativo de inferencias fue 2 USD; no se debilitó el control.
+Detalle de conversión, márgenes y resultados en [documento 25](docs/v2/25_COV_SEMANTIC_CALIBRATION.md).
+Revisión offline posterior de R2: regla original indeterminada por falta de diagnóstico conservado.
+Se añade `cov-diagnostic/1` con categorías cerradas, sin relajar validación, y se corrige la pérdida
+del request ID no enumerable del SDK. Proyecciones/expectativas intactas; ninguna llamada nueva.
+El diagnóstico separado de R2 queda preparado documentalmente, sin reiniciar el lote fallido.
 
 Aceptación COV1–COV3 — PREPARACIÓN IMPLEMENTADA Y VERIFICADA OFFLINE: criterios docentes ratificados en conversación,
 desempeño histórico separado de vigencia, fixtures de calibración, adaptadores reales con transporte
-simulado y runner seco por defecto. Live bloqueado sin autorización de modelo/presupuesto; no se
-ejecutan llamadas reales. Sin migraciones, dependencias ni efectos productivos. Personalización 0/4,
+simulado y runner seco por defecto. Live bloqueado sin autorización de modelo/presupuesto; el primer
+intento autorizado está detenido y no debe repetirse. Sin migraciones, dependencias ni efectos productivos. Personalización 0/4,
 M6 64%, proyecto 51.53%; M6/M6-E PARTIAL, PED2 abierto y D3B OPEN / VALIDATION DEBT.
-Open decisions: aceptación semántica real, modelo y presupuesto de ejecución pendientes; no se
+Open decisions: aceptación semántica real pendiente; modelo y presupuesto de este lote aprobados. No se
 reabre la decisión aprobada de conservar desempeño histórico ni se reinterpreta evidencia anterior.
 [Materiales, versiones, límites y primer lote](docs/v2/25_COV_SEMANTIC_CALIBRATION.md): 33 variantes,
 27 solicitudes potenciales, seis resoluciones sin proveedor; runner seco por defecto y live bloqueado.
-Evidencia nueva: 189 focalizados, TypeScript PASS, suite offline 3505 PASS / 67 SKIPPED.
+Evidencia histórica de preparación: 189 focalizados, TypeScript PASS, suite offline 3505 PASS / 67 SKIPPED.
 
 M6-COV3 — **IMPLEMENTADO / REVISADO OFFLINE**: personalización vinculada a circunstancias conocidas, adaptación concreta, comprobación de viabilidad y atención a dificultades/rechazo cuando existan. No exige aceptación del paciente ni equipara barrera identificada con adaptación; estilo comunicativo reservado a M7. [Contrato, ejemplo, evidencia y límites](docs/v2/24_PERSONALIZATION_OFFLINE_EVALUATION.md). Contratos mínimos versionados de requisitos y cadenas de evidencia, con secuencia temporal y runtime falso explícito. Sin refactorización, migraciones, dependencias, scoring ni cambios funcionales en COV1/COV2, M5, D1/D2 o E2. Checkpoint local COV3, no publicado; revisión focalizada con 62/62 tests y TypeScript PASS, evidencia anterior conservada. Open decisions: aceptación semántica e integración productiva pendientes; ninguna decisión docente adicional bloquea el recorrido sintético. Personalización 0/4, M6 64%, proyecto 51.53%, M6/M6-E PARTIAL, PED2 abierto y D3B OPEN / VALIDATION DEBT.
 

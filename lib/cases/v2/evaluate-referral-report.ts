@@ -1,4 +1,5 @@
 import { createHash } from 'node:crypto';
+import { CovDiagnosticError, covDiagnostic, type CovDiagnostic, type CovDiagnosticCode } from './cov-diagnostics';
 import { validatePharmaceuticalClinicalReferenceV2 } from './validate-pharmaceutical-clinical-reference';
 import { validateSessionTranscriptSnapshotV2 } from './spfa-session-transcript';
 import {
@@ -29,7 +30,11 @@ For INTENT_ONLY or UNCERTAIN document kind return empty criteria and claims.
 Return only referral-report-adjudication/1 with the exact requestDigest.`;
 
 export class ReferralReportValidationError extends Error {
-  constructor() { super('INVALID_REFERRAL_REPORT_INPUT'); this.name = 'ReferralReportValidationError'; }
+  readonly diagnostic: CovDiagnostic;
+  constructor(error?: unknown) {
+    super('INVALID_REFERRAL_REPORT_INPUT'); this.name = 'ReferralReportValidationError';
+    this.diagnostic = covDiagnostic(error, 'INPUT_SCHEMA_INVALID');
+  }
 }
 
 // Canonical object-key order; array order (especially interview chronology) is preserved.
@@ -51,8 +56,8 @@ function freeze<T>(value: T): T {
   }
   return value;
 }
-function assert(condition: unknown): asserts condition {
-  if (!condition) throw new ReferralReportValidationError();
+function assert(condition: unknown, code: CovDiagnosticCode): asserts condition {
+  if (!condition) throw new CovDiagnosticError(code);
 }
 function spanMatches(span: ReportSpanV1, text: string): boolean {
   return span.start < span.end && text.slice(span.start, span.end) === span.quote && span.end <= text.length;
@@ -74,12 +79,12 @@ export async function evaluateReferralReportV1(input: {
       const transcript = validateSessionTranscriptSnapshotV2(isolated.transcript);
       const binding = { sessionId: transcript.sessionId, caseVersionId: transcript.caseVersionId,
         transcriptFingerprint: transcript.fingerprint };
-      assert(hash(submission.binding) === hash(binding) && hash(context.binding) === hash(binding));
-      assert(clinical.caseVersionId === transcript.caseVersionId);
-      assert(typeof runtime.runtimeRef === 'string' && runtime.runtimeRef.trim().length > 0);
-      assert(typeof runtime.adjudicate === 'function');
+      assert(hash(submission.binding) === hash(binding) && hash(context.binding) === hash(binding), 'BINDING_MISMATCH');
+      assert(clinical.caseVersionId === transcript.caseVersionId, 'BINDING_MISMATCH');
+      assert(typeof runtime.runtimeRef === 'string' && runtime.runtimeRef.trim().length > 0, 'RUNTIME_INVALID');
+      assert(typeof runtime.adjudicate === 'function', 'RUNTIME_INVALID');
       return freeze({ submission, context, clinical, transcript });
-    } catch { throw new ReferralReportValidationError(); }
+    } catch (error) { throw new ReferralReportValidationError(error); }
   })();
   const { submission, context, clinical, transcript } = sources;
   const base = {
@@ -122,32 +127,36 @@ export async function evaluateReferralReportV1(input: {
   const execution = { requestDigest: request.requestDigest, runtimeRef: request.runtimeRef };
   let raw: unknown;
   try { raw = await runtime.adjudicate(request); }
-  catch { return finish('TECHNICAL_FAILURE', 'RUNTIME_FAILED', execution); }
+  catch (error) { return finish('TECHNICAL_FAILURE', 'RUNTIME_FAILED', { ...execution, diagnostic: covDiagnostic(error, 'RUNTIME_FAILURE') }); }
   try {
-    const result = reportAdjudicationSchema.parse(raw);
-    assert(result.requestDigest === request.requestDigest);
+    const parsed = reportAdjudicationSchema.safeParse(raw);
+    assert(parsed.success, 'ADJUDICATION_SCHEMA_INVALID');
+    const result = parsed.data;
+    assert(result.requestDigest === request.requestDigest, 'REQUEST_DIGEST_MISMATCH');
     if (result.documentKind !== 'WRITTEN_REPORT') {
-      assert(result.criteria.length === 0 && result.claims.length === 0);
+      assert(result.criteria.length === 0 && result.claims.length === 0, 'DOCUMENT_STATE_INVALID');
       return finish(result.documentKind === 'INTENT_ONLY' && completeOpportunity ? 'NOT_DEMONSTRATED' : 'INSUFFICIENT',
         result.documentKind === 'INTENT_ONLY' ? 'INTENT_ONLY' : 'DOCUMENT_UNCERTAIN', execution);
     }
     const sourceMatches = (span: ReportSourceSpanV1): boolean => {
       const text = span.source === 'PUBLIC' ? String(context.publicProfile[span.field])
         : transcript.messages.find(message => message.messageId === span.messageId)?.content;
-      return text !== undefined && spanMatches(span, text);
+      assert(text !== undefined, 'SOURCE_REFERENCE_INVALID');
+      assert(spanMatches(span, text), 'SOURCE_CITATION_INVALID');
+      return true;
     };
     const hasAvailableFact = (spans: ReportSourceSpanV1[]) => spans.some(span =>
       span.source === 'PUBLIC' || transcript.messages.some(message =>
         message.messageId === span.messageId && message.role === 'patient'));
     const requiredIds = request.untrustedData.requirements.map(item => item.contentId);
-    assert(result.criteria.length === requiredIds.length);
-    assert(new Set(result.criteria.map(item => item.contentId)).size === requiredIds.length);
+    assert(new Set(result.criteria.map(item => item.contentId)).size === result.criteria.length, 'CRITERIA_DUPLICATED');
+    assert(result.criteria.every(item => requiredIds.includes(item.contentId)), 'CRITERIA_UNKNOWN');
+    assert(result.criteria.length === requiredIds.length, 'CRITERIA_MISSING');
     for (const criterion of result.criteria) {
-      assert(requiredIds.includes(criterion.contentId));
-      assert(criterion.reportEvidence.every(span => spanMatches(span, request.untrustedData.reportText)));
-      assert(criterion.sourceEvidence.every(sourceMatches));
+      assert(criterion.reportEvidence.every(span => spanMatches(span, request.untrustedData.reportText)), 'REPORT_CITATION_INVALID');
+      criterion.sourceEvidence.forEach(sourceMatches);
       if (criterion.status === 'DEMONSTRATED' || criterion.status === 'CONTRADICTORY') {
-        assert(criterion.reportEvidence.length > 0 && hasAvailableFact(criterion.sourceEvidence));
+        assert(criterion.reportEvidence.length > 0 && hasAvailableFact(criterion.sourceEvidence), 'CRITERION_SUPPORT_MISSING');
       }
       if (criterion.status === 'NOT_DEMONSTRATED') {
         // No negative inference from incomplete capture, unavailable facts or missing opportunity.
@@ -155,11 +164,11 @@ export async function evaluateReferralReportV1(input: {
       }
     }
     for (const claim of result.claims) {
-      assert(spanMatches(claim.reportEvidence, request.untrustedData.reportText));
-      assert(claim.sourceEvidence.every(sourceMatches));
-      if (claim.status === 'SUPPORTED' || claim.status === 'CONTRADICTORY') assert(hasAvailableFact(claim.sourceEvidence));
+      assert(spanMatches(claim.reportEvidence, request.untrustedData.reportText), 'REPORT_CITATION_INVALID');
+      claim.sourceEvidence.forEach(sourceMatches);
+      if (claim.status === 'SUPPORTED' || claim.status === 'CONTRADICTORY') assert(hasAvailableFact(claim.sourceEvidence), 'CLAIM_SUPPORT_MISSING');
       if (claim.status === 'UNSUPPORTED' && context.transcriptCompleteness !== 'COMPLETE') claim.status = 'UNCERTAIN';
     }
     return finish('REVIEW_REQUIRED', 'ADJUDICATED', { ...execution, criteria: result.criteria, claims: result.claims });
-  } catch { return finish('TECHNICAL_FAILURE', 'INVALID_ADJUDICATION', execution); }
+  } catch (error) { return finish('TECHNICAL_FAILURE', 'INVALID_ADJUDICATION', { ...execution, diagnostic: covDiagnostic(error, 'ADJUDICATION_INVALID') }); }
 }

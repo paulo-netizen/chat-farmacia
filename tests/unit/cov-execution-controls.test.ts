@@ -196,6 +196,8 @@ describe('closed COV twelve-example execution', () => {
     await expect(runFirstCovBatch({ mode: 'live', authorization: grant, clientFactory: () => client(parse) })).rejects.toThrow();
     expect(parse).toHaveBeenCalledTimes(1); expect(journal(directory)).not.toContain('clinical-secret');
     expect(journal(directory)).toContain('resp_test'); expect(journal(directory)).toContain('inputTokens');
+    expect(journal(directory)).toContain(failure === 'parse' ? 'PROVIDER_SCHEMA_INVALID'
+      : failure === 'overUsage' ? 'METADATA_FAILED' : 'RESPONSE_ENVELOPE_INVALID');
   });
   it('rejects torn journals without network or automatic reconciliation', async () => {
     const { grant, directory, manifest } = await setup(); const s = CovExecutionSession.open(grant, manifest); s.close();
@@ -217,6 +219,7 @@ describe('closed COV twelve-example execution', () => {
     const wrapper = createCovClientFromSdk({ baseURL: COV_WIRE_POLICY.endpoint, responses: { create } } as never);
     await expect(runFirstCovBatch({ mode: 'live', authorization: grant, clientFactory: () => wrapper })).rejects.toThrow();
     expect(create).toHaveBeenCalledTimes(1); expect(journal(directory)).toContain('resp_badjson');
+    expect(journal(directory)).toContain('RESPONSE_JSON_INVALID');
     expect(journal(directory)).toContain('4500'); expect(journal(directory)).not.toContain('clinical-secret');
     expect(create.mock.calls[0]).toBeDefined();
   });
@@ -226,5 +229,36 @@ describe('closed COV twelve-example execution', () => {
     try { session.reserve(manifest[0].requestHash, COV_FIRST_CONFIG); expect(session.reservedMicroUsd).toBe(covReservationMicroUsd(5000)); }
     finally { session.close(); }
     expect(covHash(grant)).not.toBe(before);
+  });
+  it('preserves non-enumerable SDK request IDs and usage after domain validation rejects a citation', async () => {
+    const { grant, directory } = await setup();
+    const create = vi.fn(async (body: { input: string; model: string }) => {
+      const response = abstain(body);
+      const parsed = response.output_parsed as { criteria: { reportEvidence: unknown[] }[] };
+      parsed.criteria[0].reportEvidence = [{ start: 0, end: 1, quote: 'clinical-secret' }];
+      const wire = { ...response, output: [{ type: 'message', content: [{ type: 'output_text', text: JSON.stringify(parsed) }] }] };
+      Object.defineProperty(wire, '_request_id', { value: 'req_non_enumerable', enumerable: false });
+      return wire;
+    });
+    const wrapper = createCovClientFromSdk({ baseURL: COV_WIRE_POLICY.endpoint, responses: { create } } as never);
+    await expect(runFirstCovBatch({ mode: 'live', authorization: grant, clientFactory: () => wrapper })).rejects.toThrow();
+    expect(create).toHaveBeenCalledTimes(1);
+    const stored = journal(directory);
+    expect(stored).toContain('REPORT_CITATION_INVALID'); expect(stored).toContain('req_non_enumerable');
+    expect(stored).toContain('4500'); expect(stored).not.toContain('clinical-secret');
+  });
+  it('does not attach arbitrary provider usage fields or raw content to a parse error', async () => {
+    const create = vi.fn(async () => ({ id: 'resp_parse', _request_id: 'req_parse',
+      usage: { input_tokens: 10, output_tokens: 5, 'clinical-secret': 'private-value' },
+      output: [{ type: 'message', content: [{ type: 'output_text', text: 'clinical-secret' }] }] }));
+    const wrapper = createCovClientFromSdk({ baseURL: COV_WIRE_POLICY.endpoint, responses: { create } } as never);
+    try {
+      await wrapper.responses.parse({ model: 'gpt-5.6-terra', input: 'synthetic' });
+      expect.fail('must reject');
+    } catch (error) {
+      expect(covSafeMetadata(error)).toEqual({ responseId: 'resp_parse', requestId: 'req_parse', inputTokens: 10, outputTokens: 5 });
+      expect(String(error) + JSON.stringify(error)).not.toMatch(/clinical-secret|private-value/);
+    }
+    expect(create).toHaveBeenCalledTimes(1);
   });
 });

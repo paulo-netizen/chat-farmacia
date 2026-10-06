@@ -106,6 +106,8 @@ export type ReferralReportEvaluationV1 = Readonly<{
   sourceDigest: string;
   requestDigest?: string;
   runtimeRef?: string;
+  /** Additive diagnostic extension; never part of the provider request or academic labels. */
+  diagnostic?: import('./cov-diagnostics').CovDiagnostic;
   audience: 'TEACHER_REVIEW_ONLY';
   validation: 'STRUCTURAL_ONLY';
   semanticAcceptance: 'PENDING';

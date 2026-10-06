@@ -2,11 +2,14 @@
 
 ## Baseline oficial
 
-Primer lote COV1–COV3 (6 de octubre): **autorizado con máximo total de 3 USD**, incluidos auxiliares,
-pero **BLOCKED_BEFORE_API** porque no se pudo verificar el coste del conteo oficial. No se ejecutaron
-conteos ni inferencias; gasto y reservas inciertas: cero. Los controles offline publicados se conservan.
-Sin observaciones semánticas, aceptación ni puntos adicionales. Detalle en
+Primer lote COV1–COV3 (6 de octubre): **15 EUR totales autorizados**, incluidos doce conteos con tarifa
+desconocida expresamente aceptada. **STOPPED_TECHNICAL_FAILURE**: doce conteos confirmados,
+R1 con dos criterios coincidentes, R2 `INVALID_ADJUDICATION`; diez inferencias no ejecutadas.
+Coste calculado de las dos inferencias: 0,0212198 USD; conteos y total facturado desconocidos.
+Reservas duraderas: 0,203830 USD; no se repiten solicitudes. Sin aceptación ni puntos adicionales. Detalle en
 [calibración COV](25_COV_SEMANTIC_CALIBRATION.md).
+Diagnóstico offline posterior: causa específica de R2 indeterminada; códigos seguros por etapa/regla
+y conservación del request ID corregida. Sin nueva inferencia, cambios de expectativas ni aceptación.
 
 - **Fecha del baseline:** 28 de agosto de 2026.
 - **Commit funcional de referencia:** `3bae1167fef0f584a79a432edbcbc0a5e4a52ac6` (`Complete M6-D2 pharmaceutical claim adjudication`).

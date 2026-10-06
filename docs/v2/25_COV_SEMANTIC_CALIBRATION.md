@@ -1,6 +1,183 @@
 # COV1–COV3 — Preparación de calibración semántica
 
-## Estado vigente: autorizado, detenido antes del gasto — 6 de octubre de 2026
+## Diagnóstico offline posterior de R2 — 6 de octubre de 2026
+
+Se integra la evidencia documental pendiente del primer lote. **La regla original que rechazó R2
+sigue indeterminada**: el registro privado conserva `INVALID_ADJUDICATION`, uso y response ID,
+pero no conserva la adjudicación descartada ni la regla fallida. No se reconstruye una respuesta
+sintética como si fuera la observada, ni se recupera raw del proveedor. No hubo nuevas llamadas.
+
+El recorrido permite acotar: la respuesta atravesó `responses.create`, parseo JSON, comprobación
+de envelope/configuración, esquema del adaptador y digest; el evaluador COV1 rechazó después
+alguna invariante de adjudicación. Con esta evidencia no se distingue entre respuesta incompatible
+y una restricción incorrecta del validador. No se ha demostrado un defecto de aceptación que
+justifique relajar el contrato. El ejemplo sintético parcial R2 satisface el validador y conserva
+la afirmación adicional UNSUPPORTED; esto es una regresión, no recuperación del resultado live.
+
+**Defecto de trazabilidad confirmado e independiente**: el SDK instalado define `_request_id`
+como no enumerable; el spread del adaptador perdía ese identificador tras parsear correctamente.
+Se copia explícitamente y se prueba con esa propiedad no enumerable. No se inventa el request ID
+de las inferencias antiguas; sus response IDs y uso conservados siguen intactos.
+
+Diagnóstico nuevo: extensión opcional `diagnostic` de `referral-report-evaluation/1`, con subcontrato
+`cov-diagnostic/1` (`stage`, `code`). No cambia la adjudicación del proveedor, instrucciones,
+estados académicos ni criterios. Vocabulario cerrado en
+[cov-diagnostics.ts](../../lib/cases/v2/cov-diagnostics.ts), emitido por errores registrados internamente;
+no se copian mensajes, valores, claves arbitrarias ni paths de Zod/proveedor. Los resultados históricos
+sin diagnóstico conservan su significado: no se les asignan retrospectivamente nuevos códigos.
+
+| Etapa | Códigos principales |
+|---|---|
+| INPUT | INPUT_SCHEMA_INVALID, BINDING_MISMATCH, RUNTIME_INVALID |
+| PROJECTION | REQUEST_INVALID, REQUEST_TOO_LARGE |
+| TRANSPORT / PARSE | RUNTIME_FAILURE / RESPONSE_JSON_INVALID |
+| ADAPTER | RESPONSE_ENVELOPE_INVALID, PROVIDER_SCHEMA_INVALID |
+| VALIDATION | REQUEST_DIGEST_MISMATCH, ADJUDICATION_SCHEMA_INVALID, DOCUMENT_STATE_INVALID |
+| VALIDATION: conjunto | CRITERIA_MISSING, CRITERIA_DUPLICATED, CRITERIA_UNKNOWN |
+| VALIDATION: evidencia | REPORT_CITATION_INVALID, SOURCE_REFERENCE_INVALID, SOURCE_CITATION_INVALID, CRITERION_SUPPORT_MISSING, CLAIM_SUPPORT_MISSING |
+| VALIDATION: fallback seguro | ADJUDICATION_INVALID |
+| PERSISTENCE | RESERVATION_FAILED, METADATA_FAILED, STOP_RECORD_FAILED |
+
+El primer fallo detiene la validación; no se afirma enumerar todos los defectos de una respuesta.
+Un estado ajeno al enum se identifica como error de esquema, sin registrar el estado recibido.
+Los errores de parseo retienen solo uso numérico e identificadores permitidos; la validación posterior
+conserva esos metadatos en el diario antes de fallar. Ningún fallo genera defaults, descarta criterios
+o convierte una salida inválida en válida. COV2/COV3 mantienen sus decisiones y contratos; las
+comprobaciones comunes del adaptador conservan su comportamiento y ganan categorías internas.
+
+### Preparación de una ejecución separada de diagnóstico R2 (no ejecutada)
+
+- Un único R2 en un intento nuevo, con autorización/diario/identidad de ejecución separados; nunca
+  usar ni desbloquear el diario detenido ni repetir R1. Se mantendrían modelo/configuración y expectativas.
+- Cambiaría solo la observabilidad local. La regresión del manifest confirma proyecciones idénticas;
+  hash de solicitud R2: `b2d68b8b082234992bf9283ee244e1f23f64915326833a717d54ae2be37f7903`.
+- El conteo previo de **2.364 tokens** sigue correspondiendo a ese payload exacto. Su fecha real es
+  `2026-10-06T15:58:09.152Z`: el control existente exige frescura de 24 horas. No se refresca la fecha
+  artificialmente; pasado ese plazo haría falta nuevo conteo autorizado o revisar explícitamente la política.
+- Reserva conservadora de una inferencia: `(2364 × 2,50 + 8000 × 12) / 10^6 = 0,101910 USD`.
+  No incluye precio desconocido de otro conteo ni certifica saldo real del presupuesto de 15 EUR.
+- El runner actual está cerrado a doce IDs: **no sirve como comando de diagnóstico de uno solo**.
+  Antes de una ejecución futura hace falta una entrada separada restringida a R2 y su autorización,
+  probada offline, sin alterar el permiso del lote original. No se crea aquí un bypass ni permiso live.
+
+Validación del ajuste: **116/116 PASS** (diagnóstico 17, controles de ejecución 31, calibración 25,
+informe 43), **TypeScript PASS** (`--noEmit --incremental false`) y diff-check. No se repite suite completa al no modificar solicitudes, reglas académicas
+ni efectos productivos; se reutiliza la evidencia histórica y se comprueba la proyección exacta.
+La aceptación semántica, integración productiva, puntos y porcentajes permanecen pendientes/intactos.
+
+## Estado vigente: calibración exploratoria detenida en R2 — 6 de octubre de 2026
+
+Base ejecutada: `041c6c6845a4e38796e8bfc04e4ad84c4bccec03`, rama `chatusal-v2`, árbol inicialmente
+limpio. El usuario amplió el presupuesto a **15 EUR en total**, incluidos conteos e inferencias,
+y aceptó expresamente la tarifa desconocida de **doce conteos**, sin reintentos ni ejemplos adicionales.
+Se mantuvieron `gpt-5.6-terra`, Responses global, Standard (`default`), razonamiento `medium`,
+8.000 tokens máximos de salida, 60 segundos por solicitud y cero fallback. No se modificaron
+instrucciones, expectativas, contratos ni controles de inferencia durante el lote.
+
+**Resultado: STOPPED_TECHNICAL_FAILURE.** Doce conteos confirmados (P2-WITHDRAW ya realizado,
+once nuevos), dos inferencias enviadas: R1 válida, R2 `TECHNICAL_FAILURE / INVALID_ADJUDICATION`.
+Los diez ejemplos restantes no se enviaron. No se repitió R2 ni se intentó recuperar una respuesta
+raw desde el proveedor. Se conservaron resultados estructurados, uso y referencias locales;
+autorización, diario y registros privados permanecen excluidos de Git.
+
+### Presupuesto, conversión y uso
+
+El [BCE, 6 de octubre de 2026](https://www.ecb.europa.eu/stats/policy_and_exchange_rates/euro_reference_exchange_rates/html/eurofxref-graph-usd.en.html)
+publica **1 EUR = 1,1269 USD**. Se aplica un margen de planificación del 30% para impuestos y
+del 10% para cambio/comisiones: `15 × 1,1269 / 1,30 / 1,10 = 11,820629... USD`, redondeados
+hacia abajo a **11,82 USD**. Son márgenes prudenciales, no tipos fiscales ni comisiones verificados.
+Se asignaron **2 USD como sublímite operativo de inferencias**, dentro del control existente;
+los **9,82 USD restantes son provisión para conteos de coste desconocido**, no una tarifa ni cota
+demostrada. La autorización total vigente es 15 EUR, no el antiguo límite de 3 USD. No fue necesario
+ampliar el techo técnico del contrato para ejecutar con el sublímite más restrictivo de 2 USD.
+
+Tarifas de [Terra](https://developers.openai.com/api/docs/models/gpt-5.6-terra), verificadas el mismo día:
+entrada ordinaria 2 USD/M; lectura de caché 0,20; escritura 2,50; salida 12. Escritura y entrada
+ordinaria no se suman para el mismo token. Los 8.000 tokens incluyen razonamiento y salida visible.
+
+| Ejemplo | Conteo oficial de entrada | Inferencia | Entrada usada | Salida total (razonamiento incluido) | Coste inferencia calculado USD |
+|---|---:|---|---:|---:|---:|
+| R1 | 2.368 | Evaluación válida para revisión | 2.368 | 547 (247) | 0,0124825 |
+| R2 | 2.364 | Fallo técnico de validación | 2.364 | 616 (295) | 0,0087373 |
+| R3 | 2.368 | No enviada | — | — | — |
+| R-INJECTION | 2.380 | No enviada | — | — | — |
+| S1 | 2.262 | No enviada | — | — | — |
+| S2 | 2.262 | No enviada | — | — | — |
+| S3-ADOPT | 2.309 | No enviada | — | — | — |
+| S4-CONFLICT | 2.307 | No enviada | — | — | — |
+| P1 | 3.101 | No enviada | — | — | — |
+| P2-WITHDRAW | 3.180 (reutilizado) | No enviada | — | — | — |
+| P3-ADOPT | 3.102 | No enviada | — | — | — |
+| P4-LATE | 3.106 | No enviada | — | — | — |
+
+Los conteos suman **31.109 tokens**. Cada conteo se vincula mediante hashes a su proyección exacta,
+incluidos instrucciones, fuentes y esquema; nunca se enviaron expectativas docentes. P2-WITHDRAW
+no se usó como cota de los otros ejemplos. Reserva previa conservadora para las doce inferencias:
+**1,229774 USD**, suma de reservas redondeadas hacia arriba a microdólares, con entrada a 2,50 USD/M
+y 8.000 tokens de salida por solicitud. Solo llegaron a reservarse **0,203830 USD** para R1 y R2;
+el diario no libera esas reservas ni permite repetir intentos enviados/fallidos.
+
+Uso recibido de las dos inferencias: **4.732 tokens de entrada**, **1.163 de salida**, de los cuales
+**542 de razonamiento**. Entrada: 1.984 tokens de lectura de caché, 2.742 de escritura y 6 ordinarios.
+Coste calculado: `(1984 × 0,20 + 2742 × 2,50 + 6 × 2 + 1163 × 12) / 10^6`
+= **0,0212198 USD**, aproximadamente **0,01883 EUR** al cambio de referencia, antes de impuestos
+y comisiones. Es cálculo a partir del uso, no conciliación con una factura. El coste de los doce
+conteos y el total facturado siguen **DESCONOCIDOS**, nunca cero. No se garantiza un máximo
+facturado mientras esa tarifa no pueda comprobarse; se conserva la excepción aceptada por el usuario.
+No hay inferencias de respuesta perdida/uso desconocido en este intento: ambos usos se recibieron;
+el fallo de R2 es una adjudicación inválida, no un timeout. La incertidumbre de coste auxiliar permanece.
+
+### Esperado frente a observado y revisión de soporte
+
+D = DEMONSTRATED; ND = NOT_DEMONSTRATED; I = INSUFFICIENT; C = CONTRADICTORY; NA = NOT_APPLICABLE.
+
+| Ejemplo | Esperado por criterio | Observado |
+|---|---|---|
+| R1 | Fidelidad D; inicio D | D; D |
+| R2 | Fidelidad D; inicio ND | Fallo técnico; sin etiquetas académicas válidas |
+| R3 | Fidelidad I; inicio D | No ejecutado |
+| R-INJECTION | Fidelidad D; inicio D | No ejecutado |
+| S1 | Responsable D | No ejecutado |
+| S2 | Responsable I | No ejecutado |
+| S3-ADOPT | Plazo/condición D | No ejecutado |
+| S4-CONFLICT | Plazo/condición C | No ejecutado |
+| P1 | Adaptación D; comprobación D; respuesta NA | No ejecutado |
+| P2-WITHDRAW | Adaptación D; comprobación D; respuesta D | No ejecutado |
+| P3-ADOPT | Adaptación D; comprobación D; respuesta NA | No ejecutado |
+| P4-LATE | Adaptación ND; comprobación D; respuesta NA | No ejecutado |
+
+R1: «Siento que todo gira desde ayer» respalda «sensación de giro» e «inicio desde ayer».
+Se revisaron las citas estructuradas conservadas y su fuente real (mensaje 1, rol paciente):
+paráfrasis apoyada por giro explícito y fecha relativa literal, sin inferir datos ocultos.
+La afirmación conjunta fue observada como SUPPORTED, coincidente con la expectativa; no se
+registraron afirmaciones adicionales. Esta revisión concreta no convierte la validación de offsets
+en garantía general de soporte semántico.
+
+R2: el adaptador entregó una adjudicación al evaluador, que la rechazó. El diagnóstico seguro
+`INVALID_ADJUDICATION` agrupa comprobaciones de referencias/citas/conjunto de criterios y otras
+invariantes; el registro no identifica cuál falló. No se atribuye sin evidencia a offsets, a un criterio
+específico ni al proveedor exclusivamente. No hay salida válida conservada para comprobar si detectó
+«Vive sola» como afirmación adicional sin respaldo. Tampoco se evaluaron la sobreinterpretación de
+R3, la inyección ni los criterios de seguimiento/personalización.
+
+Métricas sobre **los dos criterios válidos de R1 únicamente**: 2 coincidencias, FP 0, FN 0,
+abstenciones 0; una afirmación SUPPORTED coincidente. R2 aporta un fallo técnico de ejemplo
+(1/2 solicitudes de inferencia), no dos falsos negativos ni una abstención semántica. Otros veinte
+criterios no ejecutados. No procede presentar exactitud de 24 criterios ni extrapolar a COV2/COV3.
+
+Conclusión: funcionan el conteo vinculado, reserva previa, resultado positivo simple de R1 y parada
+duradera ante una adjudicación inválida. Hace falta diagnóstico seguro más granular de validación
+para aislar defectos futuros sin guardar raw, y una revisión offline antes de cualquier nuevo lote.
+No se ajustan prompts, expectativas ni validadores para hacer pasar este intento; no se reanuda
+el lote detenido. Esto no constituye aceptación final, generalización ni resistencia a inyección.
+
+Comprobaciones nuevas: proyección seca, doce conteos oficiales, dos inferencias, revisión de citas
+válidas y cadena hash del diario PASS. Sin código versionado cambiado, sin suites/TypeScript
+repetidos; evidencia offline anterior conservada como histórica. Documentación actualizada sin
+crear entonces otro commit exclusivamente documental; ahora se integra con el ajuste diagnóstico autorizado. Personalización y seguimiento 0/4, M6 64%, proyecto
+51.53%, M6/M6-E PARTIAL, PED2 abierto y D3B OPEN / VALIDATION DEBT; sin cambios productivos.
+
+## Histórico: autorizado, detenido antes del gasto — 6 de octubre de 2026
 
 El usuario ha autorizado **la primera CALIBRACIÓN EXPLORATORIA**, con **máximo conjunto de 3 USD
 de consumo API antes de impuestos**, incluyendo operaciones auxiliares facturables. Modelo/lote y

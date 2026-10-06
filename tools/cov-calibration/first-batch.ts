@@ -1,4 +1,5 @@
 import OpenAI from 'openai';
+import { CovDiagnosticError } from '../../lib/cases/v2/cov-diagnostics';
 import { buildCalibrationFixtures } from './fixtures';
 import { evaluateFixture, measure } from './runner';
 import { covRuntimeRef, projectCovRequest, createCovOpenAiRuntimes, type CovClient, type CovRequest,
@@ -38,10 +39,16 @@ export function createCovClientFromSdk(sdk: Pick<OpenAI, 'baseURL' | 'responses'
     try {
       const text = response.output.flatMap(item => item.type === 'message'
         ? item.content.flatMap(c => c.type === 'output_text' ? [c.text] : []) : []).join('');
-      return { ...response, output_parsed: JSON.parse(text) as unknown };
+      // SDK request IDs may be non-enumerable; object spread alone loses them.
+      return { ...response, _request_id: response._request_id, output_parsed: JSON.parse(text) as unknown };
     } catch {
-      const error = new Error('COV_RESPONSE_PARSE_FAILED');
-      Object.assign(error, { id: response.id, _request_id: response._request_id, usage: response.usage });
+      const error = new CovDiagnosticError('RESPONSE_JSON_INVALID');
+      const metadata = covSafeMetadata(response);
+      Object.assign(error, { id: metadata.responseId, _request_id: metadata.requestId, usage: {
+        input_tokens: metadata.inputTokens, output_tokens: metadata.outputTokens,
+        input_tokens_details: { cached_tokens: metadata.cachedTokens, cache_write_tokens: metadata.cacheWriteTokens },
+        output_tokens_details: { reasoning_tokens: metadata.reasoningTokens },
+      } });
       throw error;
     }
   };
