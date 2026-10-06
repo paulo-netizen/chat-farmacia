@@ -25,12 +25,13 @@ El repositorio dispone de una suite automatizada amplia. M6-A, M6-B, M6-C, M6-D1
 
 ## Estado vigente y próximo frente funcional
 
-Controles del primer lote COV (6 de octubre de 2026): implementar autorización también en el
-adaptador, selección cerrada de doce ejemplos, reserva previa duradera y exclusión local, sin live.
-La propuesta anterior de 65 USD queda descartada; 3 USD es solo propuesta, sin autorización.
-Falta una medición verificable de tokens de entrada completos: bytes/3 y la ventana máxima no
-constituyen una cota utilizable. Fallar cerrado mientras falten conteos completos/autorización.
-Sin DB, migraciones, dependencias, cambios clínicos ni nuevos puntos. Ver documento 25.
+Primer lote COV (6 de octubre de 2026): controles publicados en `04776b25fd8df1f1005b011e05c46e61052e626f`.
+El usuario autoriza ahora Terra/Standard/medium y los doce ejemplos con **máximo conjunto de 3 USD**,
+incluidos auxiliares. **BLOCKED_BEFORE_API**: no se pudo verificar gratuidad ni tarifa del conteo oficial;
+se cumple la instrucción de no ejecutarlo con coste desconocido. Cero solicitudes de conteo/inferencia,
+cero gasto y cero reservas inciertas. La autorización no requiere ratificación; falta resolver precio
+del conteo, medir entradas exactas y justificar el máximo conjunto. Sin cambios clínicos ni puntos.
+Detalle del intento y expectativas sin observaciones en [documento 25](docs/v2/25_COV_SEMANTIC_CALIBRATION.md).
 
 Aceptación COV1–COV3 — PREPARACIÓN IMPLEMENTADA Y VERIFICADA OFFLINE: criterios docentes ratificados en conversación,
 desempeño histórico separado de vigencia, fixtures de calibración, adaptadores reales con transporte

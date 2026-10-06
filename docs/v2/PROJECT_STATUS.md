@@ -2,10 +2,11 @@
 
 ## Baseline oficial
 
-Preparación operativa COV1–COV3 (6 de octubre): autorización en adaptador, lote cerrado de doce,
-reservas duraderas y recuperación conservadora implementadas offline. **Sin autorización de gasto**;
-3 USD es propuesta, cobertura pendiente de conteos completos verificados. Sin aceptación semántica
-ni puntos adicionales. Detalle y límites en [calibración COV](25_COV_SEMANTIC_CALIBRATION.md).
+Primer lote COV1–COV3 (6 de octubre): **autorizado con máximo total de 3 USD**, incluidos auxiliares,
+pero **BLOCKED_BEFORE_API** porque no se pudo verificar el coste del conteo oficial. No se ejecutaron
+conteos ni inferencias; gasto y reservas inciertas: cero. Los controles offline publicados se conservan.
+Sin observaciones semánticas, aceptación ni puntos adicionales. Detalle en
+[calibración COV](25_COV_SEMANTIC_CALIBRATION.md).
 
 - **Fecha del baseline:** 28 de agosto de 2026.
 - **Commit funcional de referencia:** `3bae1167fef0f584a79a432edbcbc0a5e4a52ac6` (`Complete M6-D2 pharmaceutical claim adjudication`).

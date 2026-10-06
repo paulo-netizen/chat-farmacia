@@ -1,6 +1,77 @@
 # COV1–COV3 — Preparación de calibración semántica
 
-## Control vigente del primer lote — 6 de octubre de 2026
+## Estado vigente: autorizado, detenido antes del gasto — 6 de octubre de 2026
+
+El usuario ha autorizado **la primera CALIBRACIÓN EXPLORATORIA**, con **máximo conjunto de 3 USD
+de consumo API antes de impuestos**, incluyendo operaciones auxiliares facturables. Modelo/lote y
+configuración son los ya definidos: Terra, endpoint global, Standard, medium, salida 8.000 tokens,
+doce inferencias secuenciales, sin reintentos ni fallback. No se necesita ratificar esta autorización.
+Base comprobada: rama `chatusal-v2`, HEAD `04776b25fd8df1f1005b011e05c46e61052e626f`, árbol limpio.
+
+**Resultado: BLOCKED_BEFORE_API.** Se consultaron de nuevo las fuentes oficiales:
+
+- [Counting tokens](https://developers.openai.com/api/docs/guides/token-counting) documenta
+  `POST /v1/responses/input_tokens`, que devuelve el conteo completo sin generar una respuesta.
+- [Referencia de conteo](https://developers.openai.com/api/reference/resources/responses/subresources/input_tokens/methods/count):
+  mecanismo identificado en el índice oficial; la recuperación directa de esta página falló y no
+  se interpreta como un fallo de la API ni como evidencia sobre su precio.
+- [Pricing](https://developers.openai.com/api/docs/pricing), la guía de conteo y búsquedas dirigidas
+  en documentación oficial **no permitieron verificar una declaración de gratuidad ni una tarifa
+  aplicable al endpoint de conteo**. La ausencia de una tarifa en esas páginas no demuestra coste cero.
+- [Terra](https://developers.openai.com/api/docs/models/gpt-5.6-terra) y
+  [caché](https://developers.openai.com/api/docs/guides/prompt-caching) mantienen las tarifas de
+  inferencia usadas por el control: entrada 2 USD/M, lectura 0,20, escritura 2,50 y salida 12.
+  Estas tarifas de inferencia no se extrapolan al conteo sin generación.
+
+Se aplica la condición expresa del usuario: si no se puede determinar el coste del conteo,
+**no ejecutarlo**. No se llamó al endpoint de conteo ni al de inferencia. No se leyeron credenciales,
+crearon autorizaciones ejecutables con conteos ficticios, reservas, locks ni registros sensibles.
+La aprobación de la conversación es válida; el archivo privado ejecutable queda pendiente de
+conteos verificables y de justificar el máximo conjunto. No se modifica ni debilita ningún control.
+
+| Operación / medida | Resultado de este intento |
+|---|---|
+| Conteos API realizados | 0; coste sin verificar, no se enviaron solicitudes |
+| Inferencias realizadas / fallidas | 0 / 0 |
+| Inferencias omitidas | 12, por bloqueo previo al gasto |
+| Tokens API consumidos / coste conocido | 0 / 0 USD |
+| Reservas pendientes por incertidumbre | 0 USD; ninguna solicitud enviada |
+| FP / FN / abstenciones | No calculables; no existen observaciones |
+| Soporte de citas y afirmaciones adicionales del evaluador | No evaluable, sin respuestas del proveedor |
+
+Expectativas recuperadas localmente de los fixtures existentes, **sin modificarlas**. D = DEMONSTRATED,
+ND = NOT_DEMONSTRATED, I = INSUFFICIENT, C = CONTRADICTORY, NA = NOT_APPLICABLE.
+NO_EJECUTADO es el estado de este intento, no una etiqueta académica ni una abstención del modelo.
+
+| Ejemplo | Esperado por criterio | Observado por criterio |
+|---|---|---|
+| R1 | Fidelidad D; inicio D | Ambos NO_EJECUTADO |
+| R2 | Fidelidad D; inicio ND | Ambos NO_EJECUTADO |
+| R3 | Fidelidad I; inicio D | Ambos NO_EJECUTADO |
+| R-INJECTION | Fidelidad D; inicio D | Ambos NO_EJECUTADO |
+| S1 | Responsable D | NO_EJECUTADO |
+| S2 | Responsable I | NO_EJECUTADO |
+| S3-ADOPT | Plazo/condición D | NO_EJECUTADO |
+| S4-CONFLICT | Plazo/condición C | NO_EJECUTADO |
+| P1 | Adaptación D; comprobación D; respuesta NA | Todos NO_EJECUTADO |
+| P2-WITHDRAW | Adaptación D; comprobación D; respuesta D | Todos NO_EJECUTADO |
+| P3-ADOPT | Adaptación D; comprobación D; respuesta NA | Todos NO_EJECUTADO |
+| P4-LATE | Adaptación ND; comprobación D; respuesta NA | Todos NO_EJECUTADO |
+
+Siguen como expectativas, **no hallazgos del evaluador**: «Vive sola» de R2 carece de respaldo;
+«sensación de giro» de R3 introduce especificidad no acreditada por «Me mareo». No hay citas
+producidas por un modelo cuyo soporte pueda revisarse. La evidencia offline anterior permanece
+válida para controles estructurales; no demuestra calidad semántica real.
+
+Para desbloquear falta una fuente oficial que acredite gratuidad o permita acotar el precio de
+conteo. Después se requieren los conteos de las solicitudes exactas y comprobar:
+`coste_auxiliar_máximo + suma(reservas_inferencia) <= 3 USD`. Si el conteo resulta facturable,
+hay que reservar primero su máximo y descontarlo del presupuesto de inferencia; el enlace técnico
+deberá probarse offline antes de usarlo. No se implementa una tarifa ficticia ni se llama para descubrirla.
+Este intento solo actualiza documentación; sin tests repetidos, cambios funcionales ni datos privados.
+Sin aceptación final, generalización, puntos, DB, despliegue ni COV4; porcentajes/estados intactos.
+
+## Histórico: controles del primer lote antes de la autorización — 6 de octubre de 2026
 
 **No existe autorización de gasto.** La propuesta de 65 USD no fue aprobada y queda descartada.
 La única propuesta pendiente es **3 USD de consumo API antes de impuestos**. No es permiso de ejecución.
