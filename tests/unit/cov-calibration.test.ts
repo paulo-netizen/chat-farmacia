@@ -1,7 +1,7 @@
 import { describe, expect, it, vi } from 'vitest';
 import { buildCalibrationFixtures } from '../../tools/cov-calibration/fixtures';
 import { evaluateFixture, measure, runCalibration } from '../../tools/cov-calibration/runner';
-import { createCovOpenAiRuntimes, type CovClient, type CovRuntimeConfig } from '../../lib/cases/v2/cov-semantic-runtime';
+import { createCovSimulatedRuntimes, type CovClient, type CovRuntimeConfig } from '../../lib/cases/v2/cov-semantic-runtime';
 
 const config: CovRuntimeConfig = { model: 'gpt-5.6-sol', maxOutputTokens: 4000, maxInputBytes: 100000, timeoutMs: 1000 };
 function clientWith(parse: ReturnType<typeof vi.fn>): CovClient { return { responses: { parse } } as unknown as CovClient; }
@@ -101,7 +101,7 @@ describe('Real COV adapters with simulated Responses transport only', () => {
       expect(options).toEqual({ timeout: 1000, maxRetries: 0 });
       return reply(params.input);
     });
-    const result = await evaluateFixture(fixture, createCovOpenAiRuntimes(config, clientWith(parse)));
+    const result = await evaluateFixture(fixture, createCovSimulatedRuntimes(config, clientWith(parse)));
     expect(result.status).toBe('REVIEW_REQUIRED'); expect(parse).toHaveBeenCalledTimes(1);
     expect(result.semanticAcceptance).toBe('PENDING');
     if (id === 'P1') { expect(result.contractVersion).toBe('personalization-evaluation/2'); expect('assessmentBasis' in result && result.assessmentBasis).toBe('OBSERVED_PERFORMANCE'); }
@@ -117,23 +117,23 @@ describe('Real COV adapters with simulated Responses transport only', () => {
       if (failure === 'digest') (result.output_parsed as { requestDigest: string }).requestDigest = '0'.repeat(64);
       return result;
     });
-    return evaluateFixture(buildCalibrationFixtures()[0], createCovOpenAiRuntimes(config, clientWith(parse))).then(result => {
+    return evaluateFixture(buildCalibrationFixtures()[0], createCovSimulatedRuntimes(config, clientWith(parse))).then(result => {
       expect(result.status).toBe('TECHNICAL_FAILURE'); expect(JSON.stringify(result)).not.toContain('clinical-secret');
       expect(parse).toHaveBeenCalledTimes(1);
     });
   });
   it('rejects excessive request size before the transport', async () => {
-    const parse = vi.fn(); const runtime = createCovOpenAiRuntimes({ ...config, maxInputBytes: 1 }, clientWith(parse));
+    const parse = vi.fn(); const runtime = createCovSimulatedRuntimes({ ...config, maxInputBytes: 1 }, clientWith(parse));
     expect((await evaluateFixture(buildCalibrationFixtures()[0], runtime)).status).toBe('TECHNICAL_FAILURE');
     expect(parse).not.toHaveBeenCalled();
   });
   it('rejects unapproved model aliases before transport creation', () => {
-    expect(() => createCovOpenAiRuntimes({ ...config, model: 'latest' as never }, clientWith(vi.fn()))).toThrow('COV_TRANSPORT_FAILURE');
+    expect(() => createCovSimulatedRuntimes({ ...config, model: 'latest' as never }, clientWith(vi.fn()))).toThrow('COV_TRANSPORT_FAILURE');
   });
   it('isolates configuration and provider results during await', async () => {
     const owned = { ...config }; let release!: () => void; let response!: ReturnType<typeof reply>;
     const parse = vi.fn(async params => { response = reply(params.input); await new Promise<void>(resolve => { release = resolve; }); return response; });
-    const pending = evaluateFixture(buildCalibrationFixtures()[0], createCovOpenAiRuntimes(owned, clientWith(parse)));
+    const pending = evaluateFixture(buildCalibrationFixtures()[0], createCovSimulatedRuntimes(owned, clientWith(parse)));
     owned.model = 'gpt-5.6-terra'; release(); const result = await pending;
     (response.output_parsed as { criteria: unknown[] }).criteria.length = 0;
     expect(result.criteria.length).toBe(2); expect(result.runtimeRef).toContain('gpt-5.6-sol');
@@ -154,7 +154,7 @@ describe('Real COV adapters with simulated Responses transport only', () => {
   });
   it('separates justified abstention from false negatives and technical errors', async () => {
     const f = buildCalibrationFixtures().find(f => f.id === 'R3')!;
-    const result = await evaluateFixture(f, createCovOpenAiRuntimes(config, clientWith(vi.fn(async params => reply(params.input)))));
+    const result = await evaluateFixture(f, createCovSimulatedRuntimes(config, clientWith(vi.fn(async params => reply(params.input)))));
     const altered = structuredClone(result); altered.criteria[0].status = 'INSUFFICIENT'; altered.criteria[1].status = 'NOT_DEMONSTRATED';
     const measured = measure(f, altered);
     expect(measured.criteria[0].exact).toBe(true); expect(measured.criteria[0].abstention).toBe(true);

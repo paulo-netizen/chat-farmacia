@@ -1,5 +1,136 @@
 # COV1–COV3 — Preparación de calibración semántica
 
+## Control vigente del primer lote — 6 de octubre de 2026
+
+**No existe autorización de gasto.** La propuesta de 65 USD no fue aprobada y queda descartada.
+La única propuesta pendiente es **3 USD de consumo API antes de impuestos**. No es permiso de ejecución.
+La implementación anterior está publicada en `2747fb1e5e7e0f2f234611327a9c334429dfadd2`.
+Este ajuste añade controles offline; no realiza inferencia, DB, instalaciones ni cambios productivos.
+La preparación de calibración y las evidencias anteriores se conservan abajo como histórico.
+
+### Candidato, tarifas y límite que aún no está demostrado
+
+Fuentes oficiales consultadas el 6 de octubre de 2026:
+
+- [GPT-5.6 Terra](https://developers.openai.com/api/docs/models/gpt-5.6-terra): identificador
+  `gpt-5.6-terra`, Responses y Structured Outputs; entrada 2 USD/M, lectura de caché 0,20 USD/M,
+  salida 12 USD/M, contexto corto hasta 272.000 tokens de entrada.
+- [Prompt caching](https://developers.openai.com/api/docs/guides/prompt-caching): para GPT-5.6 y posteriores,
+  también en Responses, escritura a 1,25 veces la entrada ordinaria (2,50 USD/M); no es un
+  recargo que se deba sumar nuevamente a la entrada ordinaria de esos mismos tokens.
+- [Responses](https://developers.openai.com/api/reference/python/resources/responses/methods/create):
+  `service_tier: default` selecciona Standard. `max_output_tokens` incluye razonamiento y salida visible.
+- [Counting tokens](https://developers.openai.com/api/docs/guides/token-counting): el conteo completo
+  incluye estructura de mensajes y esquemas; un tokenizer local del texto no reproduce necesariamente
+  ese conteo. El endpoint de conteo acepta la solicitud completa. **No se ha llamado**.
+
+Configuración cerrada en [cov-experiment-policy.ts](../../lib/cases/v2/cov-experiment-policy.ts):
+Terra, endpoint global `https://api.openai.com/v1`, Standard explícito, razonamiento `medium`,
+8.000 tokens de salida, 20.000 bytes de entrada proyectada, 60.000 ms, cero reintentos/fallback,
+sin herramientas, `store:false`. Disponibilidad/permisos de cuenta no comprobados. La elegibilidad
+D1/D2 no es autorización COV ni aprobación productiva. La versión del adaptador pasa a `/2`;
+se fijan razonamiento/servicio en el cuerpo y en la identidad. No cambian los criterios docentes.
+
+Medición local exacta de bytes UTF-8 de input + instrucciones + formato/schema: R1 12.378;
+R2 12.378; R3 12.365; R-INJECTION 12.459; S1 11.566; S2 11.543; S3-ADOPT 11.705;
+S4-CONFLICT 11.712; P1 16.167; P2-WITHDRAW 16.457; P3-ADOPT 16.174; P4-LATE 16.160.
+Total **161.064 bytes**. Es un límite de contenido serializado, **no una cota de todos los tokens**.
+La estructura final interna del proveedor no tiene una cota publicada que se haya podido verificar.
+No se usa bytes/3, otra constante heurística ni toda la ventana de contexto como máximo garantizado.
+
+Con conteos completos verificados `T_i`, el máximo conservador de consumo es:
+
+```text
+reserva_i (micro-USD) = ceil(2,5 × T_i + 12 × 8.000)
+máximo_lote = suma de las 12 reservas
+salida total máxima = 96.000 tokens = 1,152 USD (razonamiento incluido, no sumado dos veces)
+```
+
+Se reserva toda entrada al mayor precio aplicable de contexto corto (escritura de caché), sin
+descontar hits. Un conteo completo de **hasta 61.600 tokens por solicitud** es una condición
+suficiente para que las doce reservas sumen como máximo **3 USD**. Esto es una condición de
+financiación, no un conteo observado ni una cota inferida de los bytes. El cálculo exacto admite
+repartos distintos; rechaza contexto largo o un presupuesto insuficiente sin reducir salida.
+El máximo del lote real sigue **NO VERIFICADO**: el modo seco devuelve `maximumCostMicroUsd: null`.
+No se inventan costes ni gratuidad de una eventual adquisición de conteos: esa operación auxiliar
+requiere primero verificar su tarifa/ausencia de cargo y su autorización; no está implementada ni
+incluida como una llamada oculta del runner. El runner de inferencia hace exactamente doce solicitudes.
+
+### Autorización, durabilidad y privacidad
+
+[first-batch.ts](../../tools/cov-calibration/first-batch.ts) selecciona exclusivamente y en orden:
+R1, R2, R3, R-INJECTION, S1, S2, S3-ADOPT, S4-CONFLICT, P1, P2-WITHDRAW, P3-ADOPT, P4-LATE.
+Congela un manifiesto de fingerprints de fixtures y cuerpos proyectados. Las expectativas docentes
+solo se usan localmente para métricas, nunca en solicitudes al proveedor.
+
+La autorización es un documento administrativo local de confianza, formato `cov-authorization/1`,
+validado estrictamente: aprobación humana expresa, ID, vigencia máxima de 24 horas, configuración,
+endpoint/servicio, tarifa, presupuesto, hash del manifiesto, ruta absoluta del journal y doce conteos
+completos por hash de solicitud con fecha (máximo 24 horas). `inputCounts.source` debe ser
+`PROVIDER_COMPLETE_INPUT_COUNT`: una atestación del operador basada en mediciones verificadas,
+no un entero inventado ni una estimación. No se genera ningún documento aprobado en este cambio.
+El JSON no demuestra por sí solo consentimiento humano ni autenticidad del proveedor: la ruta y
+su contenido son autoridad administrativa del operador; no se aceptan desde UI/alumnos/HTTP.
+
+[cov-execution-session.ts](../../lib/cases/v2/cov-execution-session.ts) exige la misma autorización en
+la vía real del adaptador. No basta con saltarse el CLI ni fabricar un objeto con métodos similares.
+El punto de inyección de transporte simulado queda explícito para tests y rechaza objetos con
+endpoint SDK; no constituye un sandbox contra código JavaScript malicioso del operador.
+
+- Un lock exclusivo `wx` cubre toda la ejecución, también los awaits. No se roba un lock obsoleto.
+- Journal append-only con secuencia/hash encadenado y `fsync` **antes** de cada envío; un error al
+  escribir o confirmar la reserva impide la solicitud. La reserva ya implica posible envío.
+- Reinicio con reserva sin resultado, STOP o journal truncado/inválido: bloqueo. Nunca reenviar.
+  Un reinicio tras éxito recupera resultados guardados sin crear cliente ni llamar al proveedor.
+- Todas las reservas se conservan, incluso en timeout, respuesta perdida, error o coste observado
+  inferior. No se reutiliza saldo para repeticiones. No se cambia de carpeta para reanudar el mismo
+  permiso. Un lock residual requiere revisión manual, nunca borrar journal para recuperar permiso.
+- Se comprueba presupuesto total antes de crear cliente y saldo antes de cada envío; se para ante
+  fallos técnicos, modelo/servicio/configuración distintos, uso superior al conteo atestado o fallo
+  de registro. Los desacuerdos semánticos válidos no se descartan ni detienen por conveniencia.
+- Se conservan evaluaciones estructuradas, citas seleccionadas, métricas, IDs y uso numérico. No se
+  guarda respuesta raw, error completo, headers, credenciales, transcript completo ni testigos.
+  Se excluye `evidenceTimeline` de COV2 al guardar. Si falla el parseo, se proyectan solo ID/uso
+  disponibles y error constante; no se guarda texto inválido. No se almacena razonamiento raw.
+
+Garantía local de un único host y filesystem del operador, frente a concurrencia/reinicio del
+proceso. No protege contra eliminación/edición deliberada del journal, pérdida del disco o copias
+independientes de la autoridad administrativa. Se recomienda carpeta privada fuera del repositorio;
+las pruebas usan exclusivamente carpetas temporales y transportes simulados.
+
+### Comandos preparados
+
+```powershell
+# Ejecutable ahora: doce ejemplos, sin credenciales, red ni escritura de journal.
+node node_modules/vite-node/vite-node.mjs tools/cov-calibration/run.ts --dry
+
+# Implementado pero NO autorizado: exige aprobación y conteos completos verificados.
+node node_modules/vite-node/vite-node.mjs tools/cov-calibration/run.ts --live --authorization C:\ruta-privada\cov-autorizacion.json
+```
+
+La autorización debe ajustarse a `covGrantSchema`; no hay archivo de aprobación de ejemplo que pueda
+activarse accidentalmente. `runCalibration` conserva el harness offline anterior de 33 variantes;
+su vía live sigue bloqueada. El CLI utiliza el nuevo lote cerrado. Sin fallback entre ambos.
+
+La ejecución futura será **CALIBRACIÓN EXPLORATORIA**, no aceptación final, conjunto reservado,
+generalización ni acreditación. No se selecciona la mejor respuesta ni se modifican instrucciones
+durante el lote. Permanecen personalización 0/4, seguimiento 0/4, M6 64%, proyecto 51.53%,
+M6/M6-E PARTIAL, PED2 abierto y D3B OPEN / VALIDATION DEBT.
+
+Evidencia de este ajuste:
+- Controles nuevos **29/29**, con transporte simulado y autorizaciones/conteos sintéticos solo en tests.
+  Incluyen presupuesto insuficiente, vía directa, timeout, concurrencia, reinicio, journal incompleto,
+  fallo de fsync antes del envío, fallo de registro posterior, modelo/configuración y parseo seguro.
+- Focalizados finales controles + calibración **54/54** y TypeScript **PASS**.
+- Selección COV1–COV3 + controles durante el desarrollo **216/216**, antes de las dos regresiones finales.
+- Suite offline única por gate **3533 PASS / 67 SKIPPED**, antes del último ajuste localizado que
+  reconstruye STOP desde un resultado técnico si el proceso cae entre ambos registros. Ese ajuste
+  y su regresión están cubiertos por los 54 focalizados finales y TypeScript; no se atribuye a la suite previa.
+- Modo seco ejecutado: doce solicitudes previstas, ninguna real; máximo de entrada/coste completo
+  aún no verificado. Diff-check correcto. Sin nuevas verificaciones live/PostgreSQL ni configuración de ESLint.
+
+## Histórico: preparación del 5 de octubre de 2026
+
 5 de octubre de 2026. Implementación y pruebas **offline**; aceptación semántica **PENDING**.
 Base publicada verificada: `0ef136f4f1bade4f7bf0fd3da6b36d3be8238e4c` (COV3 `/1`).
 No se realizan llamadas reales, gasto API, DB, migraciones, instalaciones ni despliegues.

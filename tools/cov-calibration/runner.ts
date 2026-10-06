@@ -2,11 +2,11 @@ import { createHash } from 'node:crypto';
 import { evaluateReferralReportV1 } from '../../lib/cases/v2/evaluate-referral-report';
 import { evaluateFollowUpPlanV1 } from '../../lib/cases/v2/evaluate-follow-up-plan';
 import { evaluatePersonalizationV2 } from '../../lib/cases/v2/evaluate-personalization-v2';
-import { createCovOpenAiRuntimes, type CovClient, type CovRuntimeConfig } from '../../lib/cases/v2/cov-semantic-runtime';
+import { createCovSimulatedRuntimes, type CovClient, type CovRuntimeConfig } from '../../lib/cases/v2/cov-semantic-runtime';
 import { buildCalibrationFixtures, type CalibrationFixture } from './fixtures';
 
 export const COV_LIVE_AUTHORIZATION = null; // No approved model/budget. No environment override.
-type RuntimeSet = ReturnType<typeof createCovOpenAiRuntimes>;
+type RuntimeSet = ReturnType<typeof createCovSimulatedRuntimes>;
 export function evaluateFixture(fixture: CalibrationFixture, runtimes: RuntimeSet) {
   switch (fixture.capability) {
     case 'COV1': return evaluateReferralReportV1(fixture.input, runtimes.COV1);
@@ -51,7 +51,7 @@ export async function runCalibration(options: {
   let runtimes: RuntimeSet;
   if (mode === 'simulated') {
     if (!options.config || !options.client) throw new Error('SIMULATED_TRANSPORT_REQUIRED');
-    runtimes = createCovOpenAiRuntimes(options.config, options.client);
+    runtimes = createCovSimulatedRuntimes(options.config, options.client);
   } else {
     // Dry mode never constructs a client, reads credentials, or returns fake academic results.
     const capture = async () => { requestCount++; throw new Error('DRY_REQUEST_CAPTURED'); };

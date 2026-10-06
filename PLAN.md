@@ -25,6 +25,13 @@ El repositorio dispone de una suite automatizada amplia. M6-A, M6-B, M6-C, M6-D1
 
 ## Estado vigente y próximo frente funcional
 
+Controles del primer lote COV (6 de octubre de 2026): implementar autorización también en el
+adaptador, selección cerrada de doce ejemplos, reserva previa duradera y exclusión local, sin live.
+La propuesta anterior de 65 USD queda descartada; 3 USD es solo propuesta, sin autorización.
+Falta una medición verificable de tokens de entrada completos: bytes/3 y la ventana máxima no
+constituyen una cota utilizable. Fallar cerrado mientras falten conteos completos/autorización.
+Sin DB, migraciones, dependencias, cambios clínicos ni nuevos puntos. Ver documento 25.
+
 Aceptación COV1–COV3 — PREPARACIÓN IMPLEMENTADA Y VERIFICADA OFFLINE: criterios docentes ratificados en conversación,
 desempeño histórico separado de vigencia, fixtures de calibración, adaptadores reales con transporte
 simulado y runner seco por defecto. Live bloqueado sin autorización de modelo/presupuesto; no se

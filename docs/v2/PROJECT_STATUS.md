@@ -2,6 +2,11 @@
 
 ## Baseline oficial
 
+Preparación operativa COV1–COV3 (6 de octubre): autorización en adaptador, lote cerrado de doce,
+reservas duraderas y recuperación conservadora implementadas offline. **Sin autorización de gasto**;
+3 USD es propuesta, cobertura pendiente de conteos completos verificados. Sin aceptación semántica
+ni puntos adicionales. Detalle y límites en [calibración COV](25_COV_SEMANTIC_CALIBRATION.md).
+
 - **Fecha del baseline:** 28 de agosto de 2026.
 - **Commit funcional de referencia:** `3bae1167fef0f584a79a432edbcbc0a5e4a52ac6` (`Complete M6-D2 pharmaceutical claim adjudication`).
 - **Progreso global actual:** **51.53%**, cierre técnico autorizado de Persistencia/lifecycle el 27 de septiembre de 2026, conforme al desglose M6 ya aprobado; baseline e históricos conservados.
