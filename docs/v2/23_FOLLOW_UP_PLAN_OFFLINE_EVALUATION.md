@@ -1,5 +1,11 @@
 # M6-COV2 — Evaluación offline del plan de seguimiento
 
+Actualización: [calibración COV1–COV3](25_COV_SEMANTIC_CALIBRATION.md), instrucciones `/3`.
+«Revisaremos» puede identificar actor y «De acuerdo» adopción cuando el contexto es inequívoco;
+varias interpretaciones implican evidencia INSUFFICIENT. No se exige fórmula explícita universal ni
+se reetiquetan históricos. Adaptador real probado solo con transporte simulado; aceptación pendiente.
+El registro siguiente conserva el estado y evidencia del checkpoint original.
+
 Estado: **IMPLEMENTADO / REVISADO OFFLINE**, checkpoint local COV2, no publicado.
 Base: `b4b60f569f3064c9c3285d4c0684a3b2dc280337`. Progreso canónico en
 [PROJECT_STATUS](PROJECT_STATUS.md): **M6 64% / proyecto 51.53%**. Seguimiento conserva **0/4**

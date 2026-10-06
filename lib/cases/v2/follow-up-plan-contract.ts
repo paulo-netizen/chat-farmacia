@@ -59,7 +59,7 @@ export type FollowUpContextV1 = z.infer<typeof followUpContextSchema>;
 export type FollowUpAdjudicationV1 = z.infer<typeof followUpAdjudicationSchema>;
 export type FollowUpStudentSpanV1 = z.infer<typeof followUpStudentSpanSchema>;
 export type FollowUpRequestV1 = Readonly<{
-  contractVersion: 'follow-up-plan-request/1'; instructionsVersion: 'follow-up-plan-instructions/2';
+  contractVersion: 'follow-up-plan-request/1'; instructionsVersion: 'follow-up-plan-instructions/3';
   instructions: string; requestDigest: string; runtimeRef: string;
   requirements: FollowUpRequirementsV1;
   untrustedData: Readonly<{

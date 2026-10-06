@@ -1,5 +1,11 @@
 # M6-COV3 — Personalización de la intervención, evaluación offline
 
+Actualización autorizada: [preparación semántica COV1–COV3](25_COV_SEMANTIC_CALIBRATION.md).
+La nueva evaluación `/2` conserva desempeño histórico separado de vigencia: retirar una propuesta
+no borra adaptación/comprobación demostradas ni concede automáticamente atención a dificultad.
+El resto de este documento describe el checkpoint `/1` y su evidencia histórica, sin reinterpretarla.
+Los adaptadores nuevos usan `/2`; aceptación semántica e integración pendientes, personalización 0/4.
+
 Estado: **IMPLEMENTADO / REVISADO OFFLINE**, 5 de octubre de 2026; checkpoint local, no publicado.
 Base: `chatusal-v2`, `62a3f68bee75b451cca98f1dd93ef77ef1aad65e`.
 Fuente canónica de progreso: [PROJECT_STATUS](PROJECT_STATUS.md). Personalización **0/4**, M6 **64%**,

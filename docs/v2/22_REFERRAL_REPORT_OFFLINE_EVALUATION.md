@@ -1,5 +1,11 @@
 # M6-COV1 — Evaluación offline del informe de derivación escrito
 
+Actualización: [calibración COV1–COV3](25_COV_SEMANTIC_CALIBRATION.md), instrucciones `/2`.
+«Me mareo» no respalda «sensación de giro»: evidencia de fidelidad INSUFFICIENT y afirmación específica
+UNSUPPORTED con captura completa. Se mantienen contratos de estados; no se reetiquetan resultados
+anteriores. Adaptador real probado solo con transporte simulado; live bloqueado y aceptación pendiente.
+El registro siguiente conserva el estado y evidencia del checkpoint original.
+
 Estado: **IMPLEMENTADO / REVISADO OFFLINE**. Checkpoint local de COV1; no publicado.
 Base: `6e579233dfd5054b0eec6d060670bf050cddc788`. No acredita automáticamente los 3 puntos de Informe.
 Progreso canónico: [PROJECT_STATUS](PROJECT_STATUS.md), M6 **64%**, proyecto **51.53%**.

@@ -301,7 +301,7 @@ describe('COV2 offline proposed follow-up plan — no model acceptance', () => {
       { ...input.transcript.messages[1], content: text },
     ]);
     const result = await evaluateFollowUpPlanV1(input, runtime((r, request) => {
-      expect(request.instructionsVersion).toBe('follow-up-plan-instructions/2');
+      expect(request.instructionsVersion).toBe('follow-up-plan-instructions/3');
       expect(request.instructions).toContain('mere quotation');
       expect(request.instructions).toContain('Explicit adoption needs a student citation');
       r.planKind = kind === 'QUOTATION' ? 'UNCERTAIN' : 'CONCRETE_PLAN';

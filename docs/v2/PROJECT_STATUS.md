@@ -295,6 +295,16 @@ orden de respuesta espontánea y atención mediante retirada. Instrucciones `/2`
 como anterior a la corrección, sin repetir suite completa. Sin cambios funcionales en otros módulos;
 personalización **0/4**, aceptación semántica e integración productiva pendientes.
 
+Preparación de aceptación COV1–COV3 — **IMPLEMENTADA / VERIFICADA OFFLINE**.
+[Materiales y límites](25_COV_SEMANTIC_CALIBRATION.md): instrucciones COV1 `/2`, COV2 `/3` y COV3 `/3`;
+evaluación COV3 `/2` conserva desempeño histórico separado de vigencia, manteniendo `/1` para históricos.
+33 variantes de desarrollo, 27 solicitudes potenciales; adaptadores reales probados con transporte
+simulado y runner seco por defecto, live bloqueado sin autorización de modelo y presupuesto.
+Evidencia nueva: **189 focalizados PASS**, TypeScript **PASS**, suite offline **3505 PASS / 67 SKIPPED**.
+Sin llamadas reales, DB, nuevos pesos o puntos: personalización 0/4, M6 64%, proyecto 51.53%,
+M6/M6-E PARTIAL, PED2 abierto, D3B OPEN / VALIDATION DEBT. Aceptación semántica e integración pendientes.
+La evidencia 56/56, 153/153 y 3469/67 de apartados anteriores sigue siendo histórica.
+
 ### M7 — Evaluación de comunicación
 
 **Objetivo:** evaluar la comunicación farmacéutico-paciente mediante criterios trazables.

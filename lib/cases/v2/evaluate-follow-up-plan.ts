@@ -18,7 +18,8 @@ Use semantic meaning, not keyword overlap. Cite exact UTF-16 [start,end) spans.
 Student evidence must be student messages. Patient statements and public information are context, not student performance.
 Distinguish the student's own proposal from explicit adoption of another person's proposal and from mere quotation.
 A patient proposal alone, silence, acknowledgement of hearing it or quoting it does not establish student adoption.
-Explicit adoption needs a student citation plus the referenced proposal as context; ambiguous adoption is UNCERTAIN.
+Explicit adoption needs a student citation plus the referenced proposal as context. 'De acuerdo' can adopt a single concrete proposal unambiguously; brevity alone is not uncertainty. 'He oído su propuesta' alone is not adoption. When context admits multiple interpretations, evidence of adoption is INSUFFICIENT.
+Contextual 'Revisaremos' can identify the actor when unambiguous; do not require a universal explicit formula. Multiple possible actors mean INSUFFICIENT evidence, not an invented omission.
 Do not assemble a complete plan by combining mutually incompatible alternatives or withdrawn proposals.
 Retain withdrawn/replaced proposals as historical evidence, not automatically as current demonstrated elements.
 Evaluate only elements supported by a coherent student proposal/adoption; unresolved compatibility is CONTRADICTORY or UNCERTAIN.
@@ -101,7 +102,7 @@ export async function evaluateFollowUpPlanV1(input: {
     })) });
   }
   const body = {
-    contractVersion: 'follow-up-plan-request/1' as const, instructionsVersion: 'follow-up-plan-instructions/2' as const,
+    contractVersion: 'follow-up-plan-request/1' as const, instructionsVersion: 'follow-up-plan-instructions/3' as const,
     instructions: INSTRUCTIONS, runtimeRef: runtime.runtimeRef, requirements,
     untrustedData: { messages: transcript.messages, context },
   };

@@ -83,3 +83,17 @@ export type PersonalizationEvaluationV1 = Readonly<{
   criteria: PersonalizationAdjudicationV1['criteria']; links: PersonalizationAdjudicationV1['links'];
   incompatibilities: PersonalizationAdjudicationV1['incompatibilities'];
 }>;
+
+/** V1 remains available for interpreting historical results; no implicit upgrade. */
+export const personalizationAdjudicationSchemaV2 = personalizationAdjudicationSchema.extend({
+  contractVersion: z.literal('personalization-adjudication/2'),
+}).strict();
+export type PersonalizationRequestV2 = Omit<PersonalizationRequestV1, 'contractVersion' | 'instructionsVersion'> & {
+  contractVersion: 'personalization-request/2'; instructionsVersion: 'personalization-instructions/3';
+};
+export type PersonalizationRuntimeV2 = Readonly<{
+  runtimeRef: string; adjudicate(request: PersonalizationRequestV2): Promise<unknown>;
+}>;
+export type PersonalizationEvaluationV2 = Omit<PersonalizationEvaluationV1, 'contractVersion'> & {
+  contractVersion: 'personalization-evaluation/2'; assessmentBasis: 'OBSERVED_PERFORMANCE';
+};

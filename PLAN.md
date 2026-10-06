@@ -25,6 +25,17 @@ El repositorio dispone de una suite automatizada amplia. M6-A, M6-B, M6-C, M6-D1
 
 ## Estado vigente y próximo frente funcional
 
+Aceptación COV1–COV3 — PREPARACIÓN IMPLEMENTADA Y VERIFICADA OFFLINE: criterios docentes ratificados en conversación,
+desempeño histórico separado de vigencia, fixtures de calibración, adaptadores reales con transporte
+simulado y runner seco por defecto. Live bloqueado sin autorización de modelo/presupuesto; no se
+ejecutan llamadas reales. Sin migraciones, dependencias ni efectos productivos. Personalización 0/4,
+M6 64%, proyecto 51.53%; M6/M6-E PARTIAL, PED2 abierto y D3B OPEN / VALIDATION DEBT.
+Open decisions: aceptación semántica real, modelo y presupuesto de ejecución pendientes; no se
+reabre la decisión aprobada de conservar desempeño histórico ni se reinterpreta evidencia anterior.
+[Materiales, versiones, límites y primer lote](docs/v2/25_COV_SEMANTIC_CALIBRATION.md): 33 variantes,
+27 solicitudes potenciales, seis resoluciones sin proveedor; runner seco por defecto y live bloqueado.
+Evidencia nueva: 189 focalizados, TypeScript PASS, suite offline 3505 PASS / 67 SKIPPED.
+
 M6-COV3 — **IMPLEMENTADO / REVISADO OFFLINE**: personalización vinculada a circunstancias conocidas, adaptación concreta, comprobación de viabilidad y atención a dificultades/rechazo cuando existan. No exige aceptación del paciente ni equipara barrera identificada con adaptación; estilo comunicativo reservado a M7. [Contrato, ejemplo, evidencia y límites](docs/v2/24_PERSONALIZATION_OFFLINE_EVALUATION.md). Contratos mínimos versionados de requisitos y cadenas de evidencia, con secuencia temporal y runtime falso explícito. Sin refactorización, migraciones, dependencias, scoring ni cambios funcionales en COV1/COV2, M5, D1/D2 o E2. Checkpoint local COV3, no publicado; revisión focalizada con 62/62 tests y TypeScript PASS, evidencia anterior conservada. Open decisions: aceptación semántica e integración productiva pendientes; ninguna decisión docente adicional bloquea el recorrido sintético. Personalización 0/4, M6 64%, proyecto 51.53%, M6/M6-E PARTIAL, PED2 abierto y D3B OPEN / VALIDATION DEBT.
 
 M6-COV2 — **IMPLEMENTADO / REVISADO OFFLINE**: plan de seguimiento expresado en la entrevista, evaluado únicamente frente a elementos explícitos del caso aprobado. [Contrato, ejemplo y límites](docs/v2/23_FOLLOW_UP_PLAN_OFFLINE_EVALUATION.md). Contrato mínimo separado para requisitos identificados y evaluación, sin inferir requisitos desde `FollowUpEpisode`, sin resultados longitudinales, scoring ni plazos universales. Se reutilizan validadores de binding/citas de COV1 y el snapshot M5 sin modificarlos. Sin migraciones, persistencia, endpoints, dependencias ni configuración productiva nueva; checkpoint local, no publicado. Open decisions: aceptación semántica e integración autorizada pendientes; ninguna decisión docente adicional bloquea el recorrido sintético. M6 64% / proyecto 51.53%, M6/M6-E PARTIAL, PED2 abierto y D3B OPEN / VALIDATION DEBT. Los cuatro puntos existentes de Seguimiento no se acreditan automáticamente.

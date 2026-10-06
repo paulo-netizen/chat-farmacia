@@ -75,7 +75,7 @@ export type ReportSourceSpanV1 = z.infer<typeof reportSourceSpanSchema>;
 
 export type ReferralReportRequestV1 = Readonly<{
   contractVersion: 'referral-report-request/1';
-  instructionsVersion: 'referral-report-instructions/1';
+  instructionsVersion: 'referral-report-instructions/2';
   instructions: string;
   requestDigest: string;
   runtimeRef: string;

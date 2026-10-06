@@ -18,6 +18,7 @@ Only public information and information actually present in the interview are av
 A student's question/assertion is not by itself a confirmed patient fact. Hidden case truth is not acquired evidence.
 Writing a fact in the report never demonstrates retrospective exploration in the interview.
 Unknown is not negative. Preserve contradictory statements, chronology and explicit rectifications;
+Unsupported specificity is INSUFFICIENT evidence of fidelity, not UNCERTAIN merely to fit a label. For example, 'Me mareo' alone does not support 'sensación de giro'; classify that specific claim UNSUPPORTED with complete capture.
 do not silently discard an earlier statement or assume the last statement is true.
 DEMONSTRATED requires report evidence and available source support; missing inaccessible information is INSUFFICIENT.
 NOT_DEMONSTRATED requires complete capture, confirmed opportunity and evidence that necessary information was available.
@@ -107,7 +108,7 @@ export async function evaluateReferralReportV1(input: {
   // Positive projection: neither hidden patient facts nor unrelated clinical answers reach the runtime.
   const requestBody = {
     contractVersion: 'referral-report-request/1' as const,
-    instructionsVersion: 'referral-report-instructions/1' as const,
+    instructionsVersion: 'referral-report-instructions/2' as const,
     instructions: INSTRUCTIONS, runtimeRef: runtime.runtimeRef,
     binding: submission.binding, submissionId: submission.submissionId, approvalRef: context.approvalRef,
     untrustedData: {

@@ -1,5 +1,7 @@
 import { describe, expect, it, vi } from 'vitest';
 import { evaluatePersonalizationV1, PersonalizationValidationError } from '@/lib/cases/v2/evaluate-personalization';
+import { evaluatePersonalizationV2 } from '@/lib/cases/v2/evaluate-personalization-v2';
+import type { PersonalizationRequestV2 } from '@/lib/cases/v2/personalization-contract';
 import { type PersonalizationRequirementsV1, type PersonalizationContextV1,
   type PersonalizationRequestV1, type PersonalizationAdjudicationV1 } from '@/lib/cases/v2/personalization-contract';
 import { createSessionTranscriptSnapshotV2 } from '@/lib/cases/v2/spfa-session-transcript';
@@ -66,6 +68,50 @@ function markRejection(r: PersonalizationAdjudicationV1) {
   r.links[0].patientResponse = { kind: 'DIFFICULTY_OR_REJECTION', evidence: span('4', rejection) };
   r.criteria[2].status = 'NOT_DEMONSTRATED';
 }
+
+describe('COV3 v2 historical performance, independent of standing', () => {
+  function adapter(change: (r: PersonalizationAdjudicationV1) => void) {
+    return { runtimeRef: 'fake-v2/1', adjudicate: async (q: PersonalizationRequestV2) => {
+      const r = response({ ...q, contractVersion: 'personalization-request/1', instructionsVersion: 'personalization-instructions/2' });
+      change(r); return { ...r, contractVersion: 'personalization-adjudication/2' };
+    } };
+  }
+  it.each(['WITHDRAWN', 'UNCERTAIN'] as const)('preserves previously demonstrated work despite standing %s', async standing => {
+    const input = fixture(); withRejection(input, true);
+    const result = await evaluatePersonalizationV2(input, adapter(r => {
+      markRejection(r); r.links[0].standing = standing;
+      if (standing === 'WITHDRAWN') r.links[0].withdrawal = span('5', alternative);
+    }));
+    expect(result.contractVersion).toBe('personalization-evaluation/2');
+    expect(result.assessmentBasis).toBe('OBSERVED_PERFORMANCE');
+    expect(result.criteria.map(c => c.status)).toEqual(['DEMONSTRATED', 'DEMONSTRATED', 'NOT_DEMONSTRATED']);
+    expect(result.links[0].standing).toBe(standing);
+  });
+  it('withdrawal never manufactures a positive response to difficulty', async () => {
+    const input = fixture(); withRejection(input, true);
+    const result = await evaluatePersonalizationV2(input, adapter(r => {
+      markRejection(r); r.links[0].standing = 'WITHDRAWN'; r.links[0].withdrawal = span('5', alternative);
+      r.criteria[2].status = 'INSUFFICIENT';
+    }));
+    expect(result.criteria[2].status).toBe('INSUFFICIENT');
+  });
+  it('retains unresolved conflict and its criterion without erasing a separate historical check', async () => {
+    const input = fixture(); withRejection(input, true);
+    const result = await evaluatePersonalizationV2(input, adapter(r => {
+      markRejection(r); r.links.push({ ...r.links[0], linkId: 'b', proposal: span('5', alternative),
+        feasibilityCheck: span('5', alternative), patientResponse: undefined });
+      r.incompatibilities = [{ first: 'a', second: 'b' }];
+      r.criteria[0].status = 'CONTRADICTORY';
+    }));
+    expect(result.criteria[0].status).toBe('CONTRADICTORY');
+    expect(result.criteria[1].status).toBe('DEMONSTRATED');
+    expect(result.incompatibilities).toEqual([{ first: 'a', second: 'b' }]);
+  });
+  it('rejects old adjudication versions instead of silently relabelling historical results', async () => {
+    expect((await evaluatePersonalizationV2(fixture(), { runtimeRef: 'old/1', adjudicate: async q =>
+      response({ ...q, contractVersion: 'personalization-request/1', instructionsVersion: 'personalization-instructions/2' }) })).reason).toBe('INVALID_ADJUDICATION');
+  });
+});
 
 describe('COV3 offline personalization — synthetic runtime, no semantic acceptance', () => {
   it('links known circumstance, adaptation and feasibility without requiring acceptance or rejection', async () => {
