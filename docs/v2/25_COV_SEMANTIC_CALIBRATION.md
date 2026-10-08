@@ -1,5 +1,82 @@
 # COV1–COV3 — Preparación de calibración semántica
 
+## Diagnóstico R2 separado ejecutado — 8 de octubre de 2026
+
+Base: `8b1461c858c68c135508b5e5dd76405a9387aa7c`, rama `chatusal-v2`, árbol inicialmente limpio.
+El usuario autorizó una ejecución deliberada nueva de R2 dentro de los 15 EUR acumulados y,
+si caducaba el conteo, una única actualización. **No es una reanudación del lote fallido.**
+
+Se implementó [run-r2.ts](../../tools/cov-calibration/run-r2.ts), seco por defecto, sin selector libre
+de ejemplos, con autorización `cov-r2-diagnostic-authorization/1` y propósito `R2_DIAGNOSTIC_ONLY`.
+El control del adaptador sigue requiriendo una sesión nominal autorizada. Se comprueba en lectura
+el hash/cadena del diario original, su parada técnica en R2 y sus reservas. El diagnóstico usa un
+único directorio derivado de ese padre: cambiar el ID de autorización o proponer otro directorio
+no abre una segunda ejecución. Conserva exclusión, fsync antes del envío, ausencia de reintentos,
+recuperación de resultados sin nueva llamada y bloqueo tras reserva incierta o fallo técnico.
+
+La autorización y el diario nuevos permanecen privados, separados y vinculados al hash original.
+El diario anterior permanece idéntico (SHA-256 verificado antes/después); no se abrió para escritura,
+no se desbloqueó ni se repitió R1. Tampoco se ejecutaron los otros diez ejemplos.
+
+### Conteo y ejecución
+
+El conteo del 6 de octubre a las 15:58:09.152Z tenía más de 24 horas. Se realizó **un único conteo
+oficial de actualización**, HTTP 200: **2.364 tokens**, fecha real `2026-10-08T16:00:02.760Z`.
+Se verificaron los hashes del contenido y configuración exactos, sin modificar instrucciones,
+esquema, expectativas ni enviar etiquetas docentes. El precio del conteo sigue desconocido.
+
+Después de 83 pruebas offline, TypeScript y diff-check, se envió **una sola inferencia** con Terra,
+medium, Standard, máximo 8.000 tokens, timeout 60 s, `store:false`, sin fallback/reintentos.
+Resultado: **TECHNICAL_FAILURE / INVALID_ADJUDICATION**, diagnóstico **`cov-diagnostic/1`**:
+
+```text
+stage: VALIDATION
+code: REPORT_CITATION_INVALID
+```
+
+Demostrado: al menos una cita del informe falló la invariante `start < end`, rango dentro del texto
+y coincidencia literal `text.slice(start, end) === quote`. No se identifica qué criterio/afirmación
+ni qué componente concreto del span falló, porque el diagnóstico no conserva valores recibidos.
+Offsets incorrectos o texto citado distinto son hipótesis, no hechos observados separadamente.
+No hay evidencia de defecto del validador que permita relajar esa invariante. El resultado sigue
+siendo técnico, sin etiquetas académicas válidas: no se puede acreditar fidelidad/inicio ni que
+detectara «Vive sola» como afirmación adicional sin respaldo. No es un falso negativo académico.
+La causa específica del primer R2 sigue indeterminada; no se le atribuye retrospectivamente este código.
+
+Se conservaron diagnóstico, uso e identificadores disponibles, sin raw, secretos ni valores del
+span inválido. No se modificaron instrucciones ni se realizó otra inferencia tras el fallo.
+
+### Costes y reservas
+
+Tarifas [Terra](https://developers.openai.com/api/docs/models/gpt-5.6-terra) verificadas el 8 de octubre:
+entrada 2 USD/M, lectura de caché 0,20, escritura 2,50 y salida 12. Uso de este diagnóstico:
+**2.364 tokens de entrada** (2.361 escritura de caché, 3 ordinarios, 0 lectura) y **722 de salida**,
+incluidos **411 de razonamiento**. Coste calculado de inferencia: **0,0145725 USD**.
+Acumulado de las tres inferencias: **0,0357923 USD**, antes de impuestos/comisiones, no factura conciliada.
+Coste de los **trece conteos acumulados** y total facturado: **DESCONOCIDOS**, no cero.
+
+Reserva nueva **0,101910 USD**; reservas acumuladas retenidas **0,305740 USD** (original 0,203830).
+El control suma las reservas anteriores verificadas al permiso nuevo y limita las inferencias
+acumuladas a un sublímite de 2 USD. No se liberan reservas del fallo para repetirlo.
+Se recibieron uso y respuesta: no hay inferencia perdida de coste indeterminable por timeout.
+
+Conversión de referencia [BCE del 8 de octubre](https://www.ecb.europa.eu/stats/policy_and_exchange_rates/euro_reference_exchange_rates/html/eurofxref-graph-usd.en.html):
+**1 EUR = 1,1186 USD**. Los márgenes de planificación 30% impuestos y 10% cambio/comisiones
+dejan `floor(15 × 1,1186 / 1,30 / 1,10 × 100) / 100 = 11,73 USD`: 2 USD para inferencias,
+9,73 como provisión no verificada para conteos. No se garantiza el total facturado desconocido;
+la excepción de tarifa desconocida está expresamente autorizada. No se pide otra autorización económica.
+
+Comando de la ejecución realizada (ruta privada omitida):
+`node node_modules/vite-node/vite-node.mjs tools/cov-calibration/run-r2.ts --live --authorization <archivo-privado>`.
+El diario detenido impide volver a enviar; este comando no constituye permiso para repetir.
+
+Pruebas nuevas: **83/83 PASS** (10 R2, 31 controles, 17 diagnósticos, 25 calibración), TypeScript
+PASS y diff-check. Cubren ejemplo distinto, directorio/diario separados, presupuesto acumulado,
+conteo caducado, concurrencia, reinicio incierto, metadatos/diagnóstico sin filtración e inmutabilidad
+del padre. Suite completa no repetida: cambio acotado, reutiliza sesión existente y regresiones pertinentes.
+Sin aceptación final, generalización, puntos ni efectos productivos. M6 64%, proyecto 51.53%,
+M6/M6-E PARTIAL, PED2 abierto, D3B OPEN / VALIDATION DEBT; seguimiento y personalización 0/4.
+
 ## Diagnóstico offline posterior de R2 — 6 de octubre de 2026
 
 Se integra la evidencia documental pendiente del primer lote. **La regla original que rechazó R2

@@ -25,6 +25,13 @@ El repositorio dispone de una suite automatizada amplia. M6-A, M6-B, M6-C, M6-D1
 
 ## Estado vigente y próximo frente funcional
 
+Diagnóstico separado R2 (8 de octubre): entrada restringida implementada; un conteo actualizado y
+una inferencia, detenida con `cov-diagnostic/1: VALIDATION / REPORT_CITATION_INVALID`.
+Diario original intacto; ninguna repetición ni otros ejemplos. Reserva acumulada 0,305740 USD,
+coste calculado de tres inferencias 0,0357923 USD; trece conteos y total facturado desconocidos.
+83/83 pruebas offline, TypeScript y diff-check. Sin cambio de expectativas ni aceptación semántica.
+Detalle actual y evidencia histórica en [documento 25](docs/v2/25_COV_SEMANTIC_CALIBRATION.md).
+
 Primer lote COV (6 de octubre de 2026): controles publicados en `04776b25fd8df1f1005b011e05c46e61052e626f`.
 Autorización ampliada a **15 EUR totales**, con aceptación expresa de tarifa desconocida de los doce
 conteos. **STOPPED_TECHNICAL_FAILURE**: doce conteos confirmados; dos inferencias enviadas (R1

@@ -1,6 +1,7 @@
 import { mkdirSync, openSync, closeSync, writeSync, fsyncSync, readFileSync, unlinkSync, realpathSync } from 'node:fs';
 import { isAbsolute, join, resolve } from 'node:path';
 import { covHash, covReservationMicroUsd, validateCovGrant, type CovGrant, type CovManifest } from './cov-experiment-policy';
+import { validateCovR2Grant, type CovR2Grant } from './cov-r2-diagnostic-policy';
 
 export type CovSafeMetadata = { responseId?: string; requestId?: string; inputTokens?: number;
   outputTokens?: number; cachedTokens?: number; cacheWriteTokens?: number; reasoningTokens?: number };
@@ -26,7 +27,7 @@ const sessions = new WeakSet<CovExecutionSession>();
 
 /** Single-host, append-only, fsync-before-send. A stale lock is NEVER stolen automatically. */
 export class CovExecutionSession {
-  private grant: CovGrant;
+  private grant: CovGrant | CovR2Grant;
   private fd = -1;
   private lockFd = -1;
   private lockPath = '';
@@ -39,10 +40,15 @@ export class CovExecutionSession {
   private closed = false;
   private failed = false;
   private busy = false;
-  private constructor(grant: CovGrant) { this.grant = grant; }
+  private constructor(grant: CovGrant | CovR2Grant) { this.grant = grant; }
 
   static open(authorization: unknown, manifest: CovManifest): CovExecutionSession {
-    const grant = validateCovGrant(authorization, manifest);
+    return this.openValidated(validateCovGrant(authorization, manifest));
+  }
+  static openR2Diagnostic(authorization: unknown, manifest: CovManifest): CovExecutionSession {
+    return this.openValidated(validateCovR2Grant(authorization, manifest));
+  }
+  private static openValidated(grant: CovGrant | CovR2Grant): CovExecutionSession {
     if (!isAbsolute(grant.ledgerDirectory)) throw new Error('COV_LEDGER_PATH_INVALID');
     const directory = resolve(grant.ledgerDirectory);
     mkdirSync(directory, { recursive: true, mode: 0o700 });

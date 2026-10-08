@@ -2,6 +2,11 @@
 
 ## Baseline oficial
 
+Actualización COV del 8 de octubre: diagnóstico separado exclusivamente R2, un conteo actualizado
+y una inferencia. Fallo `VALIDATION / REPORT_CITATION_INVALID`; lote original intacto y detenido.
+Reservas acumuladas 0,305740 USD; coste calculado de tres inferencias 0,0357923 USD, conteos/total
+facturado desconocidos. Sin aceptación semántica ni puntos. [Resultado y controles](25_COV_SEMANTIC_CALIBRATION.md).
+
 Primer lote COV1–COV3 (6 de octubre): **15 EUR totales autorizados**, incluidos doce conteos con tarifa
 desconocida expresamente aceptada. **STOPPED_TECHNICAL_FAILURE**: doce conteos confirmados,
 R1 con dos criterios coincidentes, R2 `INVALID_ADJUDICATION`; diez inferencias no ejecutadas.
