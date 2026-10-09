@@ -2,6 +2,7 @@ import { mkdirSync, openSync, closeSync, writeSync, fsyncSync, readFileSync, unl
 import { isAbsolute, join, resolve } from 'node:path';
 import { covHash, covReservationMicroUsd, validateCovGrant, type CovGrant, type CovManifest } from './cov-experiment-policy';
 import { validateCovR2Grant, type CovR2Grant } from './cov-r2-diagnostic-policy';
+import { validateCovContinuationGrant, type CovContinuationGrant } from './cov-continuation-policy';
 
 export type CovSafeMetadata = { responseId?: string; requestId?: string; inputTokens?: number;
   outputTokens?: number; cachedTokens?: number; cacheWriteTokens?: number; reasoningTokens?: number };
@@ -27,7 +28,7 @@ const sessions = new WeakSet<CovExecutionSession>();
 
 /** Single-host, append-only, fsync-before-send. A stale lock is NEVER stolen automatically. */
 export class CovExecutionSession {
-  private grant: CovGrant | CovR2Grant;
+  private grant: CovGrant | CovR2Grant | CovContinuationGrant;
   private fd = -1;
   private lockFd = -1;
   private lockPath = '';
@@ -40,7 +41,7 @@ export class CovExecutionSession {
   private closed = false;
   private failed = false;
   private busy = false;
-  private constructor(grant: CovGrant | CovR2Grant) { this.grant = grant; }
+  private constructor(grant: CovGrant | CovR2Grant | CovContinuationGrant) { this.grant = grant; }
 
   static open(authorization: unknown, manifest: CovManifest): CovExecutionSession {
     return this.openValidated(validateCovGrant(authorization, manifest));
@@ -48,7 +49,10 @@ export class CovExecutionSession {
   static openR2Diagnostic(authorization: unknown, manifest: CovManifest): CovExecutionSession {
     return this.openValidated(validateCovR2Grant(authorization, manifest));
   }
-  private static openValidated(grant: CovGrant | CovR2Grant): CovExecutionSession {
+  static openContinuation(authorization: unknown, manifest: CovManifest): CovExecutionSession {
+    return this.openValidated(validateCovContinuationGrant(authorization, manifest));
+  }
+  private static openValidated(grant: CovGrant | CovR2Grant | CovContinuationGrant): CovExecutionSession {
     if (!isAbsolute(grant.ledgerDirectory)) throw new Error('COV_LEDGER_PATH_INVALID');
     const directory = resolve(grant.ledgerDirectory);
     mkdirSync(directory, { recursive: true, mode: 0o700 });
@@ -113,6 +117,8 @@ export class CovExecutionSession {
       Date.parse(this.grant.expiresAt) <= Date.now() || covHash(config) !== covHash(this.grant.config)) throw new Error('COV_EXECUTION_BLOCKED');
     const next = this.grant.inputCounts[this.reserved.size];
     if (!next || next.requestHash !== requestHash) throw new Error('COV_REQUEST_NOT_AUTHORIZED');
+    if (this.grant.version === 'cov-literal-continuation-authorization/1' && next.id !== 'R2' &&
+      (this.results.get('R2') as { result?: { status?: string } } | undefined)?.result?.status !== 'REVIEW_REQUIRED') throw new Error('COV_R2_TECHNICAL_GATE_REQUIRED');
     const amount = covReservationMicroUsd(next.inputTokens);
     if (this.spent + amount > this.grant.budgetMicroUsd) { this.stop(); throw new Error('COV_BUDGET_INSUFFICIENT'); }
     this.busy = true;

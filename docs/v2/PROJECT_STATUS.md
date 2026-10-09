@@ -2,6 +2,12 @@
 
 ## Baseline oficial
 
+Continuación del 9 de octubre: **STOPPED_TECHNICAL_FAILURE** en R2, código `SOURCE_CITATION_INVALID`.
+Once conteos nuevos confirmados; una inferencia, diez pendientes no enviadas. 113/113 pruebas
+offline y TypeScript PASS. Coste calculado acumulado de cuatro inferencias 0,0508183 USD;
+reservas retenidas 0,408008 USD. Coste de 24 conteos y total facturado desconocidos. Sin puntos
+ni aceptación final; R1 sigue siendo evidencia de la versión anterior. [Detalle](25_COV_SEMANTIC_CALIBRATION.md).
+
 Ajuste offline posterior al diagnóstico R2: citas literales COV1 versionadas y resueltas en servidor,
 con rechazo de referencias ambiguas y códigos seguros específicos. 141/141 pruebas focalizadas y
 relacionadas, TypeScript PASS. Sin nuevas llamadas, reinterpretación de fallos históricos ni puntos.

@@ -13,16 +13,18 @@ export async function prepareFirstCovBatch(legacyReportProjection = false) {
   const all = buildCalibrationFixtures();
   const fixtures = COV_FIRST_IDS.map(id => all.find(f => f.id === id)!);
   const manifest: CovManifest = [];
+  const requests: ReturnType<typeof projectCovRequest>[] = [];
   for (const fixture of fixtures) {
     let projected: ReturnType<typeof projectCovRequest> | undefined;
     const capture = (capability: CovCapability) => ({ runtimeRef: covRuntimeRef(COV_FIRST_CONFIG, legacyReportProjection ? undefined : capability),
       adjudicate: async (q: CovRequest) => { projected = projectCovRequest(capability, q, COV_FIRST_CONFIG, legacyReportProjection); throw new Error('COV_DRY_CAPTURE'); } });
     await evaluateFixture(fixture, { COV1: capture('COV1'), COV2: capture('COV2'), COV3: capture('COV3') });
     if (!projected) throw new Error('COV_DRY_CAPTURE_FAILED');
+    requests.push(projected);
     manifest.push({ id: fixture.id as typeof COV_FIRST_IDS[number], fixtureHash: covHash(fixture),
       requestHash: projected.requestHash, inputBytes: projected.inputBytes });
   }
-  return { fixtures, manifest, manifestHash: covHash(manifest) };
+  return { fixtures, manifest, manifestHash: covHash(manifest), requests };
 }
 
 /** Reads the API key only after authorization and journal validation in the caller. */

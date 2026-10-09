@@ -25,6 +25,11 @@ El repositorio dispone de una suite automatizada amplia. M6-A, M6-B, M6-C, M6-D1
 
 ## Estado vigente y próximo frente funcional
 
+Continuación COV (9 de octubre): entrada cerrada R2 + diez pendientes, diarios nuevos vinculados
+a los anteriores y gate técnico probado offline. Once conteos confirmados y una inferencia R2:
+`VALIDATION / SOURCE_CITATION_INVALID`; parada inmediata, diez inferencias no enviadas y R1 no repetido.
+Sin aceptación ni puntos. Prioridad: diagnóstico offline de citas a fuentes; [evidencia](docs/v2/25_COV_SEMANTIC_CALIBRATION.md).
+
 Citas COV1 (8 de octubre, ajuste offline): representación literal versionada, posiciones derivadas
 por el servidor y rechazo de ambigüedad; diagnóstico seguro desglosado. Causa concreta de R2 no
 recuperable; históricos conservados. Solicitud cambiada: requiere nuevo conteo antes de cualquier

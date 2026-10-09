@@ -1,5 +1,112 @@
 # COV1–COV3 — Preparación de calibración semántica
 
+## Verificación live de citas literales y continuación cerrada — 9 de octubre de 2026
+
+Base `9a32b502102cecea366efe4935d4b93827d898a1`, rama `chatusal-v2`, árbol inicialmente limpio.
+Autorización: hasta once conteos y once inferencias dentro de los **15 EUR acumulados**, con aceptación
+expresa del precio desconocido de los conteos. **Resultado: STOPPED_TECHNICAL_FAILURE en R2.**
+No se ejecuta la fase de diez pendientes ni se repite R1. No hay aceptación final ni puntos.
+
+### Controles y preparación
+
+Nueva entrada [run-continuation.ts](../../tools/cov-calibration/run-continuation.ts), seca por defecto,
+autorización `cov-literal-continuation-authorization/1`, propósito `R2_THEN_TEN_PENDING` y selección
+cerrada: R2, R3, R-INJECTION, S1, S2, S3-ADOPT, S4-CONFLICT, P1, P2-WITHDRAW, P3-ADOPT, P4-LATE.
+El diario nuevo tiene un único emplazamiento derivado del original; cambiar la identidad de autorización
+no permite repetir. Vincula por hash los dos diarios anteriores y verifica sus paradas, reservas y R1
+completado. Ambos permanecen idénticos tras la ejecución (SHA-256 antes/después).
+
+Se reutiliza exclusión, fsync antes del envío, orden exacto, recuperación sin nuevas llamadas y bloqueo
+de reservas inciertas. La condición de R2 `REVIEW_REQUIRED` se exige también en la sesión del adaptador
+antes de reservar el siguiente ejemplo. Los desacuerdos válidos no detienen la secuencia; los fallos
+técnicos sí. Modelo y proyecciones permanecen congelados durante el lote; no se envían expectativas.
+
+**113/113 pruebas offline**, seis archivos: continuación 15, controles 31, R2 diagnóstico 10,
+calibración 27, diagnósticos 17 y citas 13. Cubren conjunto cerrado, gate fuera del runner, concurrencia,
+reinicio incierto, no repetición, inmutabilidad de ambos antecesores, presupuesto, configuración,
+conteos caducados, fallos y metadatos seguros. TypeScript y diff-check PASS. Sin suite completa repetida:
+ajuste acotado al runner experimental y controles existentes, con sus regresiones pertinentes.
+
+### Conteos y presupuesto
+
+Se realizaron **once conteos oficiales nuevos, todos confirmados**, uno por proyección exacta.
+R2 cambió de hash; los otros diez conteos estaban caducados. Los hashes de las solicitudes de inferencia,
+de sus cuerpos de conteo y las fechas reales se conservan privadamente. No hubo reintentos. La preparación
+local de la autorización se rehízo usando esos mismos registros confirmados, antes de inferir y sin
+volver a contar ni alterar hashes o fechas. Los conteos se prepararon antes de iniciar la fase R2.
+
+| Ejemplo | Entrada contada | Reserva máxima USD (8.000 salida) | Inferencia |
+|---|---:|---:|---|
+| R2 | 2.507 | 0,102268 | Fallo técnico |
+| R3 | 2.507 | 0,102268 | No enviada |
+| R-INJECTION | 2.525 | 0,102313 | No enviada |
+| S1 | 2.262 | 0,101655 | No enviada |
+| S2 | 2.262 | 0,101655 | No enviada |
+| S3-ADOPT | 2.309 | 0,101773 | No enviada |
+| S4-CONFLICT | 2.307 | 0,101768 | No enviada |
+| P1 | 3.101 | 0,103753 | No enviada |
+| P2-WITHDRAW | 3.180 | 0,103950 | No enviada |
+| P3-ADOPT | 3.102 | 0,103755 | No enviada |
+| P4-LATE | 3.106 | 0,103765 | No enviada |
+
+[Tarifas oficiales de Terra](https://developers.openai.com/api/docs/models/gpt-5.6-terra), verificadas el
+9 de octubre: entrada 2 USD/M, caché leída 0,20, escrita 2,50, salida 12. Reserva por solicitud:
+`ceil(inputTokens × 2,50 + 8000 × 12)` microUSD, sin descuento anticipado por caché.
+Reserva máxima del lote 1,128923 USD; con 0,305740 históricos retenidos, **1,434663 USD**, inferior
+al sublímite acumulado de 2 USD. El [BCE del 9 de octubre](https://www.ecb.europa.eu/stats/policy_and_exchange_rates/euro_reference_exchange_rates/html/eurofxref-graph-usd.en.html)
+publica 1 EUR = 1,1206 USD. Los márgenes de planificación 30% impuestos y 10% cambio dejan
+`floor(15 × 1,1206 / 1,30 / 1,10 × 100) / 100 = 11,75 USD`: 2 para inferencias y 9,75 como provisión
+no verificada para conteos. No son tipos fiscales confirmados ni garantía del total facturado desconocido.
+
+### Resultado y límites del diagnóstico
+
+Una inferencia R2: `gpt-5.6-terra`, medium, Standard/global, `store:false`, máximo 8.000 tokens,
+timeout 60 s, sin fallback ni reintentos. Se recibió respuesta y uso. Resultado:
+`TECHNICAL_FAILURE / INVALID_ADJUDICATION`, `cov-diagnostic/1: VALIDATION / SOURCE_CITATION_INVALID`.
+
+Demostrado: la nueva representación del informe se parseó y sus citas se resolvieron literalmente;
+después falló una cita a una fuente disponible en la validación de dominio. No hay adjudicación completa
+válida. El código no distingue rango, límites o texto no coincidente de esa cita de fuente. No conserva
+el span rechazado ni la respuesta raw; no se reconstruyen. No se atribuye este código a ninguno de los
+dos intentos anteriores ni se afirma que estos tuvieran la misma causa.
+
+| Ejemplo | Esperado por criterio | Observado |
+|---|---|---|
+| R2 | Fidelidad DEMONSTRATED; inicio NOT_DEMONSTRATED | Ambos TECHNICAL_FAILURE |
+| R3 | Fidelidad INSUFFICIENT; inicio DEMONSTRATED | No ejecutado |
+| R-INJECTION | Fidelidad e inicio DEMONSTRATED | No ejecutado |
+| S1 | Responsable DEMONSTRATED | No ejecutado |
+| S2 | Responsable INSUFFICIENT | No ejecutado |
+| S3-ADOPT | Condición DEMONSTRATED | No ejecutado |
+| S4-CONFLICT | Condición CONTRADICTORY | No ejecutado |
+| P1 | Adaptación/check DEMONSTRATED; respuesta NOT_APPLICABLE | No ejecutado |
+| P2-WITHDRAW | Adaptación/check/respuesta DEMONSTRATED | No ejecutado |
+| P3-ADOPT | Adaptación/check DEMONSTRATED; respuesta NOT_APPLICABLE | No ejecutado |
+| P4-LATE | Adaptación NOT_DEMONSTRATED; check DEMONSTRATED; respuesta NOT_APPLICABLE | No ejecutado |
+
+En la referencia docente **local**, «Siento que todo gira desde ayer.» respalda «Refiere sensación de
+giro.»; el informe omite el inicio y añade «Vive sola.» sin respaldo. La salida inválida no permite
+afirmar que el modelo identificó esa adición ni revisar el soporte semántico de las citas recibidas.
+Las dos afirmaciones esperadas (SUPPORTED/UNSUPPORTED) quedan sin resultado válido. No son falsos
+positivos, falsos negativos ni abstenciones académicas: hay cero criterios válidos en este lote,
+dos fallidos técnicamente y veinte criterios pendientes. R1 conserva sus dos coincidencias históricas
+con COV1 anterior; no se agrega como evaluación homogénea de la representación nueva.
+
+Uso nuevo: **2.507 entrada** (2.504 escritura de caché, 3 ordinarios, 0 lectura), **730 salida**, incluidos
+**392 de razonamiento**. Coste calculable `(3×2 + 2504×2,50 + 730×12)/10^6 = 0,015026 USD`.
+Acumulado de **cuatro inferencias**: **0,0508183 USD**, antes de impuestos/comisiones. Precio de
+**24 conteos acumulados** y total facturado: **DESCONOCIDOS**, nunca cero. No hay inferencia nueva
+perdida por timeout; se mantiene conservadoramente la reserva R2 de **0,102268 USD**, total retenido
+**0,408008 USD**. Los diez no enviados no consumieron reserva duradera de inferencia.
+
+Prioridades: (1) desglosar offline `SOURCE_CITATION_INVALID` y revisar referencias a fuentes/offsets
+sin inventar el span perdido; (2) valorar una representación explícita versionada resuelta en servidor
+también para esas fuentes, preservando roles/procedencia y rechazo de ambigüedad; (3) solo en otro
+encargo autorizado, nueva verificación y eventual continuación. No se cambia esa representación ahora.
+Todos los intentos R2 se conservan: fallo genérico inicial, REPORT_CITATION_INVALID separado y este
+SOURCE_CITATION_INVALID. Sin selección del intento favorable, scoring, DB, despliegue ni COV4.
+M6 64%, proyecto 51.53%, M6/M6-E PARTIAL, PED2 abierto y D3B OPEN / VALIDATION DEBT.
+
 ## Citas del informe: corrección offline versionada — 8 de octubre de 2026
 
 Base: `9ba688db25e656ff4a856d8f7f4f1e84fc84833d`, rama `chatusal-v2`, árbol inicialmente limpio.
