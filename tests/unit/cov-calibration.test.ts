@@ -12,9 +12,9 @@ function reply(input: string, model = config.model) {
   let output_parsed: unknown;
   if (capability === 'referral-report-request/1') {
     const quote = q.untrustedData.reportText as string, patient = q.untrustedData.messages[0];
-    output_parsed = { contractVersion: 'referral-report-adjudication/1', requestDigest: q.requestDigest,
+    output_parsed = { contractVersion: 'referral-report-literal-adjudication/2', requestDigest: q.requestDigest,
       documentKind: 'WRITTEN_REPORT', criteria: q.untrustedData.requirements.map((r: { contentId: string }) => ({
-        contentId: r.contentId, status: 'DEMONSTRATED', reportEvidence: [{ quote, start: 0, end: quote.length }],
+        contentId: r.contentId, status: 'DEMONSTRATED', reportEvidence: [{ quote, occurrence: null }],
         sourceEvidence: [{ source: 'TRANSCRIPT', ...span(patient.messageId, patient.content) }],
       })), claims: [] };
   } else if (capability === 'follow-up-plan-request/1') {
@@ -91,6 +91,20 @@ describe('COV calibration materials and protected runner', () => {
 });
 
 describe('Real COV adapters with simulated Responses transport only', () => {
+  it('sends and validates the identical report text through JSON without Unicode or whitespace normalization', async () => {
+    const fixture = buildCalibrationFixtures().find(f => f.id === 'R1')!;
+    if (fixture.capability !== 'COV1') throw new Error('TEST_FIXTURE');
+    const text = '  Acción 😀\r\nAccio\u0301n\nFin  ';
+    fixture.input.submission = { ...(fixture.input.submission as Record<string, unknown>), delivery: { kind: 'SUBMITTED', text } };
+    const parse = vi.fn(async params => {
+      expect(JSON.parse(params.input).untrustedData.reportText).toBe(text);
+      return reply(params.input);
+    });
+    const result = await evaluateFixture(fixture, createCovSimulatedRuntimes(config, clientWith(parse)));
+    expect(result.status).toBe('REVIEW_REQUIRED');
+    if (result.contractVersion !== 'referral-report-evaluation/1') throw new Error('TEST_CONTRACT');
+    expect(result.criteria[0].reportEvidence).toEqual([{ quote: text, start: 0, end: text.length }]);
+  });
   it.each(['R1', 'S1', 'P1'])('executes %s through its evaluator with schema, versions and no expectation leakage', async id => {
     const fixture = buildCalibrationFixtures().find(f => f.id === id)!;
     fixture.notes = 'SECRET_EXPECTATION_SENTINEL'; fixture.expected[0].rationale = 'SECRET_EXPECTATION_SENTINEL';
@@ -98,6 +112,14 @@ describe('Real COV adapters with simulated Responses transport only', () => {
       expect(JSON.stringify(params)).not.toContain('SECRET_EXPECTATION_SENTINEL');
       expect(params.store).toBe(false); expect(params.max_output_tokens).toBe(4000);
       expect(params.text.format.type).toBe('json_schema'); expect(params.text.format.strict).toBe(true);
+      if (id === 'R1') {
+        const projected = JSON.parse(params.input);
+        expect(projected.providerRepresentation).toBe('referral-report-literal-adjudication/2');
+        expect(projected.providerInstructionsVersion).toBe('report-literal-instructions/1');
+        expect(params.instructions).toContain('Return only referral-report-literal-adjudication/2');
+        expect(params.instructions).toContain('For REPORT evidence return exact literal quote and occurrence only, never offsets.');
+        expect(params.instructions).toContain('For SOURCE evidence cite exact UTF-16 [start,end) spans');
+      }
       expect(options).toEqual({ timeout: 1000, maxRetries: 0 });
       return reply(params.input);
     });
@@ -105,6 +127,28 @@ describe('Real COV adapters with simulated Responses transport only', () => {
     expect(result.status).toBe('REVIEW_REQUIRED'); expect(parse).toHaveBeenCalledTimes(1);
     expect(result.semanticAcceptance).toBe('PENDING');
     if (id === 'P1') { expect(result.contractVersion).toBe('personalization-evaluation/2'); expect('assessmentBasis' in result && result.assessmentBasis).toBe('OBSERVED_PERFORMANCE'); }
+  });
+  it('preserves the R2 additional unsupported claim through literal projection and final validation', async () => {
+    const fixture = buildCalibrationFixtures().find(f => f.id === 'R2')!;
+    const parse = vi.fn(async params => {
+      const q = JSON.parse(params.input), message = q.untrustedData.messages[0];
+      const source = { source: 'TRANSCRIPT', ...span(message.messageId, message.content) };
+      const quote = 'Refiere sensación de giro.';
+      return { status: 'completed', model: config.model, error: null, output: [], output_parsed: {
+        contractVersion: 'referral-report-literal-adjudication/2', requestDigest: q.requestDigest,
+        documentKind: 'WRITTEN_REPORT', criteria: [
+          { contentId: q.untrustedData.requirements[0].contentId, status: 'DEMONSTRATED', reportEvidence: [{ quote, occurrence: null }], sourceEvidence: [source] },
+          { contentId: q.untrustedData.requirements[1].contentId, status: 'NOT_DEMONSTRATED', reportEvidence: [], sourceEvidence: [source] },
+        ], claims: [{ status: 'UNSUPPORTED', reportEvidence: { quote: 'Vive sola.', occurrence: null }, sourceEvidence: [] }],
+      } };
+    });
+    const result = await evaluateFixture(fixture, createCovSimulatedRuntimes(config, clientWith(parse)));
+    expect(result.status).toBe('REVIEW_REQUIRED');
+    if (result.contractVersion !== 'referral-report-evaluation/1') throw new Error('TEST_CONTRACT');
+    expect(result.criteria.map(c => c.status)).toEqual(['DEMONSTRATED', 'NOT_DEMONSTRATED']);
+    expect(result.claims).toEqual([{ status: 'UNSUPPORTED', reportEvidence: { quote: 'Vive sola.', start: 27, end: 37 }, sourceEvidence: [] }]);
+    expect(result.validation).toBe('STRUCTURAL_ONLY');
+    // Constructed transport response; no claim to reproduce either discarded live adjudication.
   });
   it.each(['model', 'incomplete', 'refusal', 'invalid', 'digest', 'exception'])('fails safely without retry: %s', failure => {
     const parse = vi.fn(async params => {

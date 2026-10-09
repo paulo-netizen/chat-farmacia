@@ -8,6 +8,7 @@ import { PHARMACEUTICAL_SEMANTIC_MODELS_V1 } from './pharmaceutical-semantic-mod
 import { CovExecutionSession, covSafeMetadata } from './cov-execution-session';
 import { covHash, COV_WIRE_POLICY } from './cov-experiment-policy';
 import { CovDiagnosticError, covDiagnostic, type CovDiagnosticCode } from './cov-diagnostics';
+import { reportLiteralAdjudicationSchema, adaptReportLiteralAdjudication } from './report-citations';
 
 // Experimental eligibility only: no live authorization or production approval is implied.
 const configSchema = z.object({
@@ -33,27 +34,32 @@ const wireLink = link.extend({
   responseToDifficulty: link.shape.responseToDifficulty.unwrap().nullable(),
 }).strict();
 export const covProviderSchemas = {
-  COV1: reportAdjudicationSchema,
+  COV1: reportLiteralAdjudicationSchema,
   COV2: followUpAdjudicationSchema,
   COV3: personalizationAdjudicationSchemaV2.extend({ links: z.array(wireLink) }).strict(),
 };
 export type CovCapability = keyof typeof covProviderSchemas;
 export type CovRequest = ReferralReportRequestV1 | FollowUpRequestV1 | PersonalizationRequestV2;
 
-export function covRuntimeRef(config: CovRuntimeConfig) {
-  return `cov-openai/2:${config.model}:${config.maxOutputTokens}:${config.maxInputBytes}:${config.timeoutMs}:medium:default`;
+export function covRuntimeRef(config: CovRuntimeConfig, capability?: CovCapability) {
+  return `cov-openai/2:${config.model}:${config.maxOutputTokens}:${config.maxInputBytes}:${config.timeoutMs}:medium:default${capability === 'COV1' ? ':report-literal/2' : ''}`;
 }
-export function projectCovRequest(capability: CovCapability, q: CovRequest, config: CovRuntimeConfig) {
+export function projectCovRequest(capability: CovCapability, q: CovRequest, config: CovRuntimeConfig, legacyReportProjection = false) {
   const data = q.contractVersion === 'referral-report-request/1'
     ? { binding: q.binding, submissionId: q.submissionId, approvalRef: q.approvalRef,
       untrustedData: { reportText: q.untrustedData.reportText, requirements: q.untrustedData.requirements,
         publicProfile: q.untrustedData.publicProfile, messages: q.untrustedData.messages,
         transcriptCompleteness: q.untrustedData.transcriptCompleteness, opportunity: q.untrustedData.opportunity } }
     : { requirements: q.requirements, untrustedData: { context: q.untrustedData.context, messages: q.untrustedData.messages } };
+  const literalReport = capability === 'COV1' && !legacyReportProjection;
   const input = JSON.stringify({ contractVersion: q.contractVersion, instructionsVersion: q.instructionsVersion,
+    ...(literalReport ? { providerRepresentation: 'referral-report-literal-adjudication/2', providerInstructionsVersion: 'report-literal-instructions/1' } : {}),
     requestDigest: q.requestDigest, ...data });
-  const instructions = `${q.instructions}\nOutput JSON matching the supplied schema. Optional chain fields are null when absent.`;
-  const format = zodTextFormat(covProviderSchemas[capability], `cov_${capability.toLowerCase()}_result`);
+  const domainInstructions = literalReport ? q.instructions
+    .replace('Cite exact UTF-16 [start,end) spans and source references.', 'For SOURCE evidence cite exact UTF-16 [start,end) spans and source references. For REPORT evidence return exact literal quote and occurrence only, never offsets. occurrence is null for a unique match; repeated quotes require an explicit one-based occurrence in original text order (including overlapping matches). Never normalize Unicode, spaces or line breaks; paraphrases are not literal citations. The server derives report offsets. Citation validity does not establish semantic support.')
+    .replace('Return only referral-report-adjudication/1', 'Return only referral-report-literal-adjudication/2') : q.instructions;
+  const instructions = `${domainInstructions}\nOutput JSON matching the supplied schema. Optional chain fields are null when absent.`;
+  const format = zodTextFormat(legacyReportProjection && capability === 'COV1' ? reportAdjudicationSchema : covProviderSchemas[capability], `cov_${capability.toLowerCase()}_result`);
   if (Buffer.byteLength(input + instructions + JSON.stringify(format), 'utf8') > config.maxInputBytes) throw new CovTransportError('REQUEST_TOO_LARGE');
   const body = { model: config.model, instructions, input, text: { format }, max_output_tokens: config.maxOutputTokens, store: false, service_tier: 'default' as const, reasoning: { effort: 'medium' as const } };
   return { body, inputBytes: Buffer.byteLength(input + instructions + JSON.stringify(format), 'utf8'), requestHash: covHash(body) };
@@ -74,7 +80,6 @@ function buildRuntimes(configInput: CovRuntimeConfig, client: CovClient, session
 } {
   let config: CovRuntimeConfig;
   try { config = configSchema.parse(structuredClone(configInput)); } catch { throw new CovTransportError(); }
-  const runtimeRef = covRuntimeRef(config);
   async function adjudicate(capability: CovCapability, request: CovRequest): Promise<unknown> {
     let reserved = false;
     let failure: CovDiagnosticCode = 'REQUEST_INVALID';
@@ -83,7 +88,7 @@ function buildRuntimes(configInput: CovRuntimeConfig, client: CovClient, session
       const versions = { COV1: ['referral-report-request/1', 'referral-report-instructions/2'],
         COV2: ['follow-up-plan-request/1', 'follow-up-plan-instructions/3'],
         COV3: ['personalization-request/2', 'personalization-instructions/3'] };
-      if (q.runtimeRef !== runtimeRef || q.contractVersion !== versions[capability][0] ||
+      if (q.runtimeRef !== covRuntimeRef(config, capability) || q.contractVersion !== versions[capability][0] ||
         q.instructionsVersion !== versions[capability][1]) throw new CovTransportError('REQUEST_INVALID');
       const projected = projectCovRequest(capability, q, config);
       if (session && client.baseURL !== COV_WIRE_POLICY.endpoint) throw new CovTransportError();
@@ -100,6 +105,9 @@ function buildRuntimes(configInput: CovRuntimeConfig, client: CovClient, session
       failure = 'PROVIDER_SCHEMA_INVALID';
       const result = covProviderSchemas[capability].parse(response.output_parsed);
       if (result.requestDigest !== q.requestDigest) throw new CovTransportError('REQUEST_DIGEST_MISMATCH');
+      if (capability === 'COV1' && q.contractVersion === 'referral-report-request/1') {
+        return adaptReportLiteralAdjudication(result, q.untrustedData.reportText);
+      }
       if (capability === 'COV3') {
         const parsed = covProviderSchemas.COV3.parse(result);
         return personalizationAdjudicationSchemaV2.parse({ ...parsed, links: parsed.links.map(item =>
@@ -114,8 +122,8 @@ function buildRuntimes(configInput: CovRuntimeConfig, client: CovClient, session
     }
   }
   return {
-    COV1: { runtimeRef, adjudicate: q => adjudicate('COV1', q) },
-    COV2: { runtimeRef, adjudicate: q => adjudicate('COV2', q) },
-    COV3: { runtimeRef, adjudicate: q => adjudicate('COV3', q) },
+    COV1: { runtimeRef: covRuntimeRef(config, 'COV1'), adjudicate: q => adjudicate('COV1', q) },
+    COV2: { runtimeRef: covRuntimeRef(config, 'COV2'), adjudicate: q => adjudicate('COV2', q) },
+    COV3: { runtimeRef: covRuntimeRef(config, 'COV3'), adjudicate: q => adjudicate('COV3', q) },
   };
 }

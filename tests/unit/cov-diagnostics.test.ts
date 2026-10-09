@@ -32,12 +32,12 @@ const cases: [CovDiagnosticCode, (r: ReferralReportAdjudicationV1) => void][] = 
   ['CRITERIA_UNKNOWN', r => { r.criteria[0].contentId = 'clinical-secret'; }],
   ['REQUEST_DIGEST_MISMATCH', r => { r.requestDigest = 'a'.repeat(64); }],
   ['DOCUMENT_STATE_INVALID', r => { r.documentKind = 'INTENT_ONLY'; }],
-  ['REPORT_CITATION_INVALID', r => { r.criteria[0].reportEvidence[0].quote = 'clinical-secret'; }],
+  ['REPORT_CITATION_TEXT_MISMATCH', r => { r.criteria[0].reportEvidence[0].quote = 'clinical-secret'; }],
   ['SOURCE_REFERENCE_INVALID', r => { Object.assign(r.criteria[0].sourceEvidence[0], { messageId: 'clinical-secret' }); }],
   ['SOURCE_CITATION_INVALID', r => { r.criteria[0].sourceEvidence[0].quote = 'clinical-secret'; }],
   ['CRITERION_SUPPORT_MISSING', r => { r.criteria[0].sourceEvidence = []; }],
   ['CLAIM_SUPPORT_MISSING', r => { r.claims[1].status = 'SUPPORTED'; }],
-  ['REPORT_CITATION_INVALID', r => { r.claims[1].reportEvidence.start++; }],
+  ['REPORT_CITATION_TEXT_MISMATCH', r => { r.claims[1].reportEvidence.start++; }],
   ['ADJUDICATION_SCHEMA_INVALID', r => { Object.assign(r, { 'clinical-secret': 'secret-key-value' }); }],
   ['ADJUDICATION_SCHEMA_INVALID', r => { r.criteria[0].status = 'clinical-secret' as never; }],
 ];
@@ -77,7 +77,13 @@ describe('safe COV1 diagnostic extension', () => {
     expect(JSON.stringify(result)).not.toContain('secret');
     expect(covDiagnostic(new CovDiagnosticError('clinical-secret' as never), 'RUNTIME_FAILURE').code).toBe('RUNTIME_FAILURE');
   });
-  it('keeps the exact provider projections and historical counts applicable to identical input', async () => {
-    expect((await prepareFirstCovBatch()).manifestHash).toBe('b03e1ac613fdff7021d3e26da44f195c6aba7f2f6ab607f09d89616e7e907864');
+  it('reconstructs history explicitly while new report requests require new counts', async () => {
+    const old = await prepareFirstCovBatch(true), current = await prepareFirstCovBatch();
+    expect(current.manifestHash).not.toBe(old.manifestHash);
+    for (let i = 0; i < 12; i++) {
+      if (i < 4) expect(current.manifest[i].requestHash).not.toBe(old.manifest[i].requestHash);
+      else expect(current.manifest[i]).toEqual(old.manifest[i]);
+    }
+    expect((await prepareFirstCovBatch(true)).manifestHash).toBe('b03e1ac613fdff7021d3e26da44f195c6aba7f2f6ab607f09d89616e7e907864');
   });
 });

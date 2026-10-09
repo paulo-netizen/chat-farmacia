@@ -2,6 +2,11 @@
 
 ## Baseline oficial
 
+Ajuste offline posterior al diagnóstico R2: citas literales COV1 versionadas y resueltas en servidor,
+con rechazo de referencias ambiguas y códigos seguros específicos. 141/141 pruebas focalizadas y
+relacionadas, TypeScript PASS. Sin nuevas llamadas, reinterpretación de fallos históricos ni puntos.
+La nueva proyección necesita nuevo conteo; [detalle](25_COV_SEMANTIC_CALIBRATION.md).
+
 Actualización COV del 8 de octubre: diagnóstico separado exclusivamente R2, un conteo actualizado
 y una inferencia. Fallo `VALIDATION / REPORT_CITATION_INVALID`; lote original intacto y detenido.
 Reservas acumuladas 0,305740 USD; coste calculado de tres inferencias 0,0357923 USD, conteos/total

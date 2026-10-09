@@ -1,5 +1,67 @@
 # COV1–COV3 — Preparación de calibración semántica
 
+## Citas del informe: corrección offline versionada — 8 de octubre de 2026
+
+Base: `9ba688db25e656ff4a856d8f7f4f1e84fc84833d`, rama `chatusal-v2`, árbol inicialmente limpio.
+No se realizan inferencias ni conteos; diarios, autorizaciones y registros privados no se modifican.
+
+**Hallazgo confirmado:** el adaptador pedía al proveedor calcular manualmente offsets UTF-16
+`[start,end)` (fin exclusivo). El informe de `submission.delivery.text` llega sin recortes ni
+normalización al JSON y al validador; `String.slice` usa la misma convención. No se ha demostrado
+un desacuerdo de unidades, transformaciones entre capas ni una restricción incorrecta del validador.
+La dependencia del cálculo manual de posiciones es la fragilidad corregida. La respuesta descartada
+no permite determinar si R2 falló por rango, límites o literalidad. Tampoco permite atribuir esa
+causa al primer intento: ambos resultados históricos permanecen intactos.
+
+### Representación y comprobación
+
+El proveedor COV1 usa ahora `referral-report-literal-adjudication/2` e instrucciones de adaptación
+`report-literal-instructions/1`. Cada cita **del informe**, tanto en criterios como en afirmaciones
+adicionales, contiene `quote` literal y `occurrence` (null para coincidencia única; ordinal desde 1
+para desambiguar repeticiones, incluidas las solapadas). No admite offsets del proveedor.
+El servidor busca coincidencias exactas sobre el texto original y construye los offsets UTF-16:
+
+- Una coincidencia inequívoca permite derivarlos; varias sin ordinal se rechazan.
+- El ordinal debe designar una coincidencia existente: nunca se elige la primera por defecto.
+- Texto inexistente, paráfrasis, cambio de espacios, saltos de línea o normalización Unicode se rechazan.
+- Campos de offsets añadidos a la representación nueva se rechazan por esquema estricto; no se reparan.
+
+Se conserva el dominio `referral-report-adjudication/1`, con sus spans exactos y validación final;
+los offsets suministrados por runtimes históricos siguen comprobándose, sin corrección silenciosa.
+El runtime COV1 añade `:report-literal/2` a su referencia. `prepareFirstCovBatch(true)` permite
+reconstruir **solo offline** la proyección histórica (manifest
+`b03e1ac613fdff7021d3e26da44f195c6aba7f2f6ab607f09d89616e7e907864`); las entradas live no exponen
+un selector de versión antigua. COV2/COV3 mantienen sus proyecciones exactas y expectativas.
+Las citas a fuentes de entrevista/perfil siguen usando offsets: el ajuste está limitado al informe.
+
+`cov-diagnostic/1` amplía su vocabulario cerrado con `REPORT_CITATION_RANGE_INVALID`,
+`REPORT_CITATION_OUT_OF_BOUNDS`, `REPORT_CITATION_TEXT_MISMATCH`, `REPORT_CITATION_TEXT_NOT_FOUND`,
+`REPORT_CITATION_AMBIGUOUS`, `REPORT_CITATION_OCCURRENCE_INVALID` y
+`REPORT_CITATION_REPRESENTATION_INVALID`, etapa `VALIDATION`. El esquema exterior puede rechazar
+antes una forma inválida (`PROVIDER_SCHEMA_INVALID` o `ADJUDICATION_SCHEMA_INVALID`).
+Se conserva el código genérico histórico. No se registran citas, valores recibidos, claves arbitrarias
+ni respuestas raw en errores; uso e identificadores disponibles se conservan antes de la validación.
+
+### Evidencia y límites
+
+**141/141 pruebas offline**: citas 13, informe 43, calibración 27, diagnósticos 17, controles 31 y
+R2 separado 10. Cubren coincidencia única/repetida/solapada/inexistente, rangos inválidos, acentos,
+Unicode compuesto/descompuesto, emoji, CRLF/LF, espacios, aislamiento del diario, metadatos y errores
+sin filtración. Una respuesta **sintética** de R2 conserva ambos criterios y «Vive sola» como
+`UNSUPPORTED`; no reconstruye la respuesta real perdida ni acredita calidad semántica.
+TypeScript (`--noEmit --incremental false`) y diff-check PASS. No se repite suite completa:
+el alcance es la representación de citas COV1 y se ejecutan sus regresiones y controles compartidos.
+
+**La solicitud al proveedor cambia** (instrucciones, esquema, referencia y digest): el conteo R2 de
+2.364 tokens y su reserva calculada de 0,101910 USD son históricos y no presupuestan esta nueva
+proyección. Una ejecución posterior necesita conteo fresco vinculado al nuevo hash, reserva
+recalculada y autorización vinculada a esa solicitud; los diarios parados no se reabren.
+No se realizan esas operaciones en este encargo. Costes calculados y reservas históricas no cambian.
+Validar literalidad no acredita soporte semántico ni exhaustividad al identificar afirmaciones.
+La causa concreta del fallo real sigue indeterminada hasta donde permite la evidencia conservada.
+Sin scoring, puntos, aceptación semántica final ni integración productiva. M6 64%, proyecto 51.53%,
+M6/M6-E PARTIAL, PED2 abierto y D3B OPEN / VALIDATION DEBT.
+
 ## Diagnóstico R2 separado ejecutado — 8 de octubre de 2026
 
 Base: `8b1461c858c68c135508b5e5dd76405a9387aa7c`, rama `chatusal-v2`, árbol inicialmente limpio.

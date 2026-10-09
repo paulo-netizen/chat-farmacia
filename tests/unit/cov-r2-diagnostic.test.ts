@@ -35,9 +35,9 @@ function factory(invalid = false) {
   const parse = vi.fn(async (body: { input: string; model: string }) => {
     const q = JSON.parse(body.input);
     return { id: 'resp_diagnostic', _request_id: 'req_diagnostic', model: body.model, status: 'completed', service_tier: 'default', output: [],
-      usage: { input_tokens: 2364, output_tokens: 30 }, output_parsed: { contractVersion: 'referral-report-adjudication/1', requestDigest: q.requestDigest,
+      usage: { input_tokens: 2364, output_tokens: 30 }, output_parsed: { contractVersion: 'referral-report-literal-adjudication/2', requestDigest: q.requestDigest,
         documentKind: 'WRITTEN_REPORT', claims: [], criteria: q.untrustedData.requirements.map((r: { contentId: string }) => ({ contentId: r.contentId, status: 'UNCERTAIN',
-          reportEvidence: invalid ? [{ start: 0, end: 1, quote: 'clinical-secret' }] : [], sourceEvidence: [] })) } };
+          reportEvidence: invalid ? [{ quote: 'clinical-secret', occurrence: null }] : [], sourceEvidence: [] })) } };
   });
   return { parse, make: () => ({ baseURL: COV_WIRE_POLICY.endpoint, responses: { parse } }) as never };
 }
@@ -58,7 +58,7 @@ describe('deliberate isolated R2 diagnostic', () => {
     const { grant, bytes } = await setup(), f = factory(true);
     await runR2Diagnostic({ mode: 'live', authorization: grant, clientFactory: f.make });
     const journal = readFileSync(join(grant.ledgerDirectory, 'journal.jsonl'), 'utf8');
-    expect(journal).toContain('REPORT_CITATION_INVALID'); expect(journal).toContain('req_diagnostic'); expect(journal).toContain('2364'); expect(journal).not.toContain('clinical-secret');
+    expect(journal).toContain('REPORT_CITATION_TEXT_NOT_FOUND'); expect(journal).toContain('req_diagnostic'); expect(journal).toContain('2364'); expect(journal).not.toContain('clinical-secret');
     await expect(runR2Diagnostic({ mode: 'live', authorization: grant, clientFactory: f.make })).rejects.toThrow();
     expect(f.parse).toHaveBeenCalledTimes(1); expect(readFileSync(join(grant.parent.ledgerDirectory, 'journal.jsonl'))).toEqual(bytes);
   });

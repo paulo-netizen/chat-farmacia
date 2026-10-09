@@ -42,7 +42,7 @@ function abstain(body: { input: string; model: string }) {
   const q = JSON.parse(body.input);
   const common = { requestDigest: q.requestDigest };
   const result = q.contractVersion === 'referral-report-request/1'
-    ? { ...common, contractVersion: 'referral-report-adjudication/1', documentKind: 'WRITTEN_REPORT', claims: [],
+    ? { ...common, contractVersion: 'referral-report-literal-adjudication/2', documentKind: 'WRITTEN_REPORT', claims: [],
       criteria: q.untrustedData.requirements.map((r: { contentId: string }) => ({ contentId: r.contentId,
         status: 'UNCERTAIN', reportEvidence: [], sourceEvidence: [] })) }
     : q.contractVersion === 'follow-up-plan-request/1'
@@ -235,7 +235,7 @@ describe('closed COV twelve-example execution', () => {
     const create = vi.fn(async (body: { input: string; model: string }) => {
       const response = abstain(body);
       const parsed = response.output_parsed as { criteria: { reportEvidence: unknown[] }[] };
-      parsed.criteria[0].reportEvidence = [{ start: 0, end: 1, quote: 'clinical-secret' }];
+      parsed.criteria[0].reportEvidence = [{ quote: 'clinical-secret', occurrence: null }];
       const wire = { ...response, output: [{ type: 'message', content: [{ type: 'output_text', text: JSON.stringify(parsed) }] }] };
       Object.defineProperty(wire, '_request_id', { value: 'req_non_enumerable', enumerable: false });
       return wire;
@@ -244,7 +244,7 @@ describe('closed COV twelve-example execution', () => {
     await expect(runFirstCovBatch({ mode: 'live', authorization: grant, clientFactory: () => wrapper })).rejects.toThrow();
     expect(create).toHaveBeenCalledTimes(1);
     const stored = journal(directory);
-    expect(stored).toContain('REPORT_CITATION_INVALID'); expect(stored).toContain('req_non_enumerable');
+    expect(stored).toContain('REPORT_CITATION_TEXT_NOT_FOUND'); expect(stored).toContain('req_non_enumerable');
     expect(stored).toContain('4500'); expect(stored).not.toContain('clinical-secret');
   });
   it('does not attach arbitrary provider usage fields or raw content to a parse error', async () => {

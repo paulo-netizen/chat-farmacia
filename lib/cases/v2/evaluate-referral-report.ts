@@ -1,4 +1,5 @@
 import { createHash } from 'node:crypto';
+import { validateReportSpan } from './report-citations';
 import { CovDiagnosticError, covDiagnostic, type CovDiagnostic, type CovDiagnosticCode } from './cov-diagnostics';
 import { validatePharmaceuticalClinicalReferenceV2 } from './validate-pharmaceutical-clinical-reference';
 import { validateSessionTranscriptSnapshotV2 } from './spfa-session-transcript';
@@ -153,7 +154,7 @@ export async function evaluateReferralReportV1(input: {
     assert(result.criteria.every(item => requiredIds.includes(item.contentId)), 'CRITERIA_UNKNOWN');
     assert(result.criteria.length === requiredIds.length, 'CRITERIA_MISSING');
     for (const criterion of result.criteria) {
-      assert(criterion.reportEvidence.every(span => spanMatches(span, request.untrustedData.reportText)), 'REPORT_CITATION_INVALID');
+      criterion.reportEvidence.forEach(span => validateReportSpan(span, request.untrustedData.reportText));
       criterion.sourceEvidence.forEach(sourceMatches);
       if (criterion.status === 'DEMONSTRATED' || criterion.status === 'CONTRADICTORY') {
         assert(criterion.reportEvidence.length > 0 && hasAvailableFact(criterion.sourceEvidence), 'CRITERION_SUPPORT_MISSING');
@@ -164,7 +165,7 @@ export async function evaluateReferralReportV1(input: {
       }
     }
     for (const claim of result.claims) {
-      assert(spanMatches(claim.reportEvidence, request.untrustedData.reportText), 'REPORT_CITATION_INVALID');
+      validateReportSpan(claim.reportEvidence, request.untrustedData.reportText);
       claim.sourceEvidence.forEach(sourceMatches);
       if (claim.status === 'SUPPORTED' || claim.status === 'CONTRADICTORY') assert(hasAvailableFact(claim.sourceEvidence), 'CLAIM_SUPPORT_MISSING');
       if (claim.status === 'UNSUPPORTED' && context.transcriptCompleteness !== 'COMPLETE') claim.status = 'UNCERTAIN';

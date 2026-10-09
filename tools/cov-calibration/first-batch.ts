@@ -9,14 +9,14 @@ import { COV_FIRST_IDS, COV_FIRST_CONFIG, COV_WIRE_POLICY, COV_PRICE, COV_PROPOS
 import { CovExecutionSession, covSafeMetadata } from '../../lib/cases/v2/cov-execution-session';
 
 /** Builds the exact twelve requests without a client, credentials, or network. */
-export async function prepareFirstCovBatch() {
+export async function prepareFirstCovBatch(legacyReportProjection = false) {
   const all = buildCalibrationFixtures();
   const fixtures = COV_FIRST_IDS.map(id => all.find(f => f.id === id)!);
   const manifest: CovManifest = [];
   for (const fixture of fixtures) {
     let projected: ReturnType<typeof projectCovRequest> | undefined;
-    const capture = (capability: CovCapability) => ({ runtimeRef: covRuntimeRef(COV_FIRST_CONFIG),
-      adjudicate: async (q: CovRequest) => { projected = projectCovRequest(capability, q, COV_FIRST_CONFIG); throw new Error('COV_DRY_CAPTURE'); } });
+    const capture = (capability: CovCapability) => ({ runtimeRef: covRuntimeRef(COV_FIRST_CONFIG, legacyReportProjection ? undefined : capability),
+      adjudicate: async (q: CovRequest) => { projected = projectCovRequest(capability, q, COV_FIRST_CONFIG, legacyReportProjection); throw new Error('COV_DRY_CAPTURE'); } });
     await evaluateFixture(fixture, { COV1: capture('COV1'), COV2: capture('COV2'), COV3: capture('COV3') });
     if (!projected) throw new Error('COV_DRY_CAPTURE_FAILED');
     manifest.push({ id: fixture.id as typeof COV_FIRST_IDS[number], fixtureHash: covHash(fixture),

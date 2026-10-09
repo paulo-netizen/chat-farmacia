@@ -25,6 +25,11 @@ El repositorio dispone de una suite automatizada amplia. M6-A, M6-B, M6-C, M6-D1
 
 ## Estado vigente y próximo frente funcional
 
+Citas COV1 (8 de octubre, ajuste offline): representación literal versionada, posiciones derivadas
+por el servidor y rechazo de ambigüedad; diagnóstico seguro desglosado. Causa concreta de R2 no
+recuperable; históricos conservados. Solicitud cambiada: requiere nuevo conteo antes de cualquier
+futura ejecución. Sin llamadas ni puntos; [evidencia y límites](docs/v2/25_COV_SEMANTIC_CALIBRATION.md).
+
 Diagnóstico separado R2 (8 de octubre): entrada restringida implementada; un conteo actualizado y
 una inferencia, detenida con `cov-diagnostic/1: VALIDATION / REPORT_CITATION_INVALID`.
 Diario original intacto; ninguna repetición ni otros ejemplos. Reserva acumulada 0,305740 USD,
