@@ -42,14 +42,14 @@ function abstain(body: { input: string; model: string }) {
   const q = JSON.parse(body.input);
   const common = { requestDigest: q.requestDigest };
   const result = q.contractVersion === 'referral-report-request/1'
-    ? { ...common, contractVersion: 'referral-report-literal-adjudication/2', documentKind: 'WRITTEN_REPORT', claims: [],
+    ? { ...common, contractVersion: 'referral-report-sources-adjudication/3', documentKind: 'WRITTEN_REPORT', claims: [],
       criteria: q.untrustedData.requirements.map((r: { contentId: string }) => ({ contentId: r.contentId,
         status: 'UNCERTAIN', reportEvidence: [], sourceEvidence: [] })) }
     : q.contractVersion === 'follow-up-plan-request/1'
-      ? { ...common, contractVersion: 'follow-up-plan-adjudication/1', planKind: 'UNCERTAIN', planEvidence: [], relations: [],
+      ? { ...common, contractVersion: 'follow-up-plan-sources-adjudication/2', planKind: 'UNCERTAIN', planEvidence: [], relations: [],
         criteria: q.requirements.configuration.elements.map((r: { requirementId: string }) => ({ requirementId: r.requirementId,
           status: 'UNCERTAIN', studentEvidence: [], contextEvidence: [], observedTriggerForms: [] })) }
-      : { ...common, contractVersion: 'personalization-adjudication/2', difficulty: { status: 'UNCERTAIN', evidence: [] }, links: [], incompatibilities: [],
+      : { ...common, contractVersion: 'personalization-sources-adjudication/3', difficulty: { status: 'UNCERTAIN', evidence: [] }, links: [], incompatibilities: [],
         criteria: q.requirements.configuration.elements.map((r: { requirementId: string }) => ({ requirementId: r.requirementId,
           status: 'UNCERTAIN', linkRef: null, studentEvidence: [] })) };
   return { id: 'resp_test', _request_id: 'req_test', status: 'completed', service_tier: 'default', model: body.model,

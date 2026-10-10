@@ -34,7 +34,7 @@ const cases: [CovDiagnosticCode, (r: ReferralReportAdjudicationV1) => void][] = 
   ['DOCUMENT_STATE_INVALID', r => { r.documentKind = 'INTENT_ONLY'; }],
   ['REPORT_CITATION_TEXT_MISMATCH', r => { r.criteria[0].reportEvidence[0].quote = 'clinical-secret'; }],
   ['SOURCE_REFERENCE_INVALID', r => { Object.assign(r.criteria[0].sourceEvidence[0], { messageId: 'clinical-secret' }); }],
-  ['SOURCE_CITATION_INVALID', r => { r.criteria[0].sourceEvidence[0].quote = 'clinical-secret'; }],
+  ['SOURCE_CITATION_TEXT_MISMATCH', r => { r.criteria[0].sourceEvidence[0].quote = 'clinical-secret'; }],
   ['CRITERION_SUPPORT_MISSING', r => { r.criteria[0].sourceEvidence = []; }],
   ['CLAIM_SUPPORT_MISSING', r => { r.claims[1].status = 'SUPPORTED'; }],
   ['REPORT_CITATION_TEXT_MISMATCH', r => { r.claims[1].reportEvidence.start++; }],
@@ -81,8 +81,7 @@ describe('safe COV1 diagnostic extension', () => {
     const old = await prepareFirstCovBatch(true), current = await prepareFirstCovBatch();
     expect(current.manifestHash).not.toBe(old.manifestHash);
     for (let i = 0; i < 12; i++) {
-      if (i < 4) expect(current.manifest[i].requestHash).not.toBe(old.manifest[i].requestHash);
-      else expect(current.manifest[i]).toEqual(old.manifest[i]);
+      expect(current.manifest[i].requestHash).not.toBe(old.manifest[i].requestHash);
     }
     expect((await prepareFirstCovBatch(true)).manifestHash).toBe('b03e1ac613fdff7021d3e26da44f195c6aba7f2f6ab607f09d89616e7e907864');
   });

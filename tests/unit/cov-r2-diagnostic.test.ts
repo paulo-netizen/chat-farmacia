@@ -35,7 +35,7 @@ function factory(invalid = false) {
   const parse = vi.fn(async (body: { input: string; model: string }) => {
     const q = JSON.parse(body.input);
     return { id: 'resp_diagnostic', _request_id: 'req_diagnostic', model: body.model, status: 'completed', service_tier: 'default', output: [],
-      usage: { input_tokens: 2364, output_tokens: 30 }, output_parsed: { contractVersion: 'referral-report-literal-adjudication/2', requestDigest: q.requestDigest,
+      usage: { input_tokens: 2364, output_tokens: 30 }, output_parsed: { contractVersion: 'referral-report-sources-adjudication/3', requestDigest: q.requestDigest,
         documentKind: 'WRITTEN_REPORT', claims: [], criteria: q.untrustedData.requirements.map((r: { contentId: string }) => ({ contentId: r.contentId, status: 'UNCERTAIN',
           reportEvidence: invalid ? [{ quote: 'clinical-secret', occurrence: null }] : [], sourceEvidence: [] })) } };
   });

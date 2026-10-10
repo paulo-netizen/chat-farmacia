@@ -1,5 +1,7 @@
 import { createHash } from 'node:crypto';
 import { z } from 'zod';
+import { covDiagnostic, CovDiagnosticError } from './cov-diagnostics';
+import { validateSourceSpan } from './cov-source-citations';
 import { validateSessionTranscriptSnapshotV2 } from './spfa-session-transcript';
 import {
   followUpRequirementsSchema, followUpContextSchema, followUpAdjudicationSchema,
@@ -54,7 +56,7 @@ function freeze<T>(value: T): T {
   return value;
 }
 function spanMatches(span: { start: number; end: number; quote: string }, text: string): boolean {
-  return span.start < span.end && span.end <= text.length && text.slice(span.start, span.end) === span.quote;
+  validateSourceSpan(span, text); return true;
 }
 
 /** Pure server-internal offline boundary. Caller must authorize the session and approved snapshots.
@@ -110,14 +112,16 @@ export async function evaluateFollowUpPlanV1(input: {
   const execution = { runtimeRef: request.runtimeRef, requestDigest: request.requestDigest };
   let raw: unknown;
   try { raw = await runtime.adjudicate(request); }
-  catch { return finish('TECHNICAL_FAILURE', 'RUNTIME_FAILED', execution); }
+  catch (error) { return finish('TECHNICAL_FAILURE', 'RUNTIME_FAILED', { ...execution, diagnostic: covDiagnostic(error, 'RUNTIME_FAILURE') }); }
   try {
     const result = followUpAdjudicationSchema.parse(raw);
     assert(result.requestDigest === request.requestDigest);
     const byId = new Map(transcript.messages.map((message, index) => [String(message.messageId), { message, index }]));
     const studentMatches = (span: FollowUpStudentSpanV1) => {
       const message = byId.get(span.messageId)?.message;
-      return message?.role === 'student' && spanMatches(span, message.content);
+      if (!message) throw new CovDiagnosticError('SOURCE_REFERENCE_NOT_FOUND');
+      if (message.role !== 'student') throw new CovDiagnosticError('SOURCE_ROLE_INVALID');
+      return spanMatches(span, message.content);
     };
     const ordered = (a: FollowUpStudentSpanV1, b: FollowUpStudentSpanV1) =>
       byId.get(a.messageId)!.index - byId.get(b.messageId)!.index || a.start - b.start || a.end - b.end;
@@ -132,7 +136,9 @@ export async function evaluateFollowUpPlanV1(input: {
       assert(criterion.contextEvidence.every(span => {
         if (span.source === 'PUBLIC') return spanMatches(span, String(context.publicProfile[span.field]));
         const message = byId.get(span.messageId)?.message;
-        return message?.role === 'patient' && spanMatches(span, message.content);
+        if (!message) throw new CovDiagnosticError('SOURCE_REFERENCE_NOT_FOUND');
+        if (message.role !== 'patient') throw new CovDiagnosticError('SOURCE_ROLE_INVALID');
+        return spanMatches(span, message.content);
       }));
       if (element.aspect !== 'REVIEW_TRIGGER') assert(criterion.observedTriggerForms.length === 0);
       if (criterion.observedTriggerForms.length > 0) assert(criterion.studentEvidence.length > 0);
@@ -168,5 +174,5 @@ export async function evaluateFollowUpPlanV1(input: {
     result.relations.sort((a, b) => ordered(a.earlier, b.earlier) || ordered(a.later, b.later));
     return finish('REVIEW_REQUIRED', 'ADJUDICATED', { ...execution, planKind: result.planKind,
       criteria: result.criteria, relations: result.relations, evidenceTimeline: timeline });
-  } catch { return finish('TECHNICAL_FAILURE', 'INVALID_ADJUDICATION', execution); }
+  } catch (error) { return finish('TECHNICAL_FAILURE', 'INVALID_ADJUDICATION', { ...execution, diagnostic: covDiagnostic(error, 'ADJUDICATION_INVALID') }); }
 }

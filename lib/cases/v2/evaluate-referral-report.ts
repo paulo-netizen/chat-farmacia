@@ -1,5 +1,6 @@
 import { createHash } from 'node:crypto';
 import { validateReportSpan } from './report-citations';
+import { validateSourceSpan } from './cov-source-citations';
 import { CovDiagnosticError, covDiagnostic, type CovDiagnostic, type CovDiagnosticCode } from './cov-diagnostics';
 import { validatePharmaceuticalClinicalReferenceV2 } from './validate-pharmaceutical-clinical-reference';
 import { validateSessionTranscriptSnapshotV2 } from './spfa-session-transcript';
@@ -143,7 +144,7 @@ export async function evaluateReferralReportV1(input: {
       const text = span.source === 'PUBLIC' ? String(context.publicProfile[span.field])
         : transcript.messages.find(message => message.messageId === span.messageId)?.content;
       assert(text !== undefined, 'SOURCE_REFERENCE_INVALID');
-      assert(spanMatches(span, text), 'SOURCE_CITATION_INVALID');
+      validateSourceSpan(span, text);
       return true;
     };
     const hasAvailableFact = (spans: ReportSourceSpanV1[]) => spans.some(span =>

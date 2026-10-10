@@ -1,5 +1,7 @@
 import { createHash } from 'node:crypto';
 import { z } from 'zod';
+import { covDiagnostic, CovDiagnosticError } from './cov-diagnostics';
+import { validateSourceSpan } from './cov-source-citations';
 import { validateSessionTranscriptSnapshotV2 } from './spfa-session-transcript';
 import {
   personalizationRequirementsSchema, personalizationContextSchema, personalizationAdjudicationSchemaV2,
@@ -53,7 +55,7 @@ function freeze<T>(value: T): T {
   return value;
 }
 function matches(span: { start: number; end: number; quote: string }, text: string): boolean {
-  return span.start < span.end && span.end <= text.length && text.slice(span.start, span.end) === span.quote;
+  validateSourceSpan(span, text); return true;
 }
 
 /** Server-internal offline boundary. Bindings are integrity checks, not authorization or proof of approval. */
@@ -92,14 +94,16 @@ export async function evaluatePersonalizationV2(input: {
   const execution = { requestDigest: request.requestDigest, runtimeRef: request.runtimeRef };
   let raw: unknown;
   try { raw = await runtime.adjudicate(request); }
-  catch { return finish('TECHNICAL_FAILURE', 'RUNTIME_FAILED', execution); }
+  catch (error) { return finish('TECHNICAL_FAILURE', 'RUNTIME_FAILED', { ...execution, diagnostic: covDiagnostic(error, 'RUNTIME_FAILURE') }); }
   try {
     const result = personalizationAdjudicationSchemaV2.parse(raw);
     assert(result.requestDigest === request.requestDigest);
     const messages = new Map(transcript.messages.map((message, index) => [String(message.messageId), { message, index }]));
     const cited = (span: PersonalizationSpanV1, role: 'patient' | 'student') => {
       const entry = messages.get(span.messageId);
-      assert(entry?.message.role === role && matches(span, entry.message.content));
+      if (!entry) throw new CovDiagnosticError('SOURCE_REFERENCE_NOT_FOUND');
+      if (entry.message.role !== role) throw new CovDiagnosticError('SOURCE_ROLE_INVALID');
+      matches(span, entry.message.content);
     };
     const before = (a: PersonalizationSpanV1, b: PersonalizationSpanV1) =>
       messages.get(a.messageId)!.index < messages.get(b.messageId)!.index ||
@@ -168,5 +172,5 @@ export async function evaluatePersonalizationV2(input: {
     result.links.sort((a, b) => messages.get(a.proposal.messageId)!.index - messages.get(b.proposal.messageId)!.index || a.proposal.start - b.proposal.start);
     return finish('REVIEW_REQUIRED', 'ADJUDICATED', { ...execution, difficulty: result.difficulty,
       links: result.links, incompatibilities: result.incompatibilities, criteria: result.criteria });
-  } catch { return finish('TECHNICAL_FAILURE', 'INVALID_ADJUDICATION', execution); }
+  } catch (error) { return finish('TECHNICAL_FAILURE', 'INVALID_ADJUDICATION', { ...execution, diagnostic: covDiagnostic(error, 'ADJUDICATION_INVALID') }); }
 }

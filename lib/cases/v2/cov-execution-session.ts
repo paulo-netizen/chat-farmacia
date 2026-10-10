@@ -3,6 +3,7 @@ import { isAbsolute, join, resolve } from 'node:path';
 import { covHash, covReservationMicroUsd, validateCovGrant, type CovGrant, type CovManifest } from './cov-experiment-policy';
 import { validateCovR2Grant, type CovR2Grant } from './cov-r2-diagnostic-policy';
 import { validateCovContinuationGrant, type CovContinuationGrant } from './cov-continuation-policy';
+import { validateCovSourceRunGrant, type CovSourceRunGrant } from './cov-source-run-policy';
 
 export type CovSafeMetadata = { responseId?: string; requestId?: string; inputTokens?: number;
   outputTokens?: number; cachedTokens?: number; cacheWriteTokens?: number; reasoningTokens?: number };
@@ -28,7 +29,7 @@ const sessions = new WeakSet<CovExecutionSession>();
 
 /** Single-host, append-only, fsync-before-send. A stale lock is NEVER stolen automatically. */
 export class CovExecutionSession {
-  private grant: CovGrant | CovR2Grant | CovContinuationGrant;
+  private grant: CovGrant | CovR2Grant | CovContinuationGrant | CovSourceRunGrant;
   private fd = -1;
   private lockFd = -1;
   private lockPath = '';
@@ -41,7 +42,7 @@ export class CovExecutionSession {
   private closed = false;
   private failed = false;
   private busy = false;
-  private constructor(grant: CovGrant | CovR2Grant | CovContinuationGrant) { this.grant = grant; }
+  private constructor(grant: CovGrant | CovR2Grant | CovContinuationGrant | CovSourceRunGrant) { this.grant = grant; }
 
   static open(authorization: unknown, manifest: CovManifest): CovExecutionSession {
     return this.openValidated(validateCovGrant(authorization, manifest));
@@ -52,7 +53,10 @@ export class CovExecutionSession {
   static openContinuation(authorization: unknown, manifest: CovManifest): CovExecutionSession {
     return this.openValidated(validateCovContinuationGrant(authorization, manifest));
   }
-  private static openValidated(grant: CovGrant | CovR2Grant | CovContinuationGrant): CovExecutionSession {
+  static openSourceRun(authorization: unknown, manifest: CovManifest): CovExecutionSession {
+    return this.openValidated(validateCovSourceRunGrant(authorization, manifest));
+  }
+  private static openValidated(grant: CovGrant | CovR2Grant | CovContinuationGrant | CovSourceRunGrant): CovExecutionSession {
     if (!isAbsolute(grant.ledgerDirectory)) throw new Error('COV_LEDGER_PATH_INVALID');
     const directory = resolve(grant.ledgerDirectory);
     mkdirSync(directory, { recursive: true, mode: 0o700 });

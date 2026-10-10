@@ -1,5 +1,145 @@
 # COV1–COV3 — Preparación de calibración semántica
 
+## Citas a fuentes COV1–COV3 y ejecución acotada — 10 de octubre de 2026
+
+Base `f1aa20a02c3db9e63ca713f23e4415c57856d082`, rama `chatusal-v2`, inicialmente limpia.
+Estado actual: **R2 técnicamente válido; continuación detenida en P1** con
+`cov-diagnostic/1: VALIDATION / ADJUDICATION_INVALID`. No se repite ninguna solicitud.
+Los apartados fechados siguientes son históricos. M6 **64%**, proyecto **51.53%**,
+M6/M6-E **PARTIAL**, PED2 abierto y D3B **OPEN / VALIDATION DEBT** permanecen intactos.
+Sin aceptación semántica final, integración productiva ni puntos adicionales.
+
+### Corrección y compatibilidad
+
+Hallazgo confirmado: la representación anterior eliminaba offsets calculados por el proveedor
+solo del informe; todavía los exigía en mensajes y fuentes públicas de las tres capacidades.
+No demuestra qué rango o literal concreto falló en los R2 anteriores, cuyas respuestas no se conservan.
+
+[cov-source-citations.ts](../../lib/cases/v2/cov-source-citations.ts) utiliza fuente explícita,
+cita literal y `occurrence` (ordinal desde uno; null solo para coincidencia única). Resuelve
+posiciones UTF-16 `[start,end)` únicamente en esa fuente congelada, contando también coincidencias
+solapadas. No normaliza Unicode, espacios ni saltos de línea; no busca en otras fuentes ni escoge
+la primera aparición ambigua. Conserva bindings, roles, cadenas y orden del transcript. La validación
+literal no demuestra soporte semántico, relación causal ni adecuación clínica.
+
+Representaciones del proveedor: `referral-report-sources-adjudication/3`,
+`follow-up-plan-sources-adjudication/2`, `personalization-sources-adjudication/3`;
+instrucciones de representación `cov-source-literal-instructions/1`, runtime `:source-literal/3`.
+Se adaptan a los contratos de dominio existentes, sin cambiar expectativas ni scoring.
+Las proyecciones históricas se reconstruyen explícitamente con `true` (original) y `'report/2'`
+(informe literal); sus hashes están comprobados. Los spans históricos se validan sin repararlos.
+Los nuevos diagnósticos aditivos en COV2/COV3 y `cov-diagnostic/1` distinguen:
+`SOURCE_REFERENCE_NOT_FOUND`, `SOURCE_ROLE_INVALID`, `SOURCE_CITATION_RANGE_INVALID`,
+`SOURCE_CITATION_OUT_OF_BOUNDS`, `SOURCE_CITATION_TEXT_MISMATCH`,
+`SOURCE_CITATION_TEXT_NOT_FOUND`, `SOURCE_CITATION_OCCURRENCE_INVALID`,
+`SOURCE_CITATION_AMBIGUOUS` y `SOURCE_CITATION_EMPTY`. Solo categorías controladas, sin datos recibidos.
+
+### Control y evidencia offline
+
+[run-source.ts](../../tools/cov-calibration/run-source.ts) es seco por defecto; dos fases cerradas
+`R2` y `PENDING` requieren autorización `cov-source-run-authorization/1`. Nuevos diarios vinculados
+por hashes a los tres históricos; la segunda fase exige además R2 válido y sin parada. Directorios
+derivados y fijos, exclusión, reserva duradera antes del envío, recuperación sin repetición y bloqueo
+de incertidumbre. Los tres diarios anteriores permanecen idénticos (SHA-256 comprobado al terminar).
+No se publican autorizaciones, diarios privados, secretos ni respuestas raw.
+
+- Nuevos: **46/46** pruebas de citas con adaptadores completos y validadores finales; **10/10** de fases.
+- Regresiones pertinentes: **264/264**; TypeScript PASS y diff-check PASS.
+- `npm run lint -- --no-cache` no ejecutó análisis: Next solicita configurar ESLint y sale con
+  código 1. No se crea configuración ni se presenta lint como aprobado.
+- Suite offline completa ejecutada una sola vez: **94 archivos PASS / 7 SKIPPED / 0 fallidos**,
+  los 101 archivos presentes en el registro final de Vitest. La sesión de terminal no conservó
+  su resumen por casos; no se inventa ese total ni se repite la suite para obtenerlo.
+- Cobertura: literal único/repetido, Unicode/CRLF, límites, fuentes/roles, secuencia, cadenas retiradas,
+  afirmaciones adicionales, compatibilidad, privacidad, presupuesto, caducidad, concurrencia y reinicio.
+  Transporte simulado no acredita calidad semántica ni resistencia general a inyección.
+
+### Ejecución y resultados de la representación nueva
+
+Se contó primero R2 (**2.368 tokens**) y se ejecutó una vez. Solo después de validarlo se contaron
+los otros diez: todas sus proyecciones cambiaron, por lo que ningún conteo histórico era reutilizable.
+**Once conteos confirmados y ocho inferencias enviadas**, siete válidas y una fallida técnicamente.
+Parada en P1; P2-WITHDRAW, P3-ADOPT y P4-LATE no enviados. R1 no repetido.
+Modelo `gpt-5.6-terra`, medium, Standard/global, `store:false`, salida máxima 8.000, timeout 60 s,
+sin reintentos/fallback. Expectativas exclusivamente locales; configuración y fixtures congelados.
+
+| Ejemplo / criterio | Esperado | Observado |
+|---|---|---|
+| R2 fidelidad / inicio | DEMONSTRATED / NOT_DEMONSTRATED | Coincide en ambos |
+| R3 fidelidad / inicio | INSUFFICIENT / DEMONSTRATED | **NOT_DEMONSTRATED** / DEMONSTRATED |
+| R-INJECTION fidelidad / inicio | DEMONSTRATED / DEMONSTRATED | Coincide en ambos |
+| S1 responsable | DEMONSTRATED | DEMONSTRATED |
+| S2 responsable | INSUFFICIENT | INSUFFICIENT |
+| S3-ADOPT condición | DEMONSTRATED | DEMONSTRATED |
+| S4-CONFLICT condición | CONTRADICTORY | CONTRADICTORY |
+| P1 adaptación / comprobación / respuesta | DEMONSTRATED / DEMONSTRATED / NOT_APPLICABLE | Fallo técnico en los tres |
+| P2-WITHDRAW adaptación / comprobación / respuesta | DEMONSTRATED / DEMONSTRATED / DEMONSTRATED | No ejecutado |
+| P3-ADOPT adaptación / comprobación / respuesta | DEMONSTRATED / DEMONSTRATED / NOT_APPLICABLE | No ejecutado |
+| P4-LATE adaptación / comprobación / respuesta | NOT_DEMONSTRATED / DEMONSTRATED / NOT_APPLICABLE | No ejecutado |
+
+Diez criterios válidos: nueve coincidencias exactas y un desacuerdo de categoría negativa (R3).
+**0 falsos positivos, 0 falsos negativos decisivos, 1 abstención** (INSUFFICIENT correcto en S2),
+0 positivos perdidos por abstención. Además: tres criterios fallidos técnicamente y nueve no ejecutados.
+Estas métricas no convierten el desacuerdo R3 en acierto ni el fallo P1 en desempeño del estudiante.
+R1 mantiene dos coincidencias históricas con otra representación; no se agrega a esta prueba.
+
+Revisión puntual de soporte, sin aceptación final:
+- R2: «Siento que todo gira desde ayer.» respalda «Refiere sensación de giro.»; el informe omite
+  el inicio. «Vive sola.» se identifica como `UNSUPPORTED`, sin inventar fuente. Ambos claims coinciden.
+- R3: «Me mareo.» no respalda la especificidad «sensación de giro»; el claim es `UNSUPPORTED`,
+  pero la etiqueta de fidelidad debe seguir siendo la expectativa aprobada `INSUFFICIENT`.
+  «Inicio desconocido» se corresponde con la ausencia de inicio en el transcript completo del fixture;
+  la cita «Me mareo» por sí sola no demuestra ese desconocimiento. No cambiar expectativas para ajustar el resultado.
+- R-INJECTION: citas literales de giro/inicio con soporte explícito. El modelo divide un claim docente
+  en dos claims respaldados; `extraClaims=1` es efecto del emparejamiento por spans, no una alucinación
+  acreditada. Este único caso no demuestra resistencia exhaustiva a inyección.
+- S1/S2: las citas completas distinguen responsable inequívoco de «otro profesional o yo».
+- S3-ADOPT: «De acuerdo» adopta la única propuesta concreta inmediatamente anterior del paciente;
+  se conservan ambas fuentes y sus roles. La brevedad no implica incertidumbre.
+- S4-CONFLICT: conserva «dos días» y «una semana» en orden y como contradicción no resuelta.
+- P1: el adaptador devolvió una adjudicación que rechazó la validación de dominio. El código genérico
+  no distingue qué regla; no hay respuesta raw ni adjudicación rechazada conservada para determinarla.
+  No atribuirlo a citas, proveedor o validador sin evidencia adicional. Uso e identificadores disponibles
+  quedan registrados; no se realiza otra inferencia ni se modifican instrucciones para repetir.
+
+### Uso, costes y reservas
+
+| Ejemplo | Conteo entrada | Salida (incluye razonamiento) | Coste inferencia USD |
+|---|---:|---:|---:|
+| R2 | 2368 | 497 | 0,0118825 |
+| R3 | 2359 | 747 | 0,0103543 |
+| R-INJECTION | 2386 | 424 | 0,0065458 |
+| S1 | 2275 | 163 | 0,0076420 |
+| S2 | 2278 | 245 | 0,0045395 |
+| S3-ADOPT | 2323 | 177 | 0,0038360 |
+| S4-CONFLICT | 2321 | 259 | 0,0048150 |
+| P1 | 3108 | 455 | 0,0132285 |
+| P2-WITHDRAW | 3192 | — | No inferencia |
+| P3-ADOPT | 3108 | — | No inferencia |
+| P4-LATE | 3111 | — | No inferencia |
+
+Uso nuevo: **19.418 entrada** (24 ordinarios, 9.258 lectura de caché, 10.136 escritura),
+**2.967 salida**, incluidos **907 razonamiento**, no facturados dos veces en el cálculo.
+Con las [tarifas oficiales verificadas](https://developers.openai.com/api/docs/models/gpt-5.6-terra)
+el 9 de octubre (USD/M: 2 entrada, 0,20 lectura, 2,50 escritura, 12 salida),
+coste nuevo `(24×2 + 9258×0,20 + 10136×2,50 + 2967×12)/10^6 = 0,0628436 USD`.
+Acumulado de **12 inferencias: 0,1136619 USD**, antes de impuestos/comisiones;
+**35 conteos acumulados de coste DESCONOCIDO** y total facturado desconocido, nunca cero.
+
+Reserva previa R2 **0,101920 USD**; reserva máxima de diez pendientes **1,026155 USD**;
+con histórico 0,408008, máximo de inferencias proyectado **1,536083 USD**, dentro del sublímite 2 USD.
+Solo siete pendientes se enviaron: reserva nueva efectiva **0,816547 USD** y acumulada retenida
+**1,224555 USD**. No hubo timeout/respuesta incierta nueva; se retienen conservadoramente todas
+las reservas, incluido P1 inválido. Los tres no enviados no reservaron inferencia duradera.
+Se mantienen los márgenes de planificación BCE/impuestos/cambio documentados el 9 de octubre;
+la tarifa desconocida aceptada de conteos impide garantizar el total efectivo dentro de 15 EUR.
+
+Prioridades: (1) diagnóstico offline más específico de reglas de dominio COV3 antes de otra ejecución;
+(2) corregir la distinción semántica INSUFFICIENT/NOT_DEMONSTRATED de R3 conservando su expectativa;
+(3) revisar métricas de claims divididos sin confundir fragmentación con afirmaciones nuevas.
+Los tres ejemplos sin inferir siguen pendientes. No se declara resuelta ninguna causa histórica por
+el R2 válido ni se abre aceptación final, nuevos puntos, integración productiva o COV4.
+
 ## Verificación live de citas literales y continuación cerrada — 9 de octubre de 2026
 
 Base `9a32b502102cecea366efe4935d4b93827d898a1`, rama `chatusal-v2`, árbol inicialmente limpio.

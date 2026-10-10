@@ -2,7 +2,15 @@
 
 ## Baseline oficial
 
-Continuación del 9 de octubre: **STOPPED_TECHNICAL_FAILURE** en R2, código `SOURCE_CITATION_INVALID`.
+COV, 10 de octubre: citas a fuentes versionadas y resueltas por servidor en COV1–COV3.
+R2 técnicamente válido y coincidente; continuación detenida en P1 (`VALIDATION / ADJUDICATION_INVALID`).
+Once conteos, ocho inferencias, siete resultados válidos; tres ejemplos no enviados. Nueve de diez
+criterios válidos coinciden; desacuerdo R3 conservado. 56/56 pruebas nuevas, 264/264 regresiones,
+TypeScript PASS; suite completa: 94 archivos PASS / 7 SKIPPED. Coste calculable acumulado de
+12 inferencias **0,1136619 USD**, reservas retenidas **1,224555 USD**; 35 conteos y total facturado
+de coste desconocido. Sin aceptación, puntos ni integración productiva. [Evidencia y límites](25_COV_SEMANTIC_CALIBRATION.md).
+
+Histórico — continuación del 9 de octubre: **STOPPED_TECHNICAL_FAILURE** en R2, código `SOURCE_CITATION_INVALID`.
 Once conteos nuevos confirmados; una inferencia, diez pendientes no enviadas. 113/113 pruebas
 offline y TypeScript PASS. Coste calculado acumulado de cuatro inferencias 0,0508183 USD;
 reservas retenidas 0,408008 USD. Coste de 24 conteos y total facturado desconocidos. Sin puntos

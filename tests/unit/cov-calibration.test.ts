@@ -5,27 +5,27 @@ import { createCovSimulatedRuntimes, type CovClient, type CovRuntimeConfig } fro
 
 const config: CovRuntimeConfig = { model: 'gpt-5.6-sol', maxOutputTokens: 4000, maxInputBytes: 100000, timeoutMs: 1000 };
 function clientWith(parse: ReturnType<typeof vi.fn>): CovClient { return { responses: { parse } } as unknown as CovClient; }
-function span(messageId: string, quote: string) { return { messageId, quote, start: 0, end: quote.length }; }
+function span(messageId: string, quote: string) { return { messageId, quote, occurrence: null }; }
 // Mechanical provider stub only, independently written; not an oracle of semantic correctness.
 function reply(input: string, model = config.model) {
   const q = JSON.parse(input), capability = q.contractVersion;
   let output_parsed: unknown;
   if (capability === 'referral-report-request/1') {
     const quote = q.untrustedData.reportText as string, patient = q.untrustedData.messages[0];
-    output_parsed = { contractVersion: 'referral-report-literal-adjudication/2', requestDigest: q.requestDigest,
+    output_parsed = { contractVersion: 'referral-report-sources-adjudication/3', requestDigest: q.requestDigest,
       documentKind: 'WRITTEN_REPORT', criteria: q.untrustedData.requirements.map((r: { contentId: string }) => ({
         contentId: r.contentId, status: 'DEMONSTRATED', reportEvidence: [{ quote, occurrence: null }],
         sourceEvidence: [{ source: 'TRANSCRIPT', ...span(patient.messageId, patient.content) }],
       })), claims: [] };
   } else if (capability === 'follow-up-plan-request/1') {
     const m = q.untrustedData.messages.find((m: { role: string }) => m.role === 'student');
-    output_parsed = { contractVersion: 'follow-up-plan-adjudication/1', requestDigest: q.requestDigest,
+    output_parsed = { contractVersion: 'follow-up-plan-sources-adjudication/2', requestDigest: q.requestDigest,
       planKind: 'CONCRETE_PLAN', planEvidence: [span(m.messageId, m.content)], relations: [],
       criteria: q.requirements.configuration.elements.map((r: { requirementId: string }) => ({ requirementId: r.requirementId,
         status: 'DEMONSTRATED', studentEvidence: [span(m.messageId, m.content)], contextEvidence: [], observedTriggerForms: [] })) };
   } else {
     const [p, a, v] = q.untrustedData.messages;
-    output_parsed = { contractVersion: 'personalization-adjudication/2', requestDigest: q.requestDigest,
+    output_parsed = { contractVersion: 'personalization-sources-adjudication/3', requestDigest: q.requestDigest,
       difficulty: { status: 'NOT_OBSERVED', evidence: [] }, incompatibilities: [],
       links: [{ linkId: 'a', circumstances: [{ source: 'TRANSCRIPT', ...span(p.messageId, p.content) }],
         proposal: span(a.messageId, a.content), feasibilityCheck: span(v.messageId, v.content),
@@ -114,11 +114,11 @@ describe('Real COV adapters with simulated Responses transport only', () => {
       expect(params.text.format.type).toBe('json_schema'); expect(params.text.format.strict).toBe(true);
       if (id === 'R1') {
         const projected = JSON.parse(params.input);
-        expect(projected.providerRepresentation).toBe('referral-report-literal-adjudication/2');
-        expect(projected.providerInstructionsVersion).toBe('report-literal-instructions/1');
-        expect(params.instructions).toContain('Return only referral-report-literal-adjudication/2');
-        expect(params.instructions).toContain('For REPORT evidence return exact literal quote and occurrence only, never offsets.');
-        expect(params.instructions).toContain('For SOURCE evidence cite exact UTF-16 [start,end) spans');
+        expect(projected.providerRepresentation).toBe('referral-report-sources-adjudication/3');
+        expect(projected.providerInstructionsVersion).toBe('cov-source-literal-instructions/1');
+        expect(params.instructions).toContain('Return only referral-report-sources-adjudication/3');
+        expect(params.instructions).toContain('For EVERY citation return exact literal quote and occurrence, never start/end offsets.');
+        expect(params.instructions).not.toContain('Cite exact UTF-16');
       }
       expect(options).toEqual({ timeout: 1000, maxRetries: 0 });
       return reply(params.input);
@@ -135,7 +135,7 @@ describe('Real COV adapters with simulated Responses transport only', () => {
       const source = { source: 'TRANSCRIPT', ...span(message.messageId, message.content) };
       const quote = 'Refiere sensación de giro.';
       return { status: 'completed', model: config.model, error: null, output: [], output_parsed: {
-        contractVersion: 'referral-report-literal-adjudication/2', requestDigest: q.requestDigest,
+        contractVersion: 'referral-report-sources-adjudication/3', requestDigest: q.requestDigest,
         documentKind: 'WRITTEN_REPORT', criteria: [
           { contentId: q.untrustedData.requirements[0].contentId, status: 'DEMONSTRATED', reportEvidence: [{ quote, occurrence: null }], sourceEvidence: [source] },
           { contentId: q.untrustedData.requirements[1].contentId, status: 'NOT_DEMONSTRATED', reportEvidence: [], sourceEvidence: [source] },

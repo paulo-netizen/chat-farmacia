@@ -1,4 +1,5 @@
 import { z } from 'zod';
+import type { CovDiagnostic } from './cov-diagnostics';
 import { reportBindingSchema, reportSourceSpanSchema, referralReportContextSchema } from './referral-report-contract';
 import { followUpStudentSpanSchema } from './follow-up-plan-contract';
 
@@ -78,6 +79,7 @@ export type PersonalizationEvaluationV1 = Readonly<{
   requestDigest?: string; runtimeRef?: string; captureStatus: PersonalizationContextV1['captureStatus'];
   audience: 'TEACHER_REVIEW_ONLY'; validation: 'STRUCTURAL_ONLY'; semanticAcceptance: 'PENDING';
   status: 'REVIEW_REQUIRED' | 'NOT_APPLICABLE' | 'TECHNICAL_FAILURE';
+  diagnostic?: CovDiagnostic;
   reason: 'ADJUDICATED' | 'CASE_NOT_APPLICABLE' | 'CAPTURE_FAILED' | 'RUNTIME_FAILED' | 'INVALID_ADJUDICATION';
   difficulty: PersonalizationAdjudicationV1['difficulty'] | null;
   criteria: PersonalizationAdjudicationV1['criteria']; links: PersonalizationAdjudicationV1['links'];

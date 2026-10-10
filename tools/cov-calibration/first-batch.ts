@@ -3,20 +3,20 @@ import { CovDiagnosticError } from '../../lib/cases/v2/cov-diagnostics';
 import { buildCalibrationFixtures } from './fixtures';
 import { evaluateFixture, measure } from './runner';
 import { covRuntimeRef, projectCovRequest, createCovOpenAiRuntimes, type CovClient, type CovRequest,
-  type CovCapability } from '../../lib/cases/v2/cov-semantic-runtime';
+  type CovCapability, type CovProjection } from '../../lib/cases/v2/cov-semantic-runtime';
 import { COV_FIRST_IDS, COV_FIRST_CONFIG, COV_WIRE_POLICY, COV_PRICE, COV_PROPOSED_BUDGET_MICRO_USD,
   covHash, covReservationMicroUsd, validateCovGrant, type CovManifest } from '../../lib/cases/v2/cov-experiment-policy';
 import { CovExecutionSession, covSafeMetadata } from '../../lib/cases/v2/cov-execution-session';
 
 /** Builds the exact twelve requests without a client, credentials, or network. */
-export async function prepareFirstCovBatch(legacyReportProjection = false) {
+export async function prepareFirstCovBatch(legacyReportProjection: CovProjection = false) {
   const all = buildCalibrationFixtures();
   const fixtures = COV_FIRST_IDS.map(id => all.find(f => f.id === id)!);
   const manifest: CovManifest = [];
   const requests: ReturnType<typeof projectCovRequest>[] = [];
   for (const fixture of fixtures) {
     let projected: ReturnType<typeof projectCovRequest> | undefined;
-    const capture = (capability: CovCapability) => ({ runtimeRef: covRuntimeRef(COV_FIRST_CONFIG, legacyReportProjection ? undefined : capability),
+    const capture = (capability: CovCapability) => ({ runtimeRef: covRuntimeRef(COV_FIRST_CONFIG, capability, legacyReportProjection),
       adjudicate: async (q: CovRequest) => { projected = projectCovRequest(capability, q, COV_FIRST_CONFIG, legacyReportProjection); throw new Error('COV_DRY_CAPTURE'); } });
     await evaluateFixture(fixture, { COV1: capture('COV1'), COV2: capture('COV2'), COV3: capture('COV3') });
     if (!projected) throw new Error('COV_DRY_CAPTURE_FAILED');

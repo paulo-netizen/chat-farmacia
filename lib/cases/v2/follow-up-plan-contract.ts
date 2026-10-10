@@ -1,4 +1,5 @@
 import { z } from 'zod';
+import type { CovDiagnostic } from './cov-diagnostics';
 import { reportBindingSchema, reportSpanSchema, reportSourceSpanSchema, referralReportContextSchema } from './referral-report-contract';
 
 const id = z.string().min(1).refine(value => value.trim() === value && value.length > 0);
@@ -77,6 +78,7 @@ export type FollowUpEvaluationV1 = Readonly<{
   captureStatus: FollowUpContextV1['captureStatus'];
   audience: 'TEACHER_REVIEW_ONLY'; validation: 'STRUCTURAL_ONLY'; semanticAcceptance: 'PENDING';
   status: 'REVIEW_REQUIRED' | 'NOT_APPLICABLE' | 'NOT_DEMONSTRATED' | 'INSUFFICIENT' | 'TECHNICAL_FAILURE';
+  diagnostic?: CovDiagnostic;
   reason: 'ADJUDICATED' | 'CASE_NOT_APPLICABLE' | 'NO_STUDENT_MESSAGES' | 'CAPTURE_FAILED'
     | 'RUNTIME_FAILED' | 'INVALID_ADJUDICATION';
   planKind: FollowUpAdjudicationV1['planKind'] | 'NOT_ASSESSED';

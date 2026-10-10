@@ -25,7 +25,16 @@ El repositorio dispone de una suite automatizada amplia. M6-A, M6-B, M6-C, M6-D1
 
 ## Estado vigente y próximo frente funcional
 
-Continuación COV (9 de octubre): entrada cerrada R2 + diez pendientes, diarios nuevos vinculados
+COV (10 de octubre): resolución literal versionada de todas las citas a fuentes COV1–COV3,
+con posiciones calculadas por servidor y diagnósticos seguros. 56/56 pruebas nuevas, 264/264
+regresiones, TypeScript PASS y suite offline completa: 94 archivos PASS / 7 SKIPPED.
+Once conteos y ocho inferencias: R2 válido; seis pendientes válidos; parada en P1 con
+`VALIDATION / ADJUDICATION_INVALID`. P2-WITHDRAW, P3-ADOPT y P4-LATE no ejecutados.
+R3 discrepa: NOT_DEMONSTRATED frente a INSUFFICIENT aprobado; no se cambia su expectativa.
+Prioridad: diagnóstico offline de P1 y distinción semántica R3. Históricos conservados, sin
+aceptación ni puntos; M6 64%, proyecto 51.53%. [Resultado completo](docs/v2/25_COV_SEMANTIC_CALIBRATION.md).
+
+Histórico — continuación COV (9 de octubre): entrada cerrada R2 + diez pendientes, diarios nuevos vinculados
 a los anteriores y gate técnico probado offline. Once conteos confirmados y una inferencia R2:
 `VALIDATION / SOURCE_CITATION_INVALID`; parada inmediata, diez inferencias no enviadas y R1 no repetido.
 Sin aceptación ni puntos. Prioridad: diagnóstico offline de citas a fuentes; [evidencia](docs/v2/25_COV_SEMANTIC_CALIBRATION.md).
