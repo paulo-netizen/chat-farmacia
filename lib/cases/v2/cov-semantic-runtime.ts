@@ -7,9 +7,11 @@ import { personalizationAdjudicationSchemaV2, type PersonalizationRequestV2, typ
 import { PHARMACEUTICAL_SEMANTIC_MODELS_V1 } from './pharmaceutical-semantic-model-policy';
 import { CovExecutionSession, covSafeMetadata } from './cov-execution-session';
 import { covHash, COV_WIRE_POLICY } from './cov-experiment-policy';
-import { CovDiagnosticError, covDiagnostic, type CovDiagnosticCode } from './cov-diagnostics';
+import { CovDiagnosticError, covDiagnostic, type CovDiagnosticCode, type CovIssue } from './cov-diagnostics';
 import { reportLiteralAdjudicationSchema } from './report-citations';
 import { covSourceSchemas, adaptCovSources, covProposalSchema, parseCovProposal } from './cov-source-citations';
+
+import { cov3ProviderV5, adaptCov3V5, cov3EligibleSources, type Cov3RequestV4, type Cov3RuntimeV4 } from './cov3-canonical-contract';
 
 // Experimental eligibility only: no live authorization or production approval is implied.
 const configSchema = z.object({
@@ -21,8 +23,8 @@ const configSchema = z.object({
 export type CovRuntimeConfig = z.infer<typeof configSchema>;
 export type CovClient = { baseURL?: string; responses: Pick<OpenAI['responses'], 'parse'> };
 export class CovTransportError extends CovDiagnosticError {
-  constructor(code: CovDiagnosticCode = 'RUNTIME_FAILURE', causes?: readonly CovDiagnosticCode[]) {
-    super(code, causes); this.message = 'COV_TRANSPORT_FAILURE'; this.name = 'CovTransportError';
+  constructor(code: CovDiagnosticCode = 'RUNTIME_FAILURE', causes?: readonly CovDiagnosticCode[], issues?: readonly CovIssue[]) {
+    super(code, causes, issues); this.message = 'COV_TRANSPORT_FAILURE'; this.name = 'CovTransportError';
   }
 }
 const link = personalizationAdjudicationSchemaV2.shape.links.element;
@@ -40,14 +42,30 @@ const previousProviderSchemas = {
   COV3: personalizationAdjudicationSchemaV2.extend({ links: z.array(wireLink) }).strict(),
 };
 export const covProviderSchemas = covSourceSchemas;
-export type CovProjection = false | true | 'report/2' | 'sources/3' | 'proposal/4';
+export type CovProjection = false | true | 'report/2' | 'sources/3' | 'proposal/4' | 'canonical/5';
 export type CovCapability = keyof typeof covProviderSchemas;
-export type CovRequest = ReferralReportRequestV1 | FollowUpRequestV1 | PersonalizationRequestV2 | PersonalizationRequestV3;
+export type CovRequest = ReferralReportRequestV1 | FollowUpRequestV1 | PersonalizationRequestV2 | PersonalizationRequestV3 | Cov3RequestV4;
 
-export function covRuntimeRef(config: CovRuntimeConfig, capability?: CovCapability, projection: CovProjection = false) {
+export function covRuntimeRef(config: CovRuntimeConfig, capability?: CovCapability, projection: CovProjection = false): string {
+  if (projection === 'canonical/5') return capability === 'COV3' ? `${covRuntimeRef(config, capability, 'proposal/4')}:canonical/5` : covRuntimeRef(config, capability);
   return `cov-openai/2:${config.model}:${config.maxOutputTokens}:${config.maxInputBytes}:${config.timeoutMs}:medium:default${capability && (projection === false || projection === 'sources/3' || projection === 'proposal/4') ? ':source-literal/3' : capability === 'COV1' && projection === 'report/2' ? ':report-literal/2' : ''}${capability === 'COV1' && (projection === false || projection === 'proposal/4') ? ':report-evidence/2' : ''}${capability === 'COV3' && projection === 'proposal/4' ? ':proposal-difficulty/4' : ''}`;
 }
 export function projectCovRequest(capability: CovCapability, q: CovRequest, config: CovRuntimeConfig, legacyReportProjection: CovProjection = false) {
+  if (legacyReportProjection === 'canonical/5') {
+    if (capability !== 'COV3') return projectCovRequest(capability, q, config, false);
+    if (q.contractVersion !== 'personalization-request/4') throw new CovTransportError('REQUEST_INVALID');
+    const input = JSON.stringify({contractVersion:q.contractVersion,instructionsVersion:q.instructionsVersion,
+      providerRepresentation:'personalization-canonical-sources-adjudication/5',requestDigest:q.requestDigest,
+      eligibleSources:cov3EligibleSources(q), requirements:q.requirements,untrustedData:q.untrustedData});
+    const instructions = q.instructions.replace('Cite exact UTF-16 [start,end) spans and message/field references.',
+      'Every citation uses the field-specific source type and an eligible messageId (or PUBLIC field), exact literal quote and occurrence. occurrence is null only for a unique match; otherwise specify its one-based occurrence including overlapping matches. Never supply offsets, normalize text or search another source. STUDENT_MESSAGE is performance; PATIENT_MESSAGE is context or patient response. PUBLIC circumstances need no patient utterance. The server verifies roles and computes UTF-16 positions. Optional fields must be null when absent.')
+      .replace('Return only personalization-adjudication/4','Return only personalization-canonical-sources-adjudication/5');
+    const format=zodTextFormat(cov3ProviderV5,'cov_cov3_result');
+    const inputBytes=Buffer.byteLength(input+instructions+JSON.stringify(format),'utf8');
+    if(inputBytes>config.maxInputBytes)throw new CovTransportError('REQUEST_TOO_LARGE');
+    const body={model:config.model,instructions,input,text:{format},max_output_tokens:config.maxOutputTokens,store:false,service_tier:'default' as const,reasoning:{effort:'medium' as const}};
+    return {body,inputBytes,requestHash:covHash(body)};
+  }
   const data = q.contractVersion === 'referral-report-request/1'
     ? { binding: q.binding, submissionId: q.submissionId, approvalRef: q.approvalRef,
       untrustedData: { reportText: q.untrustedData.reportText, requirements: q.untrustedData.requirements,
@@ -85,18 +103,18 @@ export function projectCovRequest(capability: CovCapability, q: CovRequest, conf
   return { body, inputBytes: Buffer.byteLength(input + instructions + JSON.stringify(format), 'utf8'), requestHash: covHash(body) };
 }
 /** Real path: nominal durable authorization is required outside the CLI too. */
-export function createCovOpenAiRuntimes(config: CovRuntimeConfig, client: CovClient, session?: CovExecutionSession, proposalScoped = false) {
+export function createCovOpenAiRuntimes(config: CovRuntimeConfig, client: CovClient, session?: CovExecutionSession, proposalScoped: boolean | 'canonical' = false) {
   if (!CovExecutionSession.isAuthorized(session) || client.baseURL !== COV_WIRE_POLICY.endpoint) throw new CovTransportError();
   return buildRuntimes(config, client, session, proposalScoped);
 }
 /** Explicit test seam: injected transport must be offline. Never selected by the live CLI. */
-export function createCovSimulatedRuntimes(config: CovRuntimeConfig, client: CovClient, proposalScoped = false) {
+export function createCovSimulatedRuntimes(config: CovRuntimeConfig, client: CovClient, proposalScoped: boolean | 'canonical' = false) {
   // Reject an accidentally injected SDK/live wrapper. Arbitrary injected JS remains trusted test code.
   if (client.baseURL !== undefined) throw new CovTransportError();
   return buildRuntimes(config, client, undefined, proposalScoped);
 }
-function buildRuntimes(configInput: CovRuntimeConfig, client: CovClient, session?: CovExecutionSession, proposalScoped = false): {
-  COV1: ReferralReportRuntimeV1; COV2: FollowUpRuntimeV1; COV3: PersonalizationRuntimeV2 & PersonalizationRuntimeV3;
+function buildRuntimes(configInput: CovRuntimeConfig, client: CovClient, session?: CovExecutionSession, proposalScoped: boolean | 'canonical' = false): {
+  COV1: ReferralReportRuntimeV1; COV2: FollowUpRuntimeV1; COV3: PersonalizationRuntimeV2 & PersonalizationRuntimeV3 & Cov3RuntimeV4;
 } {
   let config: CovRuntimeConfig;
   try { config = configSchema.parse(structuredClone(configInput)); } catch { throw new CovTransportError(); }
@@ -107,10 +125,10 @@ function buildRuntimes(configInput: CovRuntimeConfig, client: CovClient, session
       const q = structuredClone(request);
       const versions = { COV1: ['referral-report-request/1', 'referral-report-instructions/2'],
         COV2: ['follow-up-plan-request/1', 'follow-up-plan-instructions/3'],
-        COV3: proposalScoped ? ['personalization-request/3', 'personalization-instructions/4'] : ['personalization-request/2', 'personalization-instructions/3'] };
-      if (q.runtimeRef !== covRuntimeRef(config, capability, proposalScoped ? 'proposal/4' : false) || q.contractVersion !== versions[capability][0] ||
+        COV3: proposalScoped === 'canonical' ? ['personalization-request/4','personalization-instructions/5'] : proposalScoped ? ['personalization-request/3', 'personalization-instructions/4'] : ['personalization-request/2', 'personalization-instructions/3'] };
+      if (q.runtimeRef !== covRuntimeRef(config, capability, proposalScoped === 'canonical' ? 'canonical/5' : proposalScoped ? 'proposal/4' : false) || q.contractVersion !== versions[capability][0] ||
         q.instructionsVersion !== versions[capability][1]) throw new CovTransportError('REQUEST_INVALID');
-      const projected = projectCovRequest(capability, q, config, proposalScoped ? 'proposal/4' : false);
+      const projected = projectCovRequest(capability, q, config, proposalScoped === 'canonical' ? 'canonical/5' : proposalScoped ? 'proposal/4' : false);
       if (session && client.baseURL !== COV_WIRE_POLICY.endpoint) throw new CovTransportError();
       failure = 'RESERVATION_FAILED';
       if (session) { session.reserve(projected.requestHash, config); reserved = true; }
@@ -123,6 +141,10 @@ function buildRuntimes(configInput: CovRuntimeConfig, client: CovClient, session
       if ((session && (response.service_tier !== 'default' || usage.inputTokens === undefined || usage.outputTokens === undefined)) || response.status !== 'completed' || response.model !== config.model || response.error ||
         response.output.some(item => item.type === 'message' && item.content.some(c => c.type === 'refusal'))) throw new CovTransportError('RESPONSE_ENVELOPE_INVALID');
       failure = 'PROVIDER_SCHEMA_INVALID';
+      if (capability === 'COV3' && proposalScoped === 'canonical') {
+        if(q.contractVersion !== 'personalization-request/4') throw new CovTransportError('REQUEST_INVALID');
+        return adaptCov3V5(response.output_parsed,q);
+      }
       const result = capability === 'COV3' && proposalScoped ? parseCovProposal(response.output_parsed, q) : covProviderSchemas[capability].parse(response.output_parsed);
       if (result.requestDigest !== q.requestDigest) throw new CovTransportError('REQUEST_DIGEST_MISMATCH');
       return adaptCovSources(capability, result, q);
@@ -131,12 +153,12 @@ function buildRuntimes(configInput: CovRuntimeConfig, client: CovClient, session
         try { if (reserved) session.metadata(error); session.stop(); } catch { throw new CovTransportError('STOP_RECORD_FAILED'); }
       }
       const diagnostic = covDiagnostic(error, failure);
-      throw new CovTransportError(diagnostic.code, diagnostic.causes);
+      throw new CovTransportError(diagnostic.code, diagnostic.causes, diagnostic.issues);
     }
   }
   return {
     COV1: { runtimeRef: covRuntimeRef(config, 'COV1'), adjudicate: q => adjudicate('COV1', q) },
     COV2: { runtimeRef: covRuntimeRef(config, 'COV2'), adjudicate: q => adjudicate('COV2', q) },
-    COV3: { runtimeRef: covRuntimeRef(config, 'COV3', proposalScoped ? 'proposal/4' : false), adjudicate: q => adjudicate('COV3', q) },
+    COV3: { runtimeRef: covRuntimeRef(config, 'COV3', proposalScoped === 'canonical' ? 'canonical/5' : proposalScoped ? 'proposal/4' : false), adjudicate: q => adjudicate('COV3', q) },
   };
 }

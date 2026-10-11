@@ -1,5 +1,15 @@
 # COV1–COV3 — Preparación de calibración semántica
 
+## Revisión integral offline COV3 — 11 de octubre de 2026
+
+Contrato canónico /4, proveedor /5 y diagnósticos localizados /3; [matriz, hallazgos y pruebas](26_COV3_CANONICAL_OUTPUT_CONTRACT.md).
+P1, P2-WITHDRAW, P3-ADOPT y P4-LATE tienen salidas sintéticas técnicamente válidas sin alterar
+expectativas (12/12 etiquetas transportadas). Esto no acredita calidad semántica real.
+63 pruebas nuevas; suite offline única 3.786 PASS / 67 SKIPPED, TypeScript y diff-check PASS.
+Lint solicita configuración y no se completa. Ninguna inferencia ni conteo; costes y diarios
+históricos intactos. Los conteos COV3 previos no corresponden a la proyección nueva.
+Sigue pendiente aceptación semántica, sin puntos ni cambios de estados/porcentajes.
+
 ## Aplicabilidad por propuesta y segunda ronda P1 — 11 de octubre de 2026
 
 Base `46630ad34a967eeba62de924a075a28cdbad4ab6`, rama `chatusal-v2`, árbol inicialmente limpio.

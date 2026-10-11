@@ -2,7 +2,13 @@
 
 ## Baseline oficial
 
-Actual — COV, 11 de octubre, segunda ronda: dificultad por propuesta implementada en COV3 /3,
+Actual — revisión integral offline COV3 (11 de octubre): contrato canónico /4, proveedor /5 y
+diagnósticos por campo /3. [Matriz y evidencia](26_COV3_CANONICAL_OUTPUT_CONTRACT.md).
+Cuatro ejemplos completos representables sin alterar expectativas; 63 tests nuevos y suite offline
+única **3.786 PASS / 67 SKIPPED**. TypeScript/diff-check PASS; lint sin configurar, no completado.
+Sin inferencias, conteos, gasto nuevo ni puntos; fallos live históricos no reinterpretados.
+
+Histórico — COV, 11 de octubre, segunda ronda: dificultad por propuesta implementada en COV3 /3,
 instrucciones /4 y diagnósticos acumulados /2. 29 pruebas nuevas y 365 regresiones PASS;
 TypeScript y diff-check PASS. Un conteo (3.497 tokens) y una inferencia P1: **STOPPED_TECHNICAL_FAILURE**,
 `VALIDATION / SOURCE_ROLE_INVALID`, antes de comprobar aplicabilidad. Tres personalizaciones y R3

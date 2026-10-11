@@ -1,6 +1,11 @@
 # M6-COV3 — Personalización de la intervención, evaluación offline
 
-Actualización autorizada: [preparación semántica COV1–COV3](25_COV_SEMANTIC_CALIBRATION.md).
+Actual — 11 de octubre de 2026: [contrato canónico /4 y matriz de las cuatro capas](26_COV3_CANONICAL_OUTPUT_CONTRACT.md).
+Representación proveedor /5, referencias tipadas y diagnóstico localizado; comprobación exclusivamente
+offline. Las versiones /1–/3 permanecen históricas y disponibles. El opt-in nuevo no cambia los
+runners live previos, no acredita puntos ni resuelve retrospectivamente los fallos P1.
+
+Histórico — actualización autorizada: [preparación semántica COV1–COV3](25_COV_SEMANTIC_CALIBRATION.md).
 La nueva evaluación `/2` conserva desempeño histórico separado de vigencia: retirar una propuesta
 no borra adaptación/comprobación demostradas ni concede automáticamente atención a dificultad.
 El resto de este documento describe el checkpoint `/1` y su evidencia histórica, sin reinterpretarla.

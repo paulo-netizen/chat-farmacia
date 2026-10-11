@@ -25,7 +25,14 @@ El repositorio dispone de una suite automatizada amplia. M6-A, M6-B, M6-C, M6-D1
 
 ## Estado vigente y próximo frente funcional
 
-Actual — COV (11 de octubre, segunda ronda): dificultad vinculada a cada propuesta en COV3 /3,
+Actual — revisión integral offline COV3: contrato /4, representación /5, referencias tipadas,
+dificultad canónica por propuesta y diagnósticos localizados /3. [Matriz y recorridos completos](docs/v2/26_COV3_CANONICAL_OUTPUT_CONTRACT.md)
+de P1, P2-WITHDRAW, P3-ADOPT y P4-LATE. 63 tests nuevos; suite offline única 3.786 PASS / 67 SKIPPED;
+TypeScript/diff-check PASS. Lint no completado por falta de configuración, sin configurar ESLint.
+Sin live/conteos ni migraciones; expectativas e históricos intactos. Pendiente comportamiento
+semántico real de la nueva versión, que necesita conteos nuevos. Sin puntos ni cambios de porcentajes.
+
+Histórico — COV (11 de octubre, segunda ronda): dificultad vinculada a cada propuesta en COV3 /3,
 instrucciones /4 y diagnósticos acumulados seguros /2. 29 pruebas nuevas y 365 regresiones PASS;
 TypeScript y diff-check PASS. Un conteo (3.497 tokens) y una inferencia P1: parada en
 `VALIDATION / SOURCE_ROLE_INVALID`, antes del validador de aplicabilidad. No se declara resuelta

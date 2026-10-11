@@ -1,6 +1,7 @@
 import { createHash } from 'node:crypto';
 import { evaluateReferralReportV1 } from '../../lib/cases/v2/evaluate-referral-report';
 import { evaluateFollowUpPlanV1 } from '../../lib/cases/v2/evaluate-follow-up-plan';
+import { evaluatePersonalizationV4 } from '../../lib/cases/v2/evaluate-personalization-v4';
 import { evaluatePersonalizationV3 } from '../../lib/cases/v2/evaluate-personalization-v3';
 import { evaluatePersonalizationV2 } from '../../lib/cases/v2/evaluate-personalization-v2';
 import { createCovSimulatedRuntimes, type CovClient, type CovRuntimeConfig } from '../../lib/cases/v2/cov-semantic-runtime';
@@ -8,11 +9,17 @@ import { buildCalibrationFixtures, type CalibrationFixture } from './fixtures';
 
 export const COV_LIVE_AUTHORIZATION = null; // No approved model/budget. No environment override.
 type RuntimeSet = ReturnType<typeof createCovSimulatedRuntimes>;
-export function evaluateFixture(fixture: CalibrationFixture, runtimes: RuntimeSet, proposalScoped = false) {
+type CommonEvaluation = Awaited<ReturnType<typeof evaluateReferralReportV1> | ReturnType<typeof evaluateFollowUpPlanV1>>;
+type HistoricalEvaluation = CommonEvaluation | Awaited<ReturnType<typeof evaluatePersonalizationV2> | ReturnType<typeof evaluatePersonalizationV3>>;
+type CanonicalEvaluation = CommonEvaluation | Awaited<ReturnType<typeof evaluatePersonalizationV4>>;
+export function evaluateFixture(fixture: CalibrationFixture, runtimes: RuntimeSet, proposalScoped?: boolean): Promise<HistoricalEvaluation>;
+export function evaluateFixture(fixture: CalibrationFixture, runtimes: RuntimeSet, proposalScoped: 'canonical'): Promise<CanonicalEvaluation>;
+export function evaluateFixture(fixture: CalibrationFixture, runtimes: RuntimeSet, proposalScoped: boolean | 'canonical'): Promise<HistoricalEvaluation | CanonicalEvaluation>;
+export function evaluateFixture(fixture: CalibrationFixture, runtimes: RuntimeSet, proposalScoped: boolean | 'canonical' = false): Promise<HistoricalEvaluation | CanonicalEvaluation> {
   switch (fixture.capability) {
     case 'COV1': return evaluateReferralReportV1(fixture.input, runtimes.COV1);
     case 'COV2': return evaluateFollowUpPlanV1(fixture.input, runtimes.COV2);
-    case 'COV3': return proposalScoped ? evaluatePersonalizationV3(fixture.input, runtimes.COV3) : evaluatePersonalizationV2(fixture.input, runtimes.COV3);
+    case 'COV3': return proposalScoped === 'canonical' ? evaluatePersonalizationV4(fixture.input, runtimes.COV3) : proposalScoped ? evaluatePersonalizationV3(fixture.input, runtimes.COV3) : evaluatePersonalizationV2(fixture.input, runtimes.COV3);
   }
 }
 type Evaluation = Awaited<ReturnType<typeof evaluateFixture>>;

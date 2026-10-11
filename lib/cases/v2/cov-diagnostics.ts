@@ -50,15 +50,25 @@ const stages = {
   CLAIM_SUPPORT_MISSING: 'VALIDATION', ADJUDICATION_INVALID: 'VALIDATION',
 } as const;
 export type CovDiagnosticCode = keyof typeof stages;
-export type CovDiagnostic = Readonly<{ version: 'cov-diagnostic/1' | 'cov-diagnostic/2'; stage: typeof stages[CovDiagnosticCode]; code: CovDiagnosticCode; causes?: readonly CovDiagnosticCode[] }>;
+export const COV_FIELDS = ['OUTPUT', 'REQUEST_DIGEST', 'CRITERIA', 'CRITERION_STATUS', 'CRITERION_LINK', 'STUDENT_EVIDENCE', 'LINKS', 'CIRCUMSTANCE', 'PROPOSAL', 'ATTRIBUTION', 'PATIENT_PROPOSAL', 'STANDING', 'WITHDRAWAL', 'FEASIBILITY_CHECK', 'PATIENT_RESPONSE', 'DIFFICULTY_STATE', 'DIFFICULTY_EVIDENCE', 'RESPONSE_DIFFICULTY_REF', 'RESPONSE_ACTION', 'INCOMPATIBILITY'] as const;
+const roles = ['STUDENT', 'PATIENT', 'PUBLIC', 'PATIENT_OR_PUBLIC', 'NONE'] as const;
+const references = ['MESSAGE', 'PUBLIC_FIELD', 'SOURCE', 'LINK', 'CRITERION', 'STATE', 'STRUCTURE'] as const;
+export type CovIssue = Readonly<{ code: CovDiagnosticCode; field: typeof COV_FIELDS[number]; stage: 'ADAPTER' | 'VALIDATION'; requiredRole: typeof roles[number]; referenceType: typeof references[number] }>;
+export type CovDiagnostic = Readonly<{ version: 'cov-diagnostic/1' | 'cov-diagnostic/2' | 'cov-diagnostic/3'; stage: typeof stages[CovDiagnosticCode]; code: CovDiagnosticCode; causes?: readonly CovDiagnosticCode[]; issues?: readonly CovIssue[] }>;
 const issued = new WeakMap<object, CovDiagnostic>();
 export class CovDiagnosticError extends Error {
-  constructor(code: CovDiagnosticCode, causes?: readonly CovDiagnosticCode[]) {
+  constructor(code: CovDiagnosticCode, causes?: readonly CovDiagnosticCode[], issues?: readonly CovIssue[]) {
     const safe = Object.hasOwn(stages, code) ? code : 'RUNTIME_FAILURE';
     super(safe);
     this.name = 'CovDiagnosticError';
     const closed = causes ? Object.freeze([...new Set(causes.map(c => Object.hasOwn(stages, c) ? c : 'RUNTIME_FAILURE' as const))]) : undefined;
-    issued.set(this, Object.freeze({ version: closed ? 'cov-diagnostic/2' : 'cov-diagnostic/1', stage: stages[safe], code: safe, ...(closed ? { causes: closed } : {}) }));
+    // Copy only closed scalar identifiers: callers cannot attach provider keys/values through this API.
+    const located = issues?.map(i => Object.freeze({ code: Object.hasOwn(stages, i.code) ? i.code : 'RUNTIME_FAILURE' as const,
+      field: COV_FIELDS.includes(i.field) ? i.field : 'OUTPUT' as const,
+      stage: i.stage === 'ADAPTER' ? 'ADAPTER' as const : 'VALIDATION' as const,
+      requiredRole: roles.includes(i.requiredRole) ? i.requiredRole : 'NONE' as const,
+      referenceType: references.includes(i.referenceType) ? i.referenceType : 'STRUCTURE' as const }));
+    issued.set(this, Object.freeze({ version: located ? 'cov-diagnostic/3' : closed ? 'cov-diagnostic/2' : 'cov-diagnostic/1', stage: located?.[0]?.stage ?? stages[safe], code: safe, ...(closed ? { causes: closed } : {}), ...(located ? { issues: Object.freeze(located) } : {}) }));
   }
 }
 export function covDiagnostic(error: unknown, fallback: CovDiagnosticCode): CovDiagnostic {

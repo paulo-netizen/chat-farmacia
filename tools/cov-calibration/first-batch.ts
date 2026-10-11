@@ -18,7 +18,7 @@ export async function prepareFirstCovBatch(legacyReportProjection: CovProjection
     let projected: ReturnType<typeof projectCovRequest> | undefined;
     const capture = (capability: CovCapability) => ({ runtimeRef: covRuntimeRef(COV_FIRST_CONFIG, capability, legacyReportProjection),
       adjudicate: async (q: CovRequest) => { projected = projectCovRequest(capability, q, COV_FIRST_CONFIG, legacyReportProjection); throw new Error('COV_DRY_CAPTURE'); } });
-    await evaluateFixture(fixture, { COV1: capture('COV1'), COV2: capture('COV2'), COV3: capture('COV3') }, legacyReportProjection === 'proposal/4');
+    await evaluateFixture(fixture, { COV1: capture('COV1'), COV2: capture('COV2'), COV3: capture('COV3') }, legacyReportProjection === 'canonical/5' ? 'canonical' : legacyReportProjection === 'proposal/4');
     if (!projected) throw new Error('COV_DRY_CAPTURE_FAILED');
     requests.push(projected);
     manifest.push({ id: fixture.id as typeof COV_FIRST_IDS[number], fixtureHash: covHash(fixture),
