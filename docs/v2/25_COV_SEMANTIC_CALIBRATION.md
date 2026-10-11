@@ -1,5 +1,104 @@
 # COV1–COV3 — Preparación de calibración semántica
 
+## Aplicabilidad por propuesta y segunda ronda P1 — 11 de octubre de 2026
+
+Base `46630ad34a967eeba62de924a075a28cdbad4ab6`, rama `chatusal-v2`, árbol inicialmente limpio.
+**Estado actual: STOPPED_TECHNICAL_FAILURE / VALIDATION / SOURCE_ROLE_INVALID.** Solo se contó
+y ejecutó P1. La corrección offline no ha superado la comprobación live de aplicabilidad.
+Los apartados siguientes son históricos; no se reinterpretan sus respuestas no conservadas.
+
+### Corrección offline versionada
+
+La limitación demostrada del contrato anterior es un estado global de dificultad sin estado
+explícito por propuesta. No demuestra la causa de los fallos anteriores. El nuevo
+[evaluador V3](../../lib/cases/v2/evaluate-personalization-v3.ts) conserva las APIs V1/V2 y añade
+`personalization-request/3`, `personalization-adjudication/3`, `personalization-evaluation/3`,
+`personalization-instructions/4` y representación del proveedor
+`personalization-proposal-sources-adjudication/4`. Activación experimental explícita `proposal/4`;
+las proyecciones históricas y expectativas permanecen intactas.
+
+Cada cadena declara dificultad respecto a su propuesta y citas del paciente posteriores a ella.
+Una circunstancia inicial puede fundamentar adaptación, pero no acredita dificultad con la alternativa.
+Una pregunta del estudiante comprueba viabilidad; sin respuesta no demuestra aceptación ni viabilidad.
+El resumen global debe concordar con los estados y unión exacta de citas de las cadenas.
+NOT_APPLICABLE exige criterio condicionado por configuración, referencia a la propuesta pertinente
+y dificultad NOT_OBSERVED. Sin cadenas puede referirse al resumen, sin inventar propuestas.
+No se transforma una observación incompatible en NOT_APPLICABLE. La retirada no borra desempeño
+histórico ni otorga positivos; pertinencia y clasificación de la dificultad siguen siendo semánticas.
+
+`cov-diagnostic/2` agrega causas comprobables de aplicabilidad con vocabulario cerrado:
+NOT_APPLICABLE_CRITERION_TYPE_INVALID, NOT_APPLICABLE_DIFFICULTY_STATE_INVALID,
+DIFFICULTY_STATE_MISSING_OR_INVALID, DIFFICULTY_SCOPE_REFERENCE_MISSING,
+DIFFICULTY_SUMMARY_INCONSISTENT, DIFFICULTY_EVIDENCE_NOT_AFTER_PROPOSAL y
+RESPONSE_OMISSION_WITHOUT_DIFFICULTY. Conserva DIFFICULTY_EVIDENCE_MISSING y
+DIFFICULTY_STATE_CONFLICT. No serializa contenido, valores recibidos ni claves arbitrarias.
+Los errores anteriores /1 siguen siendo compatibles. Una referencia inválida puede impedir
+alcanzar estas reglas: no se informa como comprobada una condición que no llegó a evaluarse.
+
+### Verificación y ejecución
+
+- 19/19 pruebas nuevas de recorrido proveedor simulado → adaptador → validador: circunstancia
+  inicial, dificultad posterior, comprobación sin respuesta, retirada, múltiples propuestas,
+  diagnósticos individuales/acumulados, compatibilidad histórica y ausencia de filtraciones.
+- 10/10 pruebas nuevas de ronda cerrada, diarios independientes, exclusión, reservas, parada,
+  duplicados y conservación de uso/identificadores. 365/365 regresiones: total **394/394**.
+- TypeScript y diff-check PASS. Sin repetición de suite completa: cambios acotados y regresiones
+  afectadas ejecutadas. La suite del 10 de octubre permanece histórica; no se acredita nuevo lint.
+- [run-applicability.ts](../../tools/cov-calibration/run-applicability.ts) es seco por defecto,
+  con autorización privada `cov-applicability-authorization/1`, orden cerrado y diarios nuevos.
+  Vincula seis diarios anteriores por hash; permanecen inmutables. Una reserva precede al envío,
+  persiste ante incertidumbre y bloquea duplicados. Un STOP impide autorizar ejemplos posteriores.
+
+Un conteo oficial de P1, **3.497 tokens**, vinculado a la solicitud
+`0b9b1d9b3246e97491106352cdd181276e5a67aba6784a20d3a1b9ba91772c50`, actualizado por cambio de
+proyección; reserva **0,104743 USD**. Una inferencia con gpt-5.6-terra, medium, Standard/global,
+store:false, máximo 8.000 tokens de salida, timeout 60 s, sin reintentos ni fallback.
+Runtime COV3 `source-literal/3:proposal-difficulty/4`; COV1 conserva instrucciones report-evidence/2
+sin nueva evidencia live. Expectativas exclusivamente locales.
+
+Resultado: **`cov-diagnostic/1 / VALIDATION / SOURCE_ROLE_INVALID`**, razón RUNTIME_FAILED.
+La adaptación local encontró una fuente de mensaje existente cuyo rol no está permitido en el
+campo de evidencia referido. Se detuvo antes del validador final de aplicabilidad. No se conservó
+la respuesta raw ni el campo concreto: no puede identificarse qué cita falló ni atribuirlo a una
+confusión clínica concreta. Tampoco demuestra que la aplicabilidad fuera correcta. Los fallos
+históricos ADJUDICATION_INVALID y CRITERION_NOT_APPLICABLE_INVALID conservan sus límites previos.
+
+| Ejemplo / criterio | Esperado | Observado en esta ronda |
+|---|---|---|
+| P1 adaptación | DEMONSTRATED | TECHNICAL_FAILURE |
+| P1 comprobación | DEMONSTRATED | TECHNICAL_FAILURE |
+| P1 respuesta a dificultad | NOT_APPLICABLE | TECHNICAL_FAILURE |
+| P2-WITHDRAW adaptación / comprobación / respuesta | DEMONSTRATED / DEMONSTRATED / DEMONSTRATED | No ejecutado |
+| P3-ADOPT adaptación / comprobación / respuesta | DEMONSTRATED / DEMONSTRATED / NOT_APPLICABLE | No ejecutado |
+| P4-LATE adaptación / comprobación / respuesta | NOT_DEMONSTRATED / DEMONSTRATED / NOT_APPLICABLE | No ejecutado |
+| R3 fidelidad / inicio | INSUFFICIENT / DEMONSTRATED | No ejecutado |
+
+Denominador semántico nuevo: **0 criterios válidos**, 3 fallidos técnicamente y 11 no ejecutados.
+No se calcula exactitud ni tasa de falsos positivos/negativos. Para métricas futuras: FP = observado
+DEMONSTRATED frente a expectativa distinta; FN decisivo = NOT_DEMONSTRATED, CONTRADICTORY o
+NOT_APPLICABLE frente a DEMONSTRATED. INSUFFICIENT y UNCERTAIN se informan separadamente.
+No hay citas aceptadas en esta ronda para revisar soporte semántico, autoría, temporalidad o retirada.
+Los tests simulados no acreditan esas capacidades semánticas. No se agrupan versiones ni se elimina
+el desacuerdo R3 histórico. Prioridad pendiente: diagnóstico offline seguro del campo con rol
+incompatible; no otra inferencia para descubrirlo ni continuación automática del lote.
+
+### Uso y costes
+
+P1: entrada 3.497, salida 359, lectura de caché 0, escritura de caché 3.494 y razonamiento 0.
+Uso e identificadores disponibles se conservan en el diario privado pese al rechazo, sin raw.
+Con las tarifas registradas previamente (USD por millón: entrada 2; escritura 2,50; salida 12),
+coste calculable = `(3 × 2 + 3494 × 2,50 + 359 × 12) / 1.000.000` = **0,013049 USD**.
+Fuentes de tarifas previamente verificadas: [modelo](https://developers.openai.com/api/docs/models/gpt-5.6-terra)
+y [precios](https://developers.openai.com/api/docs/pricing); no se afirma una nueva consulta en este cierre.
+Acumulado: **14 inferencias, 0,1400954 USD calculables; 1,433068 USD de reservas retenidas**.
+**37 conteos con coste desconocido**, incluido el nuevo. No son gratuitos ni se suman como cero;
+no se conoce el total facturado ni se garantiza matemáticamente el límite acumulado con esas tarifas
+auxiliares desconocidas. Se conserva la autorización de 15 EUR y su aceptación expresa de esta incertidumbre.
+
+Sin aceptación final, generalización ni puntos. Personalización y seguimiento 0/4; M6 64%, proyecto
+51.53%, M6/M6-E PARTIAL, PED2 abierto, perfiles productivos no aprobados y D3B OPEN / VALIDATION DEBT.
+Sin cambios productivos, DB, migraciones, scoring ni COV4. Autorizaciones y diarios quedan fuera de Git.
+
 ## Diagnósticos P1 y aclaración R3 — 11 de octubre de 2026
 
 Base `6fa94c3cce786aae5512c8608aecbfffec6c6fa3`, `chatusal-v2`, árbol inicialmente limpio.

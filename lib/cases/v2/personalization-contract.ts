@@ -99,3 +99,18 @@ export type PersonalizationRuntimeV2 = Readonly<{
 export type PersonalizationEvaluationV2 = Omit<PersonalizationEvaluationV1, 'contractVersion'> & {
   contractVersion: 'personalization-evaluation/2'; assessmentBasis: 'OBSERVED_PERFORMANCE';
 };
+
+/** Explicit proposal scope; V1/V2 remain historical APIs without implicit conversion. */
+export const personalizationAdjudicationSchemaV3 = personalizationAdjudicationSchemaV2.extend({
+  contractVersion: z.literal('personalization-adjudication/3'),
+  links: z.array(linkSchema.extend({ difficulty: personalizationAdjudicationSchema.shape.difficulty }).strict()),
+}).strict();
+export type PersonalizationRequestV3 = Omit<PersonalizationRequestV2, 'contractVersion' | 'instructionsVersion'> & {
+  contractVersion: 'personalization-request/3'; instructionsVersion: 'personalization-instructions/4';
+};
+export type PersonalizationRuntimeV3 = Readonly<{
+  runtimeRef: string; adjudicate(request: PersonalizationRequestV3): Promise<unknown>;
+}>;
+export type PersonalizationEvaluationV3 = Omit<PersonalizationEvaluationV2, 'contractVersion' | 'links'> & {
+  contractVersion: 'personalization-evaluation/3'; links: z.infer<typeof personalizationAdjudicationSchemaV3>['links'];
+};

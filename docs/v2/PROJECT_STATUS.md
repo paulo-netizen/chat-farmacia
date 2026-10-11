@@ -2,7 +2,15 @@
 
 ## Baseline oficial
 
-COV, 11 de octubre: diagnósticos específicos de P1 y aclaración semántica COV1 implementados offline.
+Actual — COV, 11 de octubre, segunda ronda: dificultad por propuesta implementada en COV3 /3,
+instrucciones /4 y diagnósticos acumulados /2. 29 pruebas nuevas y 365 regresiones PASS;
+TypeScript y diff-check PASS. Un conteo (3.497 tokens) y una inferencia P1: **STOPPED_TECHNICAL_FAILURE**,
+`VALIDATION / SOURCE_ROLE_INVALID`, antes de comprobar aplicabilidad. Tres personalizaciones y R3
+siguen sin ejecutar; expectativas intactas. Coste calculable acumulado de 14 inferencias:
+**0,1400954 USD**; reservas retenidas **1,433068 USD**; 37 conteos de coste desconocido.
+No hay aceptación semántica ni nuevos puntos. [Detalle y límites](25_COV_SEMANTIC_CALIBRATION.md).
+
+Histórico — COV, 11 de octubre, primera ronda: diagnósticos específicos de P1 y aclaración semántica COV1 implementados offline.
 45 pruebas nuevas, 320 regresiones, TypeScript y diff-check PASS. Un conteo y una inferencia P1:
 **STOPPED_TECHNICAL_FAILURE**, `VALIDATION / CRITERION_NOT_APPLICABLE_INVALID`. Los tres pendientes
 y R3 no se ejecutan. La corrección de instrucciones R3 no tiene verificación live; no se declara

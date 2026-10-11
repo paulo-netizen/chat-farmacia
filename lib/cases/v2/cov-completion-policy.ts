@@ -12,20 +12,26 @@ export const covCompletionGrantSchema = covGrantSchema.extend({
   exampleId: z.enum(COV_COMPLETION_IDS), inputCounts: z.array(covGrantSchema.shape.inputCounts.element).length(1),
   parents: z.array(covR2GrantSchema.shape.parent).min(5).max(9), accumulated: covR2GrantSchema.shape.accumulated,
 }).strict();
-export type CovCompletionGrant = z.infer<typeof covCompletionGrantSchema>;
+export const covApplicabilityGrantSchema = covCompletionGrantSchema.extend({
+  version: z.literal('cov-applicability-authorization/1'),
+  parents: z.array(covR2GrantSchema.shape.parent).min(6).max(10),
+}).strict();
+export type CovCompletionGrant = z.infer<typeof covCompletionGrantSchema> | z.infer<typeof covApplicabilityGrantSchema>;
 export const COV_COMPLETION_HISTORY = ['', '-r2-diagnostic', '-literal-continuation', '-source-r2', '-source-pending'] as const;
 export function validateCovCompletionGrant(value: unknown, manifestInput: CovManifest, now = Date.now()): CovCompletionGrant {
   try {
-    const g = covCompletionGrantSchema.parse(structuredClone(value));
+    const g = z.union([covCompletionGrantSchema, covApplicabilityGrantSchema]).parse(structuredClone(value));
+    const scoped = g.version === 'cov-applicability-authorization/1', baseCount = scoped ? 6 : 5;
+    const prefix = scoped ? '-applicability-' : '-completion-';
     const index = COV_COMPLETION_IDS.indexOf(g.exampleId), manifest = z.array(covManifestSchema.element).length(1).parse(manifestInput);
     const count = g.inputCounts[0];
-    if (g.parents.length !== 5 + index || manifest[0].id !== g.exampleId || count.id !== g.exampleId ||
+    if (g.parents.length !== baseCount + index || manifest[0].id !== g.exampleId || count.id !== g.exampleId ||
       count.requestHash !== manifest[0].requestHash || g.manifestHash !== covHash(manifest) ||
       Date.parse(g.approvedAt) > now || Date.parse(g.expiresAt) <= now || Date.parse(g.expiresAt) - Date.parse(g.approvedAt) > 86400000 ||
       Date.parse(count.measuredAt) > now || now - Date.parse(count.measuredAt) > 86400000) throw new Error();
     const root = resolve(g.parents[0].ledgerDirectory);
-    const suffixes = [...COV_COMPLETION_HISTORY, ...COV_COMPLETION_IDS.slice(0, index).map(id => '-completion-' + id)];
-    if (resolve(g.ledgerDirectory).toLowerCase() !== (root + '-completion-' + g.exampleId).toLowerCase()) throw new Error();
+    const suffixes = [...COV_COMPLETION_HISTORY, ...(scoped ? ['-completion-P1'] : []), ...COV_COMPLETION_IDS.slice(0, index).map(id => prefix + id)];
+    if (resolve(g.ledgerDirectory).toLowerCase() !== (root + prefix + g.exampleId).toLowerCase()) throw new Error();
     let reserved = 0;
     for (const [i, p] of g.parents.entries()) {
       const dir = resolve(p.ledgerDirectory);
@@ -50,10 +56,10 @@ export function validateCovCompletionGrant(value: unknown, manifestInput: CovMan
         if (r.event.kind === 'STOP') stopped = true;
       });
       const expected = i === 0 ? ['R1', 'R2'] : i < 4 ? ['R2'] : i === 4
-        ? ['R3', 'R-INJECTION', 'S1', 'S2', 'S3-ADOPT', 'S4-CONFLICT', 'P1'] : [COV_COMPLETION_IDS[i - 5]];
-      if (sent.join(',') !== expected.join(',') || results.size !== expected.length || stopped !== (i < 3 || i === 4)) throw new Error();
+        ? ['R3', 'R-INJECTION', 'S1', 'S2', 'S3-ADOPT', 'S4-CONFLICT', 'P1'] : scoped && i === 5 ? ['P1'] : [COV_COMPLETION_IDS[i - baseCount]];
+      if (sent.join(',') !== expected.join(',') || results.size !== expected.length || stopped !== (i < 3 || i === 4 || (scoped && i === 5))) throw new Error();
       for (const id of expected) {
-        const status = (i < 3 && id === 'R2') || (i === 4 && id === 'P1') ? 'TECHNICAL_FAILURE' : 'REVIEW_REQUIRED';
+        const status = (i < 3 && id === 'R2') || (i === 4 && id === 'P1') || (scoped && i === 5) ? 'TECHNICAL_FAILURE' : 'REVIEW_REQUIRED';
         if (results.get(id) !== status) throw new Error();
       }
     }

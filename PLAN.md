@@ -25,7 +25,16 @@ El repositorio dispone de una suite automatizada amplia. M6-A, M6-B, M6-C, M6-D1
 
 ## Estado vigente y próximo frente funcional
 
-COV (11 de octubre): diagnósticos de dominio P1 específicos y aclaración general versionada de
+Actual — COV (11 de octubre, segunda ronda): dificultad vinculada a cada propuesta en COV3 /3,
+instrucciones /4 y diagnósticos acumulados seguros /2. 29 pruebas nuevas y 365 regresiones PASS;
+TypeScript y diff-check PASS. Un conteo (3.497 tokens) y una inferencia P1: parada en
+`VALIDATION / SOURCE_ROLE_INVALID`, antes del validador de aplicabilidad. No se declara resuelta
+su validación live ni la causa histórica. Los tres pendientes y R3 no se contaron ni ejecutaron.
+Coste calculable acumulado: 0,1400954 USD; reservas retenidas: 1,433068 USD; 37 conteos de coste
+desconocido. Prioridad: diagnóstico offline del campo de referencia con rol incompatible, sin
+otra llamada automática. [Versiones y evidencia](docs/v2/25_COV_SEMANTIC_CALIBRATION.md).
+
+Histórico — COV (11 de octubre, primera ronda): diagnósticos de dominio P1 específicos y aclaración general versionada de
 INSUFFICIENT frente a NOT_DEMONSTRATED en COV1. 45 pruebas nuevas y 320 regresiones PASS;
 TypeScript y diff-check PASS. Un conteo actualizado y una inferencia P1, detenida con
 `VALIDATION / CRITERION_NOT_APPLICABLE_INVALID`. Tres personalizaciones y R3 no ejecutados;

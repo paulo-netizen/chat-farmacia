@@ -37,6 +37,27 @@ export const covSourceSchemas = {
     }).strict()),
   }).strict(),
 };
+export const covProposalSchema = covSourceSchemas.COV3.extend({
+  contractVersion: z.literal('personalization-proposal-sources-adjudication/4'),
+  links: z.array(covSourceSchemas.COV3.shape.links.element.extend({
+    difficulty: covSourceSchemas.COV3.shape.difficulty,
+  }).strict()),
+}).strict();
+export function parseCovProposal(value: unknown, q?: CovRequest) {
+  const parsed = covProposalSchema.safeParse(value);
+  if (parsed.success) return parsed.data;
+  const r = value && typeof value === 'object' ? value as Record<string, unknown> : {};
+  const invalidDifficulty = !covProposalSchema.shape.difficulty.safeParse(r.difficulty).success ||
+    (Array.isArray(r.links) && r.links.some(l => !l || typeof l !== 'object' || !covProposalSchema.shape.difficulty.safeParse(l.difficulty).success));
+  const causes: import('./cov-diagnostics').CovDiagnosticCode[] = ['PROVIDER_SCHEMA_INVALID'];
+  if (invalidDifficulty) causes.push('DIFFICULTY_STATE_MISSING_OR_INVALID');
+  // Even with an invalid state, criterion type is independently decidable from approved configuration.
+  if (q?.contractVersion === 'personalization-request/3' && Array.isArray(r.criteria)) {
+    if (r.criteria.some(c => c && typeof c === 'object' && c.status === 'NOT_APPLICABLE' &&
+      q.requirements.configuration.elements.find(e => e.requirementId === c.requirementId)?.aspect !== 'RESPONSE_TO_DIFFICULTY')) causes.push('NOT_APPLICABLE_CRITERION_TYPE_INVALID');
+  }
+  throw new CovDiagnosticError(causes[0], causes);
+}
 
 export function validateSourceSpan(span: { start: number; end: number; quote: string }, text: string): void {
   if (!Number.isSafeInteger(span.start) || !Number.isSafeInteger(span.end) || span.start < 0 || span.start >= span.end) throw new CovDiagnosticError('SOURCE_CITATION_RANGE_INVALID');
@@ -81,11 +102,13 @@ export function adaptCovSources(capability: keyof typeof covSourceSchemas, value
       relations: r.relations.map(e => ({ ...e, earlier: msg(e.earlier, 'student'), later: msg(e.later, 'student') })) };
   }
   if (capability === 'COV3') {
-    const r = covSourceSchemas.COV3.parse(value);
-    return { ...r, contractVersion: 'personalization-adjudication/2' as const,
+    const scoped = q.contractVersion === 'personalization-request/3';
+    const r = scoped ? parseCovProposal(value, q) : covSourceSchemas.COV3.parse(value);
+    return { ...r, contractVersion: scoped ? 'personalization-adjudication/3' as const : 'personalization-adjudication/2' as const,
       difficulty: { ...r.difficulty, evidence: r.difficulty.evidence.map(e => msg(e, 'patient')) },
       criteria: r.criteria.map(c => ({ ...c, studentEvidence: c.studentEvidence.map(e => msg(e, 'student')) })),
       links: r.links.map(l => ({ ...l, circumstances: l.circumstances.map(e => src(e, 'patient')), proposal: msg(l.proposal, 'student'),
+        ...('difficulty' in l ? { difficulty: { ...l.difficulty, evidence: l.difficulty.evidence.map(e => msg(e, 'patient')) } } : {}),
         patientProposal: l.patientProposal === null ? undefined : msg(l.patientProposal, 'patient'),
         withdrawal: l.withdrawal === null ? undefined : msg(l.withdrawal, 'student'),
         feasibilityCheck: l.feasibilityCheck === null ? undefined : msg(l.feasibilityCheck, 'student'),

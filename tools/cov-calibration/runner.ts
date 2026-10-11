@@ -1,17 +1,18 @@
 import { createHash } from 'node:crypto';
 import { evaluateReferralReportV1 } from '../../lib/cases/v2/evaluate-referral-report';
 import { evaluateFollowUpPlanV1 } from '../../lib/cases/v2/evaluate-follow-up-plan';
+import { evaluatePersonalizationV3 } from '../../lib/cases/v2/evaluate-personalization-v3';
 import { evaluatePersonalizationV2 } from '../../lib/cases/v2/evaluate-personalization-v2';
 import { createCovSimulatedRuntimes, type CovClient, type CovRuntimeConfig } from '../../lib/cases/v2/cov-semantic-runtime';
 import { buildCalibrationFixtures, type CalibrationFixture } from './fixtures';
 
 export const COV_LIVE_AUTHORIZATION = null; // No approved model/budget. No environment override.
 type RuntimeSet = ReturnType<typeof createCovSimulatedRuntimes>;
-export function evaluateFixture(fixture: CalibrationFixture, runtimes: RuntimeSet) {
+export function evaluateFixture(fixture: CalibrationFixture, runtimes: RuntimeSet, proposalScoped = false) {
   switch (fixture.capability) {
     case 'COV1': return evaluateReferralReportV1(fixture.input, runtimes.COV1);
     case 'COV2': return evaluateFollowUpPlanV1(fixture.input, runtimes.COV2);
-    case 'COV3': return evaluatePersonalizationV2(fixture.input, runtimes.COV3);
+    case 'COV3': return proposalScoped ? evaluatePersonalizationV3(fixture.input, runtimes.COV3) : evaluatePersonalizationV2(fixture.input, runtimes.COV3);
   }
 }
 type Evaluation = Awaited<ReturnType<typeof evaluateFixture>>;

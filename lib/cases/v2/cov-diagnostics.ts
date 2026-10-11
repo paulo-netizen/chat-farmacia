@@ -35,6 +35,13 @@ const stages = {
   INCOMPATIBILITY_REFERENCE_INVALID: 'VALIDATION',
   LINK_REFERENCE_INVALID: 'VALIDATION',
   CRITERION_NOT_APPLICABLE_INVALID: 'VALIDATION',
+  NOT_APPLICABLE_CRITERION_TYPE_INVALID: 'VALIDATION',
+  NOT_APPLICABLE_DIFFICULTY_STATE_INVALID: 'VALIDATION',
+  DIFFICULTY_STATE_MISSING_OR_INVALID: 'VALIDATION',
+  DIFFICULTY_SCOPE_REFERENCE_MISSING: 'VALIDATION',
+  DIFFICULTY_SUMMARY_INCONSISTENT: 'VALIDATION',
+  DIFFICULTY_EVIDENCE_NOT_AFTER_PROPOSAL: 'VALIDATION',
+  RESPONSE_OMISSION_WITHOUT_DIFFICULTY: 'VALIDATION',
   DEMONSTRATED_AUTHORSHIP_MISSING: 'VALIDATION',
   ADAPTATION_CIRCUMSTANCE_MISSING: 'VALIDATION',
   FEASIBILITY_CHECK_MISSING: 'VALIDATION',
@@ -43,14 +50,15 @@ const stages = {
   CLAIM_SUPPORT_MISSING: 'VALIDATION', ADJUDICATION_INVALID: 'VALIDATION',
 } as const;
 export type CovDiagnosticCode = keyof typeof stages;
-export type CovDiagnostic = Readonly<{ version: 'cov-diagnostic/1'; stage: typeof stages[CovDiagnosticCode]; code: CovDiagnosticCode }>;
+export type CovDiagnostic = Readonly<{ version: 'cov-diagnostic/1' | 'cov-diagnostic/2'; stage: typeof stages[CovDiagnosticCode]; code: CovDiagnosticCode; causes?: readonly CovDiagnosticCode[] }>;
 const issued = new WeakMap<object, CovDiagnostic>();
 export class CovDiagnosticError extends Error {
-  constructor(code: CovDiagnosticCode) {
+  constructor(code: CovDiagnosticCode, causes?: readonly CovDiagnosticCode[]) {
     const safe = Object.hasOwn(stages, code) ? code : 'RUNTIME_FAILURE';
     super(safe);
     this.name = 'CovDiagnosticError';
-    issued.set(this, Object.freeze({ version: 'cov-diagnostic/1', stage: stages[safe], code: safe }));
+    const closed = causes ? Object.freeze([...new Set(causes.map(c => Object.hasOwn(stages, c) ? c : 'RUNTIME_FAILURE' as const))]) : undefined;
+    issued.set(this, Object.freeze({ version: closed ? 'cov-diagnostic/2' : 'cov-diagnostic/1', stage: stages[safe], code: safe, ...(closed ? { causes: closed } : {}) }));
   }
 }
 export function covDiagnostic(error: unknown, fallback: CovDiagnosticCode): CovDiagnostic {
