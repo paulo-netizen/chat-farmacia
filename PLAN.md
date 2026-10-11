@@ -25,7 +25,16 @@ El repositorio dispone de una suite automatizada amplia. M6-A, M6-B, M6-C, M6-D1
 
 ## Estado vigente y próximo frente funcional
 
-COV (10 de octubre): resolución literal versionada de todas las citas a fuentes COV1–COV3,
+COV (11 de octubre): diagnósticos de dominio P1 específicos y aclaración general versionada de
+INSUFFICIENT frente a NOT_DEMONSTRATED en COV1. 45 pruebas nuevas y 320 regresiones PASS;
+TypeScript y diff-check PASS. Un conteo actualizado y una inferencia P1, detenida con
+`VALIDATION / CRITERION_NOT_APPLICABLE_INVALID`. Tres personalizaciones y R3 no ejecutados;
+R3 ajustado offline, sin verificación live de la nueva instrucción. Causa del P1 histórico aún
+indeterminada. Prioridad: aclarar la inconsistencia de no aplicabilidad del nuevo intento sin
+relajar el contrato ni repetir automáticamente. [Evidencia](docs/v2/25_COV_SEMANTIC_CALIBRATION.md).
+Sin migraciones, scoring, aceptación final ni puntos; porcentajes y estados sin cambios.
+
+Histórico — COV (10 de octubre): resolución literal versionada de todas las citas a fuentes COV1–COV3,
 con posiciones calculadas por servidor y diagnósticos seguros. 56/56 pruebas nuevas, 264/264
 regresiones, TypeScript PASS y suite offline completa: 94 archivos PASS / 7 SKIPPED.
 Once conteos y ocho inferencias: R2 válido; seis pendientes válidos; parada en P1 con

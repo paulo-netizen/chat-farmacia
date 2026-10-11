@@ -115,7 +115,7 @@ describe('Real COV adapters with simulated Responses transport only', () => {
       if (id === 'R1') {
         const projected = JSON.parse(params.input);
         expect(projected.providerRepresentation).toBe('referral-report-sources-adjudication/3');
-        expect(projected.providerInstructionsVersion).toBe('cov-source-literal-instructions/1');
+        expect(projected.providerInstructionsVersion).toBe('cov-report-evidence-instructions/2');
         expect(params.instructions).toContain('Return only referral-report-sources-adjudication/3');
         expect(params.instructions).toContain('For EVERY citation return exact literal quote and occurrence, never start/end offsets.');
         expect(params.instructions).not.toContain('Cite exact UTF-16');

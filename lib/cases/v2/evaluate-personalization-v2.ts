@@ -1,6 +1,6 @@
 import { createHash } from 'node:crypto';
 import { z } from 'zod';
-import { covDiagnostic, CovDiagnosticError } from './cov-diagnostics';
+import { covDiagnostic, CovDiagnosticError, type CovDiagnosticCode } from './cov-diagnostics';
 import { validateSourceSpan } from './cov-source-citations';
 import { validateSessionTranscriptSnapshotV2 } from './spfa-session-transcript';
 import {
@@ -41,6 +41,7 @@ export class PersonalizationValidationError extends Error {
   constructor() { super('INVALID_PERSONALIZATION_INPUT'); this.name = 'PersonalizationValidationError'; }
 }
 function assert(value: unknown): asserts value { if (!value) throw new PersonalizationValidationError(); }
+function rule(value: unknown, code: CovDiagnosticCode): asserts value { if (!value) throw new CovDiagnosticError(code); }
 function canonical(value: unknown): string {
   if (Array.isArray(value)) return `[${value.map(canonical).join(',')}]`;
   if (value !== null && typeof value === 'object') {
@@ -96,8 +97,10 @@ export async function evaluatePersonalizationV2(input: {
   try { raw = await runtime.adjudicate(request); }
   catch (error) { return finish('TECHNICAL_FAILURE', 'RUNTIME_FAILED', { ...execution, diagnostic: covDiagnostic(error, 'RUNTIME_FAILURE') }); }
   try {
-    const result = personalizationAdjudicationSchemaV2.parse(raw);
-    assert(result.requestDigest === request.requestDigest);
+    const parsed = personalizationAdjudicationSchemaV2.safeParse(raw);
+    rule(parsed.success, 'ADJUDICATION_SCHEMA_INVALID');
+    const result = parsed.data;
+    rule(result.requestDigest === request.requestDigest, 'REQUEST_DIGEST_MISMATCH');
     const messages = new Map(transcript.messages.map((message, index) => [String(message.messageId), { message, index }]));
     const cited = (span: PersonalizationSpanV1, role: 'patient' | 'student') => {
       const entry = messages.get(span.messageId);
@@ -111,47 +114,49 @@ export async function evaluatePersonalizationV2(input: {
     // A proposal and its feasibility question/response can occupy the same utterance.
     const notEarlier = (a: PersonalizationSpanV1, b: PersonalizationSpanV1) => messages.get(a.messageId)!.index <= messages.get(b.messageId)!.index;
     result.difficulty.evidence.forEach(span => cited(span, 'patient'));
-    if (result.difficulty.status === 'PRESENT') assert(result.difficulty.evidence.length > 0);
-    if (result.difficulty.status === 'NOT_OBSERVED') assert(result.difficulty.evidence.length === 0);
+    if (result.difficulty.status === 'PRESENT') rule(result.difficulty.evidence.length > 0, 'DIFFICULTY_EVIDENCE_MISSING');
+    if (result.difficulty.status === 'NOT_OBSERVED') rule(result.difficulty.evidence.length === 0, 'DIFFICULTY_STATE_CONFLICT');
     const isDifficulty = (span: PersonalizationSpanV1) => result.difficulty.status !== 'NOT_OBSERVED' &&
       result.difficulty.evidence.some(item => canonical(item) === canonical(span));
-    assert(new Set(result.links.map(link => link.linkId)).size === result.links.length);
+    rule(new Set(result.links.map(link => link.linkId)).size === result.links.length, 'LINKS_DUPLICATED');
     for (const link of result.links) {
       cited(link.proposal, 'student');
       for (const circumstance of link.circumstances) {
-        if (circumstance.source === 'PUBLIC') assert(matches(circumstance, String(context.publicProfile[circumstance.field])));
-        else { cited(circumstance, 'patient'); assert(before(circumstance, link.proposal)); }
+        if (circumstance.source === 'PUBLIC') rule(matches(circumstance, String(context.publicProfile[circumstance.field])), 'SOURCE_CITATION_TEXT_MISMATCH');
+        else { cited(circumstance, 'patient'); rule(before(circumstance, link.proposal), 'CIRCUMSTANCE_NOT_PRIOR'); }
       }
-      if (link.patientProposal) { cited(link.patientProposal, 'patient'); assert(before(link.patientProposal, link.proposal)); }
-      if (link.attribution === 'EXPLICIT_ADOPTION') assert(link.patientProposal);
-      if (link.withdrawal) { cited(link.withdrawal, 'student'); assert(before(link.proposal, link.withdrawal)); assert(link.standing === 'WITHDRAWN'); }
-      if (link.standing === 'WITHDRAWN') assert(link.withdrawal);
-      if (link.feasibilityCheck) { cited(link.feasibilityCheck, 'student'); assert(notEarlier(link.proposal, link.feasibilityCheck)); }
+      if (link.patientProposal) { cited(link.patientProposal, 'patient'); rule(before(link.patientProposal, link.proposal), 'ADOPTION_NOT_PRIOR'); }
+      if (link.attribution === 'EXPLICIT_ADOPTION') rule(link.patientProposal, 'ADOPTION_SOURCE_MISSING');
+      if (link.withdrawal) { cited(link.withdrawal, 'student'); rule(before(link.proposal, link.withdrawal), 'WITHDRAWAL_NOT_LATER'); rule(link.standing === 'WITHDRAWN', 'WITHDRAWAL_STATE_CONFLICT'); }
+      if (link.standing === 'WITHDRAWN') rule(link.withdrawal, 'WITHDRAWAL_EVIDENCE_MISSING');
+      if (link.feasibilityCheck) { cited(link.feasibilityCheck, 'student'); rule(notEarlier(link.proposal, link.feasibilityCheck), 'FEASIBILITY_PRECEDES_PROPOSAL'); }
       if (link.patientResponse) {
         cited(link.patientResponse.evidence, 'patient');
-        assert(before(link.proposal, link.patientResponse.evidence));
-        if (link.patientResponse.kind === 'DIFFICULTY_OR_REJECTION') assert(isDifficulty(link.patientResponse.evidence));
+        rule(before(link.proposal, link.patientResponse.evidence), 'PATIENT_RESPONSE_NOT_LATER');
+        if (link.patientResponse.kind === 'DIFFICULTY_OR_REJECTION') rule(isDifficulty(link.patientResponse.evidence), 'PATIENT_DIFFICULTY_REFERENCE_INVALID');
       }
       if (link.responseToDifficulty) {
         cited(link.responseToDifficulty.difficulty, 'patient'); cited(link.responseToDifficulty.response, 'student');
-        assert(isDifficulty(link.responseToDifficulty.difficulty));
-        assert(before(link.responseToDifficulty.difficulty, link.responseToDifficulty.response));
-        assert(notEarlier(link.proposal, link.responseToDifficulty.response));
+        rule(isDifficulty(link.responseToDifficulty.difficulty), 'RESPONSE_DIFFICULTY_REFERENCE_INVALID');
+        rule(before(link.responseToDifficulty.difficulty, link.responseToDifficulty.response), 'RESPONSE_NOT_AFTER_DIFFICULTY');
+        rule(notEarlier(link.proposal, link.responseToDifficulty.response), 'RESPONSE_PRECEDES_PROPOSAL');
       }
     }
     const links = new Map(result.links.map(link => [link.linkId, link]));
     for (const pair of result.incompatibilities) {
-      assert(pair.first !== pair.second && links.has(pair.first) && links.has(pair.second));
+      rule(pair.first !== pair.second && links.has(pair.first) && links.has(pair.second), 'INCOMPATIBILITY_REFERENCE_INVALID');
     }
     const elements = requirements.configuration.elements, ids = elements.map(item => item.requirementId);
-    assert(result.criteria.length === ids.length && new Set(result.criteria.map(c => c.requirementId)).size === ids.length);
+    rule(new Set(result.criteria.map(c => c.requirementId)).size === result.criteria.length, 'CRITERIA_DUPLICATED');
+    rule(result.criteria.every(c => ids.includes(c.requirementId)), 'CRITERIA_UNKNOWN');
+    rule(result.criteria.length === ids.length, 'CRITERIA_MISSING');
     for (const criterion of result.criteria) {
       const requirement = elements.find(item => item.requirementId === criterion.requirementId);
-      assert(requirement); criterion.studentEvidence.forEach(span => cited(span, 'student'));
+      rule(requirement, 'CRITERIA_UNKNOWN'); criterion.studentEvidence.forEach(span => cited(span, 'student'));
       const link = criterion.linkRef === null ? undefined : links.get(criterion.linkRef);
-      if (criterion.linkRef !== null) assert(link);
+      if (criterion.linkRef !== null) rule(link, 'LINK_REFERENCE_INVALID');
       if (criterion.status === 'NOT_APPLICABLE') {
-        assert(requirement.aspect === 'RESPONSE_TO_DIFFICULTY' && result.difficulty.status === 'NOT_OBSERVED');
+        rule(requirement.aspect === 'RESPONSE_TO_DIFFICULTY' && result.difficulty.status === 'NOT_OBSERVED', 'CRITERION_NOT_APPLICABLE_INVALID');
         if (context.captureStatus !== 'COMPLETE') criterion.status = 'INSUFFICIENT';
       }
       if (requirement.aspect === 'RESPONSE_TO_DIFFICULTY' && criterion.status === 'NOT_DEMONSTRATED' && result.difficulty.status !== 'PRESENT') {
@@ -159,14 +164,14 @@ export async function evaluatePersonalizationV2(input: {
       }
       if (criterion.status === 'NOT_DEMONSTRATED' && (context.captureStatus !== 'COMPLETE' || context.opportunity !== 'CONFIRMED')) criterion.status = 'INSUFFICIENT';
       if (criterion.status === 'DEMONSTRATED') {
-        assert(link && link.attribution !== 'QUOTATION');
-        if (requirement.aspect === 'ADAPTATION') assert(link.circumstances.length > 0);
-        if (requirement.aspect === 'FEASIBILITY') assert(link.feasibilityCheck);
-        if (requirement.aspect === 'RESPONSE_TO_DIFFICULTY') assert(result.difficulty.status === 'PRESENT' && link.responseToDifficulty);
+        rule(link && link.attribution !== 'QUOTATION', 'DEMONSTRATED_AUTHORSHIP_MISSING');
+        if (requirement.aspect === 'ADAPTATION') rule(link.circumstances.length > 0, 'ADAPTATION_CIRCUMSTANCE_MISSING');
+        if (requirement.aspect === 'FEASIBILITY') rule(link.feasibilityCheck, 'FEASIBILITY_CHECK_MISSING');
+        if (requirement.aspect === 'RESPONSE_TO_DIFFICULTY') rule(result.difficulty.status === 'PRESENT' && link.responseToDifficulty, 'DIFFICULTY_RESPONSE_MISSING');
         // Standing/conflicts remain separate evidence. Neither can rewrite observed historical work.
         // Semantic relevance of a conflict belongs to the criterion adjudication, never this validator.
       }
-      if (criterion.status === 'CONTRADICTORY') assert(criterion.studentEvidence.length > 0 || link);
+      if (criterion.status === 'CONTRADICTORY') rule(criterion.studentEvidence.length > 0 || link, 'CONTRADICTION_SUPPORT_MISSING');
     }
     result.criteria.sort((a, b) => ids.indexOf(a.requirementId) - ids.indexOf(b.requirementId));
     result.links.sort((a, b) => messages.get(a.proposal.messageId)!.index - messages.get(b.proposal.messageId)!.index || a.proposal.start - b.proposal.start);

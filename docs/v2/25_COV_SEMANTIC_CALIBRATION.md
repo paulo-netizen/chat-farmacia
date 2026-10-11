@@ -1,5 +1,134 @@
 # COV1–COV3 — Preparación de calibración semántica
 
+## Diagnósticos P1 y aclaración R3 — 11 de octubre de 2026
+
+Base `6fa94c3cce786aae5512c8608aecbfffec6c6fa3`, `chatusal-v2`, árbol inicialmente limpio.
+**Resultado actual: STOPPED_TECHNICAL_FAILURE en P1.** Se implementa el ajuste offline de R3,
+pero no se verifica live porque P1 activa la parada autorizada. No se declaran resueltos ambos
+problemas ni completados los tres pendientes. Los apartados posteriores son históricos.
+
+### Diagnóstico offline y cambios mínimos
+
+El P1 del 10 de octubre solo conserva `ADJUDICATION_INVALID`, identificadores y uso; no su
+adjudicación rechazada. Su causa específica sigue **indeterminada**. Se inspeccionó la proyección,
+parseo, conversión de null a ausencia en campos opcionales, esquema final, referencias entre cadenas
+y criterios, no aplicabilidad, temporalidad y conservación de desempeño histórico tras retirada.
+No se demostró un defecto que permita relajar una regla o reparar silenciosamente la respuesta.
+Una respuesta sintética completa pasa por adaptador y validador final con los estados esperados
+de P1 y campos opcionales null; esto prueba correspondencia estructural, no reproduce la salida perdida.
+
+[evaluate-personalization-v2.ts](../../lib/cases/v2/evaluate-personalization-v2.ts) mantiene las mismas
+reglas y sustituye comprobaciones genéricas por códigos controlados de `cov-diagnostic/1`:
+
+| Ámbito | Códigos seguros |
+|---|---|
+| Esquema/digest/criterios | ADJUDICATION_SCHEMA_INVALID, REQUEST_DIGEST_MISMATCH, CRITERIA_DUPLICATED, CRITERIA_UNKNOWN, CRITERIA_MISSING |
+| Dificultad | DIFFICULTY_EVIDENCE_MISSING, DIFFICULTY_STATE_CONFLICT, CRITERION_NOT_APPLICABLE_INVALID |
+| Cadenas/autoría | LINKS_DUPLICATED, LINK_REFERENCE_INVALID, INCOMPATIBILITY_REFERENCE_INVALID, DEMONSTRATED_AUTHORSHIP_MISSING, ADOPTION_SOURCE_MISSING, ADOPTION_NOT_PRIOR |
+| Temporalidad/retirada | CIRCUMSTANCE_NOT_PRIOR, WITHDRAWAL_NOT_LATER, WITHDRAWAL_STATE_CONFLICT, WITHDRAWAL_EVIDENCE_MISSING, FEASIBILITY_PRECEDES_PROPOSAL, PATIENT_RESPONSE_NOT_LATER |
+| Respuesta a dificultad | PATIENT_DIFFICULTY_REFERENCE_INVALID, RESPONSE_DIFFICULTY_REFERENCE_INVALID, RESPONSE_NOT_AFTER_DIFFICULTY, RESPONSE_PRECEDES_PROPOSAL |
+| Soporte exigido | ADAPTATION_CIRCUMSTANCE_MISSING, FEASIBILITY_CHECK_MISSING, DIFFICULTY_RESPONSE_MISSING, CONTRADICTION_SUPPORT_MISSING |
+
+Se conservan los códigos de citas existentes. No se serializan valores, claves del proveedor, paths
+Zod, texto clínico ni respuestas raw. Los fallos imprevistos conservan fallback seguro; todas las
+comprobaciones explícitas de adjudicación tienen código. Entrada inválida mantiene su API histórica.
+No se modifican esquema, instrucciones ni hash de solicitud COV3, ni expectativas docentes.
+
+COV1 introduce **`cov-report-evidence-instructions/2`**, runtime `:source-literal/3:report-evidence/2`:
+INSUFFICIENT = evidencia relacionada que no basta para acreditar; NOT_DEMONSTRATED = desempeño
+exigido ausente con captura completa, oportunidad y datos necesarios disponibles; UNCERTAIN =
+incertidumbre interpretativa. Una especificidad no respaldada no equivale automáticamente a ausencia
+total de evidencia. El claim específico se evalúa por separado. No hay reglas por ID ni ejemplo
+memorizado en la instrucción actual. Se conservan expectativas, esquemas y puntuación.
+La proyección previa COV1 se conserva explícitamente mediante `'sources/3'`; su manifiesto y todas
+las proyecciones históricas siguen verificables. Cambia el hash COV1, no los hashes COV2/COV3.
+
+### Pruebas y control de ejecución
+
+- **45/45 nuevas**: 31 diagnósticos/compatibilidad, 4 analogías y contrastes de evidencia COV1,
+  10 controles de continuación. Analogías sintéticas: molestia general frente a cualidad añadida,
+  dificultad de lectura frente a incapacidad absoluta, omisión y ambigüedad. Los runtimes simulados
+  comprueban instrucciones y estados transportados, no demuestran acierto semántico real.
+- **320/320 regresiones** COV1–COV3, transporte, citas, diagnósticos, reserva y runners históricos.
+- TypeScript y diff-check **PASS**. Se corrigieron dos defectos de tests durante preparación
+  (alias de objeto en una corrupción sintética y mutación de propiedad readonly), antes de ejecutar live.
+- No se repite la suite completa: cambio acotado a diagnóstico, instrucciones COV1 y entrada
+  experimental, cubierto por regresiones afectadas. Suite completa del 10 de octubre permanece
+  histórica (94 archivos PASS / 7 SKIPPED). Lint seguía pendiente de configuración en esa revisión;
+  no se configura ESLint ni se presenta como aprobado en este paso.
+
+[completion.ts](../../tools/cov-calibration/completion.ts) y
+[run-completion.ts](../../tools/cov-calibration/run-completion.ts) son secos por defecto. Selección
+cerrada y orden obligatorio P1 → P2-WITHDRAW → P3-ADOPT → P4-LATE → R3, una inferencia por ejemplo.
+Cada autorización `cov-completion-authorization/1` y diario es nuevo y de un solo ejemplo; vincula
+por hashes cinco diarios históricos y todos los nuevos antecesores. Exige resultado técnicamente
+válido sin STOP en cada antecesor nuevo; un desacuerdo válido permite continuar. La vía del adaptador
+exige la misma sesión nominal autorizada. Exclusión, reserva/fsync antes del envío, bloqueo de
+reservas inciertas, configuración exacta y ausencia de retries/fallback se mantienen. Los cinco
+diarios históricos permanecen idénticos tras el intento (SHA-256).
+
+### Intento live y límite concreto de lo demostrado
+
+Un conteo oficial actualizado para P1 porque el anterior excedía 24 horas: **3.108 tokens**,
+misma proyección `5f97d3183d752703c3a827cc4914d51bc29180d09e80ce5dc98f2da4e66a2daf`.
+Una inferencia: `gpt-5.6-terra`, medium, Standard/global, `store:false`, máximo 8.000 tokens de salida,
+timeout 60 s. Diagnóstico: **`cov-diagnostic/1 / VALIDATION / CRITERION_NOT_APPLICABLE_INVALID`**.
+
+Demostrado: una adjudicación parseada y adaptada llegó a la comprobación de un criterio
+NOT_APPLICABLE, que exige conjuntamente aspecto `RESPONSE_TO_DIFFICULTY` y dificultad
+`NOT_OBSERVED`; esa regla no se cumplió. No conocemos cuál de ambas condiciones falló, ni
+identificamos por inferencia el criterio recibido. No se conserva la adjudicación rechazada.
+No hay evidencia para atribuirlo al mismo motivo que el P1 histórico, ni para confundir una
+barrera inicial con rechazo posterior como explicación confirmada. No se retoca el prompt ni
+se repite después del fallo. No hubo conteos ni inferencias de los cuatro ejemplos siguientes.
+
+| Ejemplo / criterio | Expectativa conservada | Observado en este intento |
+|---|---|---|
+| P1 adaptación | DEMONSTRATED | TECHNICAL_FAILURE |
+| P1 comprobación | DEMONSTRATED | TECHNICAL_FAILURE |
+| P1 respuesta | NOT_APPLICABLE | TECHNICAL_FAILURE |
+| P2-WITHDRAW adaptación / comprobación / respuesta | DEMONSTRATED / DEMONSTRATED / DEMONSTRATED | No ejecutado |
+| P3-ADOPT adaptación / comprobación / respuesta | DEMONSTRATED / DEMONSTRATED / NOT_APPLICABLE | No ejecutado |
+| P4-LATE adaptación / comprobación / respuesta | NOT_DEMONSTRATED / DEMONSTRATED / NOT_APPLICABLE | No ejecutado |
+| R3 fidelidad / inicio | INSUFFICIENT / DEMONSTRATED | No ejecutado con nueva instrucción |
+
+**Denominador semántico nuevo: 0 criterios válidos**; coincidencias, tasas FP/FN y abstención
+no estimables. Tres criterios técnicos y once no ejecutados quedan fuera del denominador.
+Definiciones: FP = observado DEMONSTRATED con expectativa distinta; FN decisivo = expectativa
+DEMONSTRATED y observado NOT_DEMONSTRATED o CONTRADICTORY; positivos esperados con INSUFFICIENT
+o UNCERTAIN observados se registran aparte como positivos perdidos por abstención. INSUFFICIENT
+(soporte insuficiente) y UNCERTAIN (interpretación incierta) nunca se fusionan en la lista de etiquetas.
+No hay nueva lista de desacuerdos semánticos válida. El desacuerdo histórico R3 sigue siendo
+INSUFFICIENT → NOT_DEMONSTRATED; no se reinterpreta como resuelto por las pruebas simuladas.
+
+Soporte de citas/autoría/temporalidad/retirada: se mantienen validadores y pruebas offline de estas
+relaciones, incluido desempeño previo tras retirada. Este resultado inválido no permite revisar
+semánticamente las cadenas recibidas de P1 ni afirmar que sus citas respaldan conclusiones.
+R3 nuevo no se ejecutó; aunque coincidiera en otro intento sería calibración, no validación independiente.
+No agregar este intento, R1 original y los resultados de versiones anteriores como una prueba homogénea.
+
+### Coste y pendientes
+
+Uso P1: **3.108 entrada** (3 ordinarios, 3.105 escritura de caché, 0 lectura), **468 salida**,
+incluidos **125 razonamiento**. Con las tarifas registradas de Terra (USD/M: 2 entrada, 0,20 lectura,
+2,50 escritura, 12 salida), coste calculable `(3×2 + 3105×2,50 + 468×12)/10^6 = 0,0133845 USD`.
+[Modelo oficial consultado](https://developers.openai.com/api/docs/models/gpt-5.6-terra) el 11 de octubre;
+se conserva la política tarifaria y reserva conservadora documentada previamente, sin descuento por caché.
+**13 inferencias acumuladas: 0,1270464 USD**, antes de impuestos/comisiones. **36 conteos acumulados:
+coste desconocido**, no gratuito. Total facturado desconocido; no se promete máximo garantizado.
+
+Reserva P1 **0,103770 USD**, acumulada retenida **1,328325 USD**, dentro del sublímite conservador
+de 2 USD para inferencias bajo los 15 EUR autorizados. No hubo nuevo timeout o respuesta perdida;
+la reserva del resultado inválido permanece retenida. Los otros cuatro no consumieron reserva de
+inferencia ni nuevo conteo. Continúan vigentes los márgenes de cambio/impuestos y la aceptación
+expresa del precio desconocido de los conteos; no se registra ese precio como cero.
+
+Pendiente real: desambiguar la incompatibilidad de NOT_APPLICABLE en P1 antes de otro intento
+autorizado y obtener evidencia live para R3 y los tres pendientes. No se ha demostrado que sea
+necesario cambiar la regla docente o relajar el contrato. Autorizaciones, diarios y metadatos privados
+quedan fuera del commit. M6 **64%**, proyecto **51.53%**, M6/M6-E **PARTIAL**, PED2 abierto,
+perfiles no aprobados y D3B **OPEN / VALIDATION DEBT**, sin aceptación final ni puntos adicionales.
+
 ## Citas a fuentes COV1–COV3 y ejecución acotada — 10 de octubre de 2026
 
 Base `f1aa20a02c3db9e63ca713f23e4415c57856d082`, rama `chatusal-v2`, inicialmente limpia.

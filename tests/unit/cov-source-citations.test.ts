@@ -105,7 +105,7 @@ describe('source scope, chronology and historical spans', () => {
   });
   it('does not turn a later patient revelation into knowledge before the proposal', async () => {
     const r = await run('COV3', r => { r.links[0].circumstances[0].messageId = '4'; });
-    expect(r.status).toBe('TECHNICAL_FAILURE'); expect(r.diagnostic?.code).toBe('ADJUDICATION_INVALID');
+    expect(r.status).toBe('TECHNICAL_FAILURE'); expect(r.diagnostic?.code).toBe('CIRCUMSTANCE_NOT_PRIOR');
   });
   it.each(['COV1','COV2','COV3'] as const)('retains PUBLIC field boundaries in %s', async cap => {
     const r = await run(cap, r => {

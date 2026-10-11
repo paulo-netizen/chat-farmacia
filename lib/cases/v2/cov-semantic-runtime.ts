@@ -40,12 +40,12 @@ const previousProviderSchemas = {
   COV3: personalizationAdjudicationSchemaV2.extend({ links: z.array(wireLink) }).strict(),
 };
 export const covProviderSchemas = covSourceSchemas;
-export type CovProjection = false | true | 'report/2';
+export type CovProjection = false | true | 'report/2' | 'sources/3';
 export type CovCapability = keyof typeof covProviderSchemas;
 export type CovRequest = ReferralReportRequestV1 | FollowUpRequestV1 | PersonalizationRequestV2;
 
 export function covRuntimeRef(config: CovRuntimeConfig, capability?: CovCapability, projection: CovProjection = false) {
-  return `cov-openai/2:${config.model}:${config.maxOutputTokens}:${config.maxInputBytes}:${config.timeoutMs}:medium:default${capability && projection === false ? ':source-literal/3' : capability === 'COV1' && projection === 'report/2' ? ':report-literal/2' : ''}`;
+  return `cov-openai/2:${config.model}:${config.maxOutputTokens}:${config.maxInputBytes}:${config.timeoutMs}:medium:default${capability && (projection === false || projection === 'sources/3') ? ':source-literal/3' : capability === 'COV1' && projection === 'report/2' ? ':report-literal/2' : ''}${capability === 'COV1' && projection === false ? ':report-evidence/2' : ''}`;
 }
 export function projectCovRequest(capability: CovCapability, q: CovRequest, config: CovRuntimeConfig, legacyReportProjection: CovProjection = false) {
   const data = q.contractVersion === 'referral-report-request/1'
@@ -55,11 +55,12 @@ export function projectCovRequest(capability: CovCapability, q: CovRequest, conf
         transcriptCompleteness: q.untrustedData.transcriptCompleteness, opportunity: q.untrustedData.opportunity } }
     : { requirements: q.requirements, untrustedData: { context: q.untrustedData.context, messages: q.untrustedData.messages } };
   const literalReport = capability === 'COV1' && legacyReportProjection === 'report/2';
-  const allSources = legacyReportProjection === false;
+  const allSources = legacyReportProjection === false || legacyReportProjection === 'sources/3';
+  const clarifiedReport = capability === 'COV1' && legacyReportProjection === false;
   const providerVersion = { COV1: 'referral-report-sources-adjudication/3', COV2: 'follow-up-plan-sources-adjudication/2', COV3: 'personalization-sources-adjudication/3' }[capability];
   const input = JSON.stringify({ contractVersion: q.contractVersion, instructionsVersion: q.instructionsVersion,
     ...(literalReport ? { providerRepresentation: 'referral-report-literal-adjudication/2', providerInstructionsVersion: 'report-literal-instructions/1' } : {}),
-    ...(allSources ? { providerRepresentation: providerVersion, providerInstructionsVersion: 'cov-source-literal-instructions/1' } : {}),
+    ...(allSources ? { providerRepresentation: providerVersion, providerInstructionsVersion: clarifiedReport ? 'cov-report-evidence-instructions/2' : 'cov-source-literal-instructions/1' } : {}),
     requestDigest: q.requestDigest, ...data });
   let domainInstructions = literalReport ? q.instructions
     .replace('Cite exact UTF-16 [start,end) spans and source references.', 'For SOURCE evidence cite exact UTF-16 [start,end) spans and source references. For REPORT evidence return exact literal quote and occurrence only, never offsets. occurrence is null for a unique match; repeated quotes require an explicit one-based occurrence in original text order (including overlapping matches). Never normalize Unicode, spaces or line breaks; paraphrases are not literal citations. The server derives report offsets. Citation validity does not establish semantic support.')
@@ -68,8 +69,16 @@ export function projectCovRequest(capability: CovCapability, q: CovRequest, conf
     domainInstructions = q.instructions.replace(/Cite exact UTF-16 \[start,end\) spans(?: and source references| and message\/field references)?\./g, 'For EVERY citation return exact literal quote and occurrence, never start/end offsets. Identify the exact messageId or PUBLIC field in its permitted evidence slot; report evidence refers only to this report. occurrence is null for a unique literal match within that source, otherwise provide the one-based occurrence counting overlapping matches. Never search another source, normalize Unicode/whitespace or cite a paraphrase. Server-derived positions do not establish semantic support.')
       .replace(/Return only (referral-report-adjudication\/1|follow-up-plan-adjudication\/1|personalization-adjudication\/2)/, `Return only ${providerVersion}`);
   }
+  if (clarifiedReport) {
+    domainInstructions = domainInstructions.replace(
+      /Unsupported specificity is INSUFFICIENT evidence of fidelity[^\n]+/,
+      'INSUFFICIENT means related evidence exists but is not sufficient to establish the criterion, including unsupported added specificity. Related evidence is not total absence. Assess that specific factual claim separately as UNSUPPORTED when capture is complete; this does not automatically make the criterion NOT_DEMONSTRATED.');
+    domainInstructions = domainInstructions.replace(
+      'NOT_DEMONSTRATED requires complete capture, confirmed opportunity and evidence that necessary information was available.',
+      'NOT_DEMONSTRATED means the required performance is absent despite complete capture, confirmed opportunity and available necessary information. First distinguish related but insufficient evidence from absence of the required performance. UNCERTAIN concerns uncertain interpretation, not a substitute for either evidence state.');
+  }
   const instructions = `${domainInstructions}\nOutput JSON matching the supplied schema. Optional chain fields are null when absent.`;
-  const format = zodTextFormat(legacyReportProjection === true && capability === 'COV1' ? reportAdjudicationSchema : legacyReportProjection !== false ? previousProviderSchemas[capability] : covProviderSchemas[capability], `cov_${capability.toLowerCase()}_result`);
+  const format = zodTextFormat(legacyReportProjection === true && capability === 'COV1' ? reportAdjudicationSchema : !allSources ? previousProviderSchemas[capability] : covProviderSchemas[capability], `cov_${capability.toLowerCase()}_result`);
   if (Buffer.byteLength(input + instructions + JSON.stringify(format), 'utf8') > config.maxInputBytes) throw new CovTransportError('REQUEST_TOO_LARGE');
   const body = { model: config.model, instructions, input, text: { format }, max_output_tokens: config.maxOutputTokens, store: false, service_tier: 'default' as const, reasoning: { effort: 'medium' as const } };
   return { body, inputBytes: Buffer.byteLength(input + instructions + JSON.stringify(format), 'utf8'), requestHash: covHash(body) };

@@ -2,7 +2,16 @@
 
 ## Baseline oficial
 
-COV, 10 de octubre: citas a fuentes versionadas y resueltas por servidor en COV1–COV3.
+COV, 11 de octubre: diagnósticos específicos de P1 y aclaración semántica COV1 implementados offline.
+45 pruebas nuevas, 320 regresiones, TypeScript y diff-check PASS. Un conteo y una inferencia P1:
+**STOPPED_TECHNICAL_FAILURE**, `VALIDATION / CRITERION_NOT_APPLICABLE_INVALID`. Los tres pendientes
+y R3 no se ejecutan. La corrección de instrucciones R3 no tiene verificación live; no se declara
+resuelto P1 ni su causa histórica. Coste calculable acumulado de 13 inferencias **0,1270464 USD**;
+reserva retenida **1,328325 USD**; 36 conteos de coste desconocido. [Detalle](25_COV_SEMANTIC_CALIBRATION.md).
+Sin aceptación final ni puntos: M6 **64%**, proyecto **51.53%**, M6/M6-E **PARTIAL**, PED2 abierto,
+perfiles productivos no aprobados y D3B **OPEN / VALIDATION DEBT**.
+
+Histórico — COV, 10 de octubre: citas a fuentes versionadas y resueltas por servidor en COV1–COV3.
 R2 técnicamente válido y coincidente; continuación detenida en P1 (`VALIDATION / ADJUDICATION_INVALID`).
 Once conteos, ocho inferencias, siete resultados válidos; tres ejemplos no enviados. Nueve de diez
 criterios válidos coinciden; desacuerdo R3 conservado. 56/56 pruebas nuevas, 264/264 regresiones,
