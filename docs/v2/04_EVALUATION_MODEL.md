@@ -310,7 +310,7 @@ La formulación exacta debe seguir el protocolo/taxonomía validada.
 
 ## Q7. Tipo de falta de adherencia
 
-Intencionada / no intencionada / combinada / no determinable.
+Intencionada / no intencionada / errática / combinada / no determinable.
 
 ## Q8. Barrera principal
 

@@ -23,6 +23,7 @@ async function getCasesForProfessor(): Promise<CaseRow[]> {
       difficulty,
       created_at
     FROM cases
+    WHERE NOT EXISTS (SELECT 1 FROM case_versions v WHERE v.case_id=cases.id AND v.content_format='TEACHER_CASE_DRAFT_V1')
     ORDER BY id ASC
     `
   );
@@ -69,6 +70,7 @@ export default async function ProfessorCasesPage() {
           gap: 12,
         }}
       >
+        <Link href="/profesor/casos/borradores" style={{color: '#176c70', fontWeight:600}}>Borradores SPFA · Lucía y María</Link>
         <h2 style={{ fontSize: 18, fontWeight: 600, margin: 0 }}>
           Casos clínicos en la base de datos
         </h2>

@@ -1,110 +1,92 @@
-# 27 — Visibilidad inicial y dos borradores de desarrollo
+# 27 — Lucía y María: borradores SPFA 2026 para revisión docente
 
-Fecha: 2026-10-12. Versión de borradores: `development-draft/1`. Estado: **BORRADOR — REVISIÓN DOCENTE PENDIENTE**. No son casos publicados, paquetes importables validados, ni evidencia independiente. Sin `approvalRef`, pesos nuevos o puntuaciones. Fuente canónica de progreso: [PROJECT_STATUS](PROJECT_STATUS.md); M6 64%, proyecto 51.53%, M6/M6-E PARTIAL, PED2 abierto, D3B OPEN / VALIDATION DEBT.
+Actualización 2026-10-12: `teacher-case-draft/1`, referencia `foro-2026-development/1`. Sustituye los borradores documentales development-draft/1 de 5b03ac0, sin modificar registros existentes. Material de desarrollo, sin aprobación académica, puntuaciones o publicación. Fuente editable inicial: `lib/cases/v2/teacher-case-draft-templates.ts`; cada cuenta conserva sus propias versiones al guardar. [Contraste y editor](28_TEACHER_DRAFT_EDITOR_SPFA_2026.md).
 
-## Cambio funcional y conservación
+Solo nombre, edad y sexo aparecen antes de entrevistar. Tratamiento, hechos, soluciones y respuestas son reservados. No se equipara autorreporte sin omisiones a adherencia global demostrada. Ninguna de estas plantillas es un paquete publicado ni una validación independiente.
 
-La API de creación y recuperación de sesiones aplica una lista positiva: `sessionId` y solo nombre, edad y sexo. Se elimina el tratamiento del chat. El snapshot clínico se conserva íntegro para los consumidores autorizados; el resolver clínico legacy obtiene tratamiento del snapshot, no del DTO público. No hay migraciones, borrado de hechos, reevaluación ni edición de sesiones históricas. Una sesión reanudada también recibe la nueva proyección; esto no puede retirar conocimientos que el estudiante ya vio anteriormente.
+## Lucía — Indicación por molestia de garganta
 
-El prompt actual incorpora `identity-only/1` mediante `buildPatientChatSystemPromptV3`; V2 se conserva para reconstrucción histórica. Los datos del paciente siguen presentes. El nombre interno legacy `publicProfile` no equivale a permiso de exposición. La instrucción exige preguntas para descubrir medicación, sin bloquear respuestas legítimas. No se ha ejecutado inferencia para certificar este comportamiento.
+Identidad inicial: **Lucía, 42 años, Mujer**.
 
-SPFA ya restringe `PUBLIC_PROFILE` a edad/sexo: los objetivos de medicación requieren evidencia semántica de mensajes del paciente, no se cubren por existir en el caso. Se conservan sin reescritura los contratos y resultados históricos de COV; sus ejemplos no deben reutilizarse como perfiles públicos de estos borradores.
+Demanda: «Desde ayer me molesta la garganta. ¿Qué puedo hacer?».
 
-## Contraste SPFA 2026: fuente pendiente
+Tratamiento reservado: Metformina 850 mg oral con desayuno y cena, prescrita y estable; se revela al preguntar.
 
-No hay guía 2026 adjunta accesible ni enlace confirmado. La búsqueda oficial devuelve la [guía Foro AF-FC 2024](https://www.farmaceuticos.com/wp-content/uploads/2024/02/GUIA_SPFA_FORO_2024_V15_AC-digital.pdf), que **no se utiliza como sustitución de 2026**. Por tanto no se atribuyen diferencias ni páginas a una edición no leída y no se cambia una versión de protocolo clínico.
-
-| Área | Contrato existente | Contraste que falta con 2026 |
+| Hecho | Información definida | Revelación |
 |---|---|---|
-| Dispensación | Inicio/continuación y requisitos configurados; información obtenida, no frases exactas | Procedimiento, incidencias y criterios de derivación, con páginas |
-| Indicación | Demanda, evolución, medidas previas, medicamentos, situaciones relevantes, derivación | Procedimiento y límites de intervención, con páginas |
-| PRM/RNM | Hechos diferenciados de conclusiones; taxonomías y versiones configurables | Categorías/definiciones y distinción entre riesgo y resultado, con páginas |
-| Adherencia | Intencionada/no intencionada/otras situaciones configuradas y barreras | Método de evaluación, clasificación y actuación, con páginas |
+| F1 — IF-F1 | Molestia leve desde ayer, sin empeoramiento; puede tragar líquidos y respirar con normalidad | Pregunta sobre evolución, intensidad y síntomas |
+| F2 — IF-F2 | No ha observado fiebre ni placas; no ha medido su temperatura. Sin malestar general, dificultad respiratoria o para beber. No embarazo ni lactancia; no alergias o intolerancias conocidas según refiere. La falta de medición no acredita ausencia de fiebre. | Preguntas pertinentes; no inferir otras ausencias |
+| F3 — IF-F3 | Diabetes tipo 2 conocida; metformina 850 mg por vía oral con desayuno y cena, pauta prescrita estable | Pregunta sobre enfermedades/medicación: «Tomo metformina de 850 con el desayuno y la cena» |
+| F4 — IF-F4 | Refiere haber tomado las catorce dosis pautadas de metformina en los últimos siete días (850 mg oral con desayuno y cena). Describe su pauta, sin omisiones ni rechazo referidos. No hay diario, recuento, registro de dispensación ni cuestionario validado disponible; no se ha evaluado adherencia a hábitos de vida. | Pregunta de uso real y posibles olvidos; no adelantar etiqueta de adherencia |
+| F5 — IF-F5 | No tomó medicamentos para esta molestia; solo bebió agua. No otros medicamentos ni productos de autocuidado en este caso | Preguntas sobre acciones previas y tratamiento completo |
+| F6 — IF-F6 | Quiere una medida sencilla; puede beber líquidos con normalidad | Pregunta sobre preferencias y viabilidad |
+| F7 — Destinataria y límites | Lucía consulta para ella misma. No dispone de glucemias ni evaluación médica de esta molestia. El caso no acredita diagnóstico etiológico ni relación causal con su medicación. | Preguntas sobre destinatario, parámetros disponibles o valoraciones previas. |
 
-La decisión docente de visibilidad sí es inequívoca y se aplica ahora. Los dos servicios de entrada son Indicación y Dispensación; seguimiento e informe solo se activan cuando el caso los requiere. No se desarrollan nuevos servicios.
+**Adherencia:** `NOT_DETERMINABLE`. Periodo: Últimos siete días para metformina; hábitos de vida no evaluados. Evidencia: Autorreporte de 14/14 tomas y explicación de pauta; sin método complementario disponible. Soporte: F3, F4. No hay falta de adherencia descrita en el periodo referido. No equivale a adherencia global demostrada. Tipo y barrera de falta de adherencia: no aplicables sin problema identificado; no extrapolar a hábitos o periodos no explorados.
 
-## IF-DEV-01 — Molestia de garganta, sin falta de adherencia
+**Solución docente propuesta:** Reconocer Indicación y explorar PA-SI-T-A-M-A-E. Valorar duración, acciones previas, tratamiento, alergias, situaciones fisiológicas, enfermedades y criterios de derivación antes de proponer autocuidado. La guía general no resuelve los umbrales específicos de garganta: concretarlos con el docente y un protocolo de síntomas menores antes de publicación. No afirmar etiología viral/bacteriana ni atribuir el síntoma a metformina sin evidencia. El autocuidado no farmacológico es una alternativa a revisar, no una solución ya autorizada para toda persona con diabetes. No hay PRM/RNM demostrado; ausencia de diagnóstico no equivale a descartar todos los problemas.
 
-**Origen:** adaptación de los dominios de Indicación del documento 03 y cuestionario del documento 04; hechos sintéticos nuevos. Identidad visible: **Lucía, 42 años, mujer**. Todo lo siguiente queda en la vista docente/paciente autorizada.
+| Requisito propuesto | Desempeño | Aplicabilidad y motivo | Hechos | Guía, páginas impresas |
+|---|---|---|---|---|
+| Entrevista de Indicación | Explorar destinatario, síntoma, duración, acciones previas, medicación, alergias y situación clínica, sin exigir frase exacta. | APPLICABLE: Requisito propuesto para revisión, sin peso ni aprobación académica. | F1, F2, F3, F5, F7 | 51–54 |
+| Evaluación y derivación | Justificar qué puede concluirse y qué falta para decidir intervención o derivación. | APPLICABLE: Requisito propuesto para revisión, sin peso ni aprobación académica. | F1, F2, F7 | 54–56 |
+| Uso referido de medicación | Obtener pauta y uso real y expresar límites del autorreporte. | APPLICABLE: Requisito propuesto para revisión, sin peso ni aprobación académica. | F3, F4 | 80–82 |
+| Personalización de propuesta | Relacionar la propuesta con preferencias conocidas y comprobar posibilidad de aplicarla. | APPLICABLE: Requisito propuesto para revisión, sin peso ni aprobación académica. | F6 | 56 |
+| Informe de derivación | No se exige un informe por defecto. | NOT_APPLICABLE: No hay derivación con informe configurada; revisar si cambia el caso. | F7 | 56–57 |
+| Seguimiento longitudinal | No exigir resultados longitudinales. | NOT_APPLICABLE: No se desarrolla otro servicio; las condiciones de nueva consulta se revisarán con el protocolo específico. | F1 | 56 |
 
-**Demanda inicial:** «Desde ayer me molesta la garganta. ¿Qué puedo hacer?». No adelanta su tratamiento ni la solución.
-
-**Hechos definidos y revelación:**
-
-| Fuente interna | Hecho completo | Revelación |
+| Pregunta | Respuesta propuesta | Hechos |
 |---|---|---|
-| IF-F1 | Molestia leve desde ayer, sin empeoramiento; puede tragar líquidos y respirar con normalidad | Pregunta sobre evolución, intensidad y síntomas |
-| IF-F2 | No fiebre medida, no placas observadas, no malestar general; no embarazo, ni alergias conocidas según refiere | Preguntas pertinentes; no inferir otras ausencias |
-| IF-F3 | Diabetes tipo 2 conocida; metformina 850 mg por vía oral con desayuno y cena, pauta prescrita estable | Pregunta sobre enfermedades/medicación: «Tomo metformina de 850 con el desayuno y la cena» |
-| IF-F4 | En el periodo explorado, última semana, tomó todas las dosis según pauta; describe correctamente cómo la utiliza, sin dificultad ni rechazo | Pregunta de uso real y posibles olvidos; no adelantar etiqueta de adherencia |
-| IF-F5 | No tomó medicamentos para esta molestia; solo bebió agua. No otros medicamentos ni productos de autocuidado en este caso | Preguntas sobre acciones previas y tratamiento completo |
-| IF-F6 | Quiere una medida sencilla; puede beber líquidos con normalidad | Pregunta sobre preferencias y viabilidad |
+| ¿Servicio de entrada? | Indicación Farmacéutica: solicita solución para una molestia. | F1, F7 |
+| ¿Qué tratamiento debe descubrir? | Metformina 850 mg oral con desayuno y cena; no figura en la ficha inicial. | F3 |
+| ¿Puede afirmarse adherencia demostrada? | No. Refiere 14/14 tomas en siete días, pero sin comprobación complementaria ni evaluación global. Clasificación global no determinable. | F4 |
+| ¿Tipo y barrera de falta de adherencia? | No aplicable: no hay problema identificado; no inventar barreras. | F4 |
+| ¿PRM o RNM demostrado? | No demostrado; el síntoma no prueba causalidad farmacológica ni efectividad de la metformina. | F1, F3, F7 |
+| ¿Actuación? | Valorar criterios de derivación y límites de datos; propuesta de autocuidado pendiente del protocolo específico de garganta. No prescribir antibiótico ni diagnóstico etiológico. | F1, F2, F7 |
 
-Lo no especificado es desconocido: el paciente no inventa exploraciones, valores de glucemia, diagnóstico etiológico ni apoyo familiar. Esta pauta describe a un personaje y requiere revisión farmacológica antes de publicación; no es una recomendación universal.
+## María — Dispensación de continuación con olvidos
 
-**Solución docente propuesta:** reconocer Indicación, obtener duración/evolución, datos relevantes de seguridad, patología y tratamiento, actuaciones previas y uso real. Proponer inicialmente autocuidado no farmacológico compatible con lo conocido (por ejemplo hidratación), con explicación de cuándo volver a consultar si empeora. No atribuir etiología viral/bacteriana ni prescribir antibióticos a partir de estos hechos. No se exige seleccionar un medicamento ni una pauta nueva. Como orientación de revisión, el [Consejo General, Punto Farmacológico 191, 2025](https://www.farmaceuticos.com/wp-content/uploads/2025/07/PF-191-La-farmacia-y-el-autocuidado-de-la-salud.pdf) describe explorar síntomas y priorizar medidas no farmacológicas cuando procede; no es la guía SPFA 2026 ni fija el protocolo evaluable de este borrador.
+Identidad inicial: **María, 67 años, Mujer**.
 
-**Criterios aplicables propuestos:** identificar demanda/servicio; obtener IF-F1–F5 antes de concluir; diferenciar uso referido de resultados clínicos; adaptar consejo y comprobar posibilidad de aplicarlo (IF-F6). Adherencia: sin problema descrito en el periodo definido, no garantía indefinida. No PRM ni RNM demostrados por estos hechos. No informe exigible ni episodio longitudinal; la indicación de volver si empeora es un componente de la actuación. El docente debe confirmar seguridad y condiciones concretas de consulta antes de validar.
+Demanda: «Vengo a recoger mi medicación habitual.».
 
-**Cuestionario docente (respuestas propuestas, nunca visibles antes del cierre):**
+Tratamiento reservado: Enalapril 20 mg oral una vez al día por la mañana; prescripción sintética de continuación vigente.
 
-| Pregunta | Respuesta y fundamento |
-|---|---|
-| ¿Servicio inicial? | Indicación: demanda de ayuda por síntoma, no petición de un medicamento concreto |
-| ¿Qué tratamiento había que descubrir? | Metformina 850 mg desayuno/cena; IF-F3, requiere pregunta |
-| ¿Qué hizo ya para la molestia? | Beber agua, sin medicamentos para ella; IF-F5 |
-| ¿Hay falta de adherencia? | No descrita en la última semana; IF-F4, sin extrapolar al resto de su vida |
-| ¿Tipo/barrera de falta de adherencia? | No aplicable en este caso, no inventar barreras |
-| ¿PRM/RNM demostrado? | No; ni el síntoma ni la diabetes aislados demuestran un problema de la farmacoterapia |
-| ¿Actuación propuesta? | Autocuidado no farmacológico tras explorar; justificar seguridad y condiciones de consulta según protocolo revisado |
-| ¿Informe/seguimiento longitudinal? | No exigibles en este borrador; no crear otro servicio |
-
-## DIS-DEV-01 — Continuación con olvidos
-
-**Origen:** adaptación de María y la barrera de olvidos de `db/seed.sql`; no se importa ni cambia ese registro histórico. Identidad visible: **María, 67 años, mujer**. Se convierte la demanda de entrada en Dispensación de continuación; se mantiene el problema de uso para descubrirlo.
-
-**Demanda inicial:** «Vengo a recoger mi medicación habitual». No enumera el tratamiento automáticamente.
-
-| Fuente interna | Hecho completo | Revelación |
+| Hecho | Información definida | Revelación |
 |---|---|---|
-| DIS-F1 | Hipertensión conocida desde hace ocho años. Enalapril 20 mg oral, una vez al día por la mañana, prescripción habitual | Pregunta sobre qué medicamento necesita y cómo está prescrito |
-| DIS-F2 | No es un tratamiento de inicio; lo utiliza desde hace años, sin cambio de pauta reciente | Pregunta sobre inicio/continuación y cambios |
-| DIS-F3 | En la última semana omitió dos tomas por olvido al cambiar la rutina; no desea abandonar el medicamento | Preguntas sobre uso real, olvidos y motivos |
-| DIS-F4 | Vive sola, rutinas variables; cree que la medicación es importante pero no tiene claro para qué sirve | Preguntas sobre comprensión y circunstancias; no adelantar barrera docente |
-| DIS-F5 | No refiere reacciones adversas, otros medicamentos ni alergias conocidas en este caso. No hay mediciones actuales de presión ni datos de daño clínico | Preguntas pertinentes; no inventar control tensional ni ausencia de todos los riesgos |
-| DIS-F6 | Puede usar una alarma del móvil y acepta probar un recordatorio asociado a una rutina elegida con ella | Tras propuesta y comprobación concreta, nunca como dato inicial |
+| F1 — DIS-F1 | Hipertensión conocida desde hace ocho años. Enalapril 20 mg oral, una vez al día por la mañana, prescripción habitual | Pregunta sobre qué medicamento necesita y cómo está prescrito |
+| F2 — DIS-F2 | No es un tratamiento de inicio; lo utiliza desde hace años, sin cambio de pauta reciente | Pregunta sobre inicio/continuación y cambios |
+| F3 — DIS-F3 | María refiere dos dosis omitidas por olvido en los últimos siete días, frente a la pauta acordada de una toma cada mañana. No decidió abandonar el medicamento; desea seguirlo y relaciona las omisiones con cambios de rutina. | Preguntas sobre uso real, olvidos y motivos |
+| F4 — DIS-F4 | Vive sola, rutinas variables; cree que la medicación es importante pero no tiene claro para qué sirve | Preguntas sobre comprensión y circunstancias; no adelantar barrera docente |
+| F5 — DIS-F5 | No refiere reacciones adversas, otros medicamentos ni alergias conocidas en este caso. No hay mediciones actuales de presión ni datos de daño clínico | Preguntas pertinentes; no inventar control tensional ni ausencia de todos los riesgos |
+| F6 — DIS-F6 | Puede usar una alarma del móvil y acepta probar un recordatorio asociado a una rutina elegida con ella | Tras propuesta y comprobación concreta, nunca como dato inicial |
+| F7 — Destinataria, prescripción y percepción | María solicita el medicamento para sí misma. Existe prescripción sintética vigente para continuación de enalapril 20 mg oral por la mañana, sin cambios recientes. Dice: me encuentro igual, no he notado molestias por las pastillas. No hay presión arterial disponible: percepción favorable no demuestra efectividad ni seguridad completas. | Preguntas sobre destinatario, receta, cambios, cómo le va y problemas con el medicamento. |
 
-**Ejemplo de revelación:** estudiante: «¿Qué toma y cómo lo está tomando realmente?»; paciente: «Enalapril de 20, por la mañana. Esta semana se me olvidó dos veces». Otras formulaciones pertinentes también habilitan estos hechos. Ante preguntas sobre medidas que desconoce contesta que no dispone de ellas.
+**Adherencia:** `NON_ADHERENT`. Periodo: Últimos siete días. Evidencia: Dos dosis omitidas referidas de una pauta diaria acordada, atribuidas a olvido por cambios de rutina. Soporte: F1, F3, F4. Falta de adherencia no intencionada con barrera práctica. La confusión del propósito requiere educación; vivir sola no demuestra falta de apoyo. No se deduce RNM manifestado ni control tensional.
 
-**Solución docente propuesta:** identificar Dispensación de continuación, contrastar pauta y uso, detectar falta de adherencia no intencionada y su barrera, explorar comprensión y acordar una ayuda viable. No modificar dosis ni afirmar fracaso terapéutico/RNM manifestado sin datos. La dificultad de uso es un problema identificado; su codificación PRM/RNM debe vincularse al catálogo aprobado, no crearse una categoría nueva. La decisión de dispensar exige las comprobaciones del protocolo vigente; estos datos narrativos no sustituyen la verificación de la prescripción. No convertir el recordatorio en un servicio longitudinal nuevo.
+**Solución docente propuesta:** Reconocer Dispensación de continuación. Verificar destinatario, prescripción y posibles incidencias, pauta, cambios, uso real y percepción de efectividad/seguridad. Explorar y documentar omisiones y comprensión; proponer recordatorio viable y educación sobre el propósito. PRM sustentado: No toma la medicación/falta de adherencia; valorar además Falta de conocimiento del uso del medicamento en esta continuación, sin doble cómputo. No inferir un RNM manifestado sin datos de resultado. No alterar dosis. La incidencia requiere intervención y registro; el Episodio de Seguimiento de la guía no equivale a desarrollar el Servicio de Seguimiento Farmacoterapéutico.
 
-**Criterios aplicables propuestos:** obtención de DIS-F1–F5, reconocimiento de continuación y discrepancia pauta/uso, explicación comprensible del propósito, propuesta vinculada a olvidos/rutina y comprobación DIS-F6. No exigir aceptación para acreditar personalización, ni atribuir control de presión por aceptar una alarma. No informe exigible; cualquier seguimiento posterior queda condicionado a configuración docente explícita, sin resultados longitudinales exigidos.
+| Requisito propuesto | Desempeño | Aplicabilidad y motivo | Hechos | Guía, páginas impresas |
+|---|---|---|---|---|
+| Dispensación y continuidad | Verificar destinatario, prescripción, cambios y proceso de uso antes de decidir entrega. | APPLICABLE: Requisito propuesto para revisión, sin peso ni aprobación académica. | F1, F2, F7 | 40–43 |
+| Uso y percepción | Explorar omisiones, cómo le va y problemas, sin confundir percepción con resultados medidos. | APPLICABLE: Requisito propuesto para revisión, sin peso ni aprobación académica. | F3, F5, F7 | 43 |
+| PRM y límites de RNM | Identificar falta de adherencia y valorar conocimiento de uso; no atribuir RNM sin evidencia. | APPLICABLE: Requisito propuesto para revisión, sin peso ni aprobación académica. | F3, F4, F5 | 34, 44–46 |
+| Intervención adaptada | Acordar una ayuda para olvidos y comprobar viabilidad sin modificar dosis ni exigir aceptación como prueba de personalización. | APPLICABLE: Requisito propuesto para revisión, sin peso ni aprobación académica. | F4, F6 | 47–48, 81 |
+| Informe de derivación | No exigir informe sin derivación configurada. | NOT_APPLICABLE: El caso no impone derivación con informe; no afirmar que nunca será necesaria. | F5, F7 | 47–48 |
+| Resultados longitudinales | Diferenciar intervención registrada de seguimiento futuro. | NOT_APPLICABLE: La incidencia forma parte del recorrido; no se exigen resultados longitudinales ni servicio nuevo. | F3, F6 | 44, 48, 81 |
 
-**Cuestionario docente (respuestas propuestas):**
+| Pregunta | Respuesta propuesta | Hechos |
+|---|---|---|
+| ¿Servicio y subtipo? | Dispensación de continuación, para sí misma. | F2, F7 |
+| ¿Pauta frente a uso? | Una toma de 20 mg por la mañana; dos omisiones en siete días. | F1, F3 |
+| ¿Falta de adherencia y barrera? | No intencionada: olvidos asociados a cambios de rutina; barrera práctica. | F3, F4 |
+| ¿PRM? | No toma la medicación/falta de adherencia; además valorar falta de conocimiento del uso en continuación. No asumir que vivir sola sea PRM. | F3, F4 |
+| ¿RNM manifestado? | No determinable: sin presión arterial ni daño clínico documentado; no confundir omisiones con inefectividad demostrada. | F5, F7 |
+| ¿Intervención? | Educación del propósito y recordatorio adaptado, con viabilidad comprobada. No modificar pauta. | F4, F6 |
+| ¿Seguimiento o informe? | Registrar la incidencia y actuación. No se exige informe ni resultado longitudinal por defecto. | F3, F6 |
 
-| Pregunta | Respuesta y fundamento |
-|---|---|
-| ¿Servicio inicial? | Dispensación: solicita recoger medicación habitual |
-| ¿Inicio o continuación? | Continuación, DIS-F2 |
-| ¿Pauta frente a uso? | Prescrita diaria por la mañana; dos omisiones en última semana, DIS-F1/F3 |
-| ¿Hay falta de adherencia? | Sí, no intencionada: olvidos, sin decisión de abandonar |
-| ¿Barrera principal? | Rutina variable/olvido; explorar además comprensión, DIS-F4 |
-| ¿PRM/RNM? | Problema de uso identificado; no RNM manifestado demostrado. Selección de códigos pendiente del catálogo docente, sin inventar categoría |
-| ¿Intervención coherente? | Explicación y recordatorio acordado con viabilidad comprobada; no cambiar dosis |
-| ¿Derivación/informe/seguimiento? | No exigidos automáticamente por el olvido; aplicar condiciones autorizadas del caso. No afirmar que nunca necesitará derivación |
+## Límites clínicos y siguientes pasos
 
-## Siguiente entrega concreta: creación y previsualización docente
+La guía general no proporciona aquí el protocolo específico de garganta. Lucía conserva datos de uso referido, pero no resultados ni medida combinada de adherencia; no se transforma en un caso de incumplimiento ni se acredita adherencia por silencio. El docente debe validar la idoneidad de la intervención y sus criterios específicos de derivación. María tiene falta de adherencia factual no intencionada; no se infiere inefectividad del enalapril, daño clínico ni ausencia global de riesgo.
 
-1. Incorporar la guía exacta y registrar edición/páginas; resolver únicamente diferencias reales, versionando protocolo/catálogos mediante mecanismos existentes.
-2. Revisar estos hechos, solución y aplicabilidad; vincular cada criterio y pregunta a identificadores estables del protocolo/taxonomías aprobados. Ningún peso nuevo.
-3. Convertir los borradores legibles en bundles validados del editor, con estado de borrador explícito. La ruta legacy de creación tiene un valor por defecto de aprobación: no se debe usar para cargar estos materiales automáticamente.
-4. Previsualización autorizada con dos vistas separadas: estudiante (solo identidad) y docente (hechos, revelaciones, solución y cuestionario); guardar/reabrir versión borrador y ejecutar conversación simulada de revelación, sin publicación automática.
-5. Solo tras revisión docente explícita tramitar publicación; no acreditar M6 por disponer de estos documentos.
-
-## Verificación de esta entrega
-
-- Selección inicial: 288/288 (DTO, proyecciones legacy/v2, creación/recuperación de sesiones, conservación clínica, prompt y baseline SPFA).
-- Dos expectativas antiguas detectadas por la primera suite se actualizaron: etiqueta de tratamiento visible y prompt V2 en el generador actual. Regresiones afectadas: 30/30.
-- Suite offline final: **3815 PASS / 67 SKIPPED**, con gates live/PostgreSQL desactivados. TypeScript: PASS. `git diff --check`: PASS.
-- Lint no ejecutado hasta análisis: `next lint --no-cache` solicita configurar ESLint; no se ha configurado ni cambiado dependencias.
-- Sin llamadas de modelo, conteos, conexiones DB, despliegues ni carga de borradores. La evidencia anterior de COV no se mezcla con esta verificación.
+En ambos casos faltan revisión farmacológica, validación docente explícita y conversión a las fuentes/identificadores ejecutables de paciente y evaluador. El editor admite campos completos y errores estructurales; no certifica coherencia semántica de una edición libre. Conversación de prueba y publicación no están habilitadas. M6 64%, proyecto 51.53%, M6/M6-E PARTIAL, PED2 abierto, D3B OPEN / VALIDATION DEBT.

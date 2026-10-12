@@ -611,4 +611,12 @@ Antes de la entrevista solo se exponen nombre, edad y sexo. El tratamiento perma
 
 El recorrido a completar comprende Indicación Farmacéutica y Dispensación, con posible falta de adherencia. Seguimiento e informe son componentes condicionados por el caso, no servicios adicionales a implementar ahora. Las posibilidades de ampliación descritas en esta especificación no autorizan ampliaciones de esta entrega.
 
-La guía SPFA 2026 mencionada no está disponible en los adjuntos accesibles. No se ha aprobado ni aplicado una nueva versión clínica por inferencia desde otra edición. La comparación por páginas queda pendiente de la fuente exacta; véase [borradores y contraste pendiente](27_SPFA_DEVELOPMENT_DRAFTS.md).
+La guía SPFA 2026 fue recibida y contrastada en esta entrega; véase [contraste por páginas y editor de borradores](28_TEACHER_DRAFT_EDITOR_SPFA_2026.md). Se aplica la referencia `foro-2026-development/1` a los borradores, sin cambiar protocolos/evaluaciones históricas ni aprobar perfiles académicos.
+
+### Aplicación de Foro AF-FC 2026 a los borradores
+
+Dispensación: verificar destinatario y cuestiones normativas; distinguir inicio, cambios y continuación; en continuación explorar uso real, percepción de efectividad/seguridad y adherencia (pp. 40–43). Indicación: entrevista PA-SI-T-A-M-A-E y evaluación de derivación/PRM/RNM (pp. 51–56). No se imponen frases literales ni umbrales de síntomas que la guía general no define.
+
+Los PRM son posibles causas, no resultados clínicos; no inferir RNM manifestado de omisiones aisladas (pp. 33–37, 44–46, 54–55). La falta de conocimiento del uso no aplica en inicio (p. 34). En adherencia, ausencia de omisiones referidas no equivale a adherencia global demostrada: explicitar métodos, periodo y límites; conservar no determinable y no aplicable según corresponda (pp. 80–82). El contrato ya admite el tipo errático; se alinea su lista documental con p. 81.
+
+Un Episodio de Seguimiento de una incidencia no equivale al Servicio de Seguimiento Farmacoterapéutico (p. 44). No se amplía esta entrega a servicios adicionales, puntuaciones o resultados longitudinales obligatorios.

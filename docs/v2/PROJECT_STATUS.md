@@ -450,8 +450,18 @@ En paralelo pueden cerrarse:
 
 El cierre de esos frentes paralelos es especialmente importante antes del despliegue definitivo.
 
-## Entrega de visibilidad inicial — 2026-10-12
+## Histórico: entrega de visibilidad inicial — 2026-10-12
 
 Nueva decisión docente: nombre, edad y sexo exclusivamente; tratamiento se obtiene en entrevista. DTO servidor y chat corregidos, datos clínicos e históricos conservados, prompt versionado identity-only/1. Dos [borradores de desarrollo](27_SPFA_DEVELOPMENT_DRAFTS.md), Indicación sin falta de adherencia y Dispensación con olvidos, pendientes de revisión y materialización en editor. No publicados ni académicamente aceptados.
 
 Comparación SPFA 2026 pendiente: no se recibió la guía exacta accesible; no se ha sustituido por otra edición ni se han alterado protocolos clínicos sin fuente. Seguimiento e informe permanecen componentes condicionados, sin servicios nuevos. Sin puntos: M6 64%, proyecto 51.53%, M6/M6-E PARTIAL, PED2 abierto y D3B OPEN / VALIDATION DEBT.
+
+## Estado actual: editor docente y guía recibida — 2026-10-12
+
+La limitación anterior de acceso a la guía queda resuelta. Contraste de la edición facilitada por páginas y recorrido de autoría documentados en [editor SPFA 2026](28_TEACHER_DRAFT_EDITOR_SPFA_2026.md). Lucía y María se abren, editan con campos estructurados, guardan como versiones y recuperan desde la interfaz docente; previsualizaciones estudiante/docente separadas. Migración 0005 aplicada exclusivamente a PostgreSQL desechable, sin despliegue ni modificación de base productiva. Ambos continúan borradores de desarrollo, bloqueados para publicación y sesiones académicas.
+
+Lucía: autorreporte sin omisiones en siete días, adherencia global no determinable; no confundir ausencia de falta descrita con adherencia demostrada. María: dos omisiones por olvido, sin inferir RNM manifestado sin resultados. Revisión clínica específica y conversión a proyecciones ejecutables pendientes; no hay conversación de prueba ni publicación docente en este recorrido.
+
+Evidencia nueva: 200/200 en selección offline, PostgreSQL desechable 6/6, suite offline final 3839 PASS / 73 SKIPPED y TypeScript PASS. Demostración real de guardado/cierre/recuperación, validación, vistas y HTTP de autorización; cero sesiones, mensajes, evaluaciones o asignaciones. Lint pendiente de configuración del repositorio. La suite anterior 3815/67 se conserva como histórica.
+
+No se acredita progreso por estos borradores: M6 64%, proyecto 51.53%, M6/M6-E PARTIAL, PED2 abierto, perfiles productivos no aprobados y D3B OPEN / VALIDATION DEBT. COV preexistente conservado fuera de esta entrega; sin nuevas calibraciones.

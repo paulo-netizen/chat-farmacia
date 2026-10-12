@@ -281,10 +281,24 @@ El cierre funcional de milestones posteriores no elimina estos gates:
 - privacidad, observabilidad y operación verificadas;
 - suite, TypeScript, migraciones y pruebas adversariales en verde.
 
-## Entrega: visibilidad inicial y borradores SPFA (2026-10-12)
+## Histórico: entrega de visibilidad inicial y borradores SPFA (2026-10-12)
 
 Decisión docente vinculante: solo nombre, edad y sexo antes de entrevistar; tratamiento obtenido mediante preguntas. Se corrigen proyecciones servidor y chat conservando datos clínicos e históricos. Alcance actual: Indicación y Dispensación; adherencia transversal; seguimiento e informe condicionados al caso. Sin migraciones ni recalificación.
 
 Open decisions: falta la guía SPFA 2026 indicada por el usuario; no está adjunta ni se ha verificado un enlace a esa edición. Comparación por páginas y actualización de protocolos bloqueadas por esa fuente, sin sustituirla por 2024. Preparados dos borradores de desarrollo pendientes de revisión, sin publicación ni puntos. M6 64%, proyecto 51.53%; M6/M6-E PARTIAL, PED2 abierto y D3B OPEN / VALIDATION DEBT.
 
 Verificación de esta entrega: suite offline final 3815 PASS / 67 SKIPPED; TypeScript y diff-check PASS. Lint requiere configuración interactiva no realizada. Detalles y casos en [documento 27](docs/v2/27_SPFA_DEVELOPMENT_DRAFTS.md).
+
+## Editor docente de borradores y contraste SPFA 2026 — 2026-10-12
+
+Base 5b03ac0; COV preexistente aislado y conservado. Leer guía facilitada, corregir los dos borradores y habilitar formulario docente estructurado con guardado/recuperación y vistas separadas. Sin conversación de prueba, sesiones académicas, publicación ni calibración.
+
+Implementación mínima: formato de autoría `TEACHER_CASE_DRAFT_V1` sobre `case_versions`, que hoy rechaza TEACHER_AUTHORED por no existir formato. Cada guardado crea snapshot con padre y control de versión esperada. Migración nueva únicamente en PostgreSQL desechable; no modificar contratos/resultados anteriores ni tocar base productiva. API con autorización y ownership servidor; proyección estudiante de tres campos. No importar un borrador como paquete evaluable ni conceder aprobación.
+
+Open decisions: la guía permite evaluar adherencia con métodos combinados (pp. 80–82); autorreporte de Lucía no equivale a demostración global. No introducir umbrales ni pesos. Catálogo PRM: discrepancia interna entre anuncio de nueve dimensiones (p. 33) y ocho enumeradas (pp. 33–37); conservar la referencia sin inventar una dimensión. El contrato ya admite errática (p. 81); se alinea la lista documental sin reetiquetar casos anteriores. Sin nuevos servicios ni puntos.
+
+Realizado: editor estructurado, API con autorización/ownership, snapshots y previsualizaciones. La guía facilitada resuelve el bloqueo de fuente anterior. Contraste y límites en [documento 28](docs/v2/28_TEACHER_DRAFT_EDITOR_SPFA_2026.md); casos legibles en [documento 27](docs/v2/27_SPFA_DEVELOPMENT_DRAFTS.md). No se incorporan los cambios COV preexistentes al checkpoint.
+
+Evidencia nueva: selección 200/200; PostgreSQL desechable 6/6; suite offline final 3839 PASS / 73 SKIPPED; TypeScript PASS. Navegador y HTTP reales verifican guardado/recuperación de ambos casos, errores de campos, autorización y ficha inicial de tres campos. Cero sesiones, mensajes, evaluaciones y asignaciones. Lint sigue requiriendo configuración interactiva, no realizada. Diff-check de trabajo y staged verificados antes del commit.
+
+Siguiente trabajo: conversión validada del borrador al runtime de paciente existente para previsualización no académica, seguida del workflow de revisión/publicación. No habilitar publicación legacy ni afirmar que el formulario ya es un caso ejecutable. Mantener porcentajes y estados canónicos.
