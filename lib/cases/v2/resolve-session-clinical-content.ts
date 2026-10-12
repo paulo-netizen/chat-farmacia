@@ -256,6 +256,8 @@ export function resolveSessionPatientClinicalContentV2(
     }
     const patientData: LegacySessionPatientDataV2 = {
       ...publicData,
+      // Clinical data remain server-side; never obtain them from the student DTO.
+      tratamiento: requiredString(legacy.spec.tratamiento, 'content.spec.tratamiento'),
       ...copyOptionalStrings(legacy.spec, [
         'motivo_consulta', 'antecedentes', 'contexto', 'descripcion_paciente',
       ], 'content.spec'),

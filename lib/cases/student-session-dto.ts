@@ -3,7 +3,6 @@ export type StudentSessionDto = {
   nombre: string;
   edad: number;
   sexo: string;
-  tratamiento: string;
 };
 
 export type StudentCasePublicData = Omit<StudentSessionDto, 'sessionId'>;
@@ -22,7 +21,7 @@ function asRecord(value: unknown): Record<string, unknown> {
 
 function requiredString(
   source: Record<string, unknown>,
-  field: 'nombre' | 'sexo' | 'tratamiento',
+  field: 'nombre' | 'sexo',
 ): string {
   const value = source[field];
   if (typeof value !== 'string' || value.trim().length === 0) {
@@ -77,6 +76,5 @@ export function createStudentCasePublicData(
     nombre: requiredString(source, 'nombre'),
     edad: requiredAge(source.edad),
     sexo: requiredString(source, 'sexo'),
-    tratamiento: requiredString(source, 'tratamiento'),
   };
 }

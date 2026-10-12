@@ -147,9 +147,9 @@ async function callEndpoint() {
 
 function expectPublicResponse(body: Record<string, unknown>) {
   expect(Object.keys(body).sort()).toEqual(
-    ['edad', 'nombre', 'sessionId', 'sexo', 'tratamiento'].sort(),
+    ['edad', 'nombre', 'sessionId', 'sexo'].sort(),
   );
-  expect(body).toEqual({ sessionId, ...publicProfile });
+  expect(body).toEqual({ sessionId, nombre: publicProfile.nombre, edad: publicProfile.edad, sexo: publicProfile.sexo });
   expect(Object.values(body).some((value) => typeof value === 'object')).toBe(
     false,
   );

@@ -202,3 +202,9 @@ Un criterio crítico omitido puede:
 No todos los elementos tienen el mismo peso.
 
 ---
+
+### Alcance de la entrega actual — 2026-10-12
+
+El recorrido a completar comprende Indicación Farmacéutica y Dispensación, con posible falta de adherencia. Seguimiento e informe son componentes condicionados por el caso, no servicios adicionales a implementar ahora. Las posibilidades de ampliación descritas en esta especificación no autorizan ampliaciones de esta entrega.
+
+La guía SPFA 2026 mencionada no está disponible en los adjuntos accesibles. No se ha aprobado ni aplicado una nueva versión clínica por inferencia desde otra edición. La comparación por páginas queda pendiente de la fuente exacta; véase [borradores y contraste pendiente](27_SPFA_DEVELOPMENT_DRAFTS.md).

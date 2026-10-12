@@ -1,5 +1,8 @@
 # M6-COV3 — Personalización de la intervención, evaluación offline
 
+> Compatibilidad histórica (2026-10-12): las referencias a tratamiento público de este contrato describen fixtures/versiones offline anteriores. La política actual del producto solo expone nombre, edad y sexo. No reutilizar esas fuentes públicas para acreditar conocimiento del tratamiento en nuevos casos; debe proceder de la entrevista. No se reescriben resultados ni expectativas históricas. No hay integración productiva COV autorizada.
+
+
 Actual — 11 de octubre de 2026: [contrato canónico /4 y matriz de las cuatro capas](26_COV3_CANONICAL_OUTPUT_CONTRACT.md).
 Representación proveedor /5, referencias tipadas y diagnóstico localizado; comprobación exclusivamente
 offline. Las versiones /1–/3 permanecen históricas y disponibles. El opt-in nuevo no cambia los

@@ -1,5 +1,8 @@
 # M6-COV2 — Evaluación offline del plan de seguimiento
 
+> Compatibilidad histórica (2026-10-12): las referencias a tratamiento público de este contrato describen fixtures/versiones offline anteriores. La política actual del producto solo expone nombre, edad y sexo. No reutilizar esas fuentes públicas para acreditar conocimiento del tratamiento en nuevos casos; debe proceder de la entrevista. No se reescriben resultados ni expectativas históricas. No hay integración productiva COV autorizada.
+
+
 Actualización: [calibración COV1–COV3](25_COV_SEMANTIC_CALIBRATION.md), instrucciones `/3`.
 «Revisaremos» puede identificar actor y «De acuerdo» adopción cuando el contexto es inequívoco;
 varias interpretaciones implican evidencia INSUFFICIENT. No se exige fórmula explícita universal ni

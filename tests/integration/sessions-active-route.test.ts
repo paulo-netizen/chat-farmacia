@@ -163,9 +163,9 @@ function expectExactSuccessPayload(
   expectedMessages: Array<{ role: 'student' | 'patient'; content: string }>,
 ) {
   expect(Object.keys(body).sort()).toEqual(['messages', 'session']);
-  expect(body.session).toEqual({ sessionId, ...publicProfile });
+  expect(body.session).toEqual({ sessionId, nombre: publicProfile.nombre, edad: publicProfile.edad, sexo: publicProfile.sexo });
   expect(Object.keys(body.session as Record<string, unknown>).sort()).toEqual(
-    ['edad', 'nombre', 'sessionId', 'sexo', 'tratamiento'].sort(),
+    ['edad', 'nombre', 'sessionId', 'sexo'].sort(),
   );
   expect(body.messages).toEqual(expectedMessages);
   for (const message of body.messages as Array<Record<string, unknown>>) {

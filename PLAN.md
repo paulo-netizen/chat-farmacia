@@ -280,3 +280,11 @@ El cierre funcional de milestones posteriores no elimina estos gates:
 - publicación docente controlada;
 - privacidad, observabilidad y operación verificadas;
 - suite, TypeScript, migraciones y pruebas adversariales en verde.
+
+## Entrega: visibilidad inicial y borradores SPFA (2026-10-12)
+
+Decisión docente vinculante: solo nombre, edad y sexo antes de entrevistar; tratamiento obtenido mediante preguntas. Se corrigen proyecciones servidor y chat conservando datos clínicos e históricos. Alcance actual: Indicación y Dispensación; adherencia transversal; seguimiento e informe condicionados al caso. Sin migraciones ni recalificación.
+
+Open decisions: falta la guía SPFA 2026 indicada por el usuario; no está adjunta ni se ha verificado un enlace a esa edición. Comparación por páginas y actualización de protocolos bloqueadas por esa fuente, sin sustituirla por 2024. Preparados dos borradores de desarrollo pendientes de revisión, sin publicación ni puntos. M6 64%, proyecto 51.53%; M6/M6-E PARTIAL, PED2 abierto y D3B OPEN / VALIDATION DEBT.
+
+Verificación de esta entrega: suite offline final 3815 PASS / 67 SKIPPED; TypeScript y diff-check PASS. Lint requiere configuración interactiva no realizada. Detalles y casos en [documento 27](docs/v2/27_SPFA_DEVELOPMENT_DRAFTS.md).

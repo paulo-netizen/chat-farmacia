@@ -147,7 +147,7 @@ la ruta debe:
 2. recuperar la fila versionada exacta referenciada por la sesión;
 3. validar el anclaje sesión–caso–versión;
 4. proyectar la ficha pública mediante la API semántica de reanudación;
-5. construir el mismo `StudentSessionDto` de cinco claves;
+5. construir el mismo `StudentSessionDto` de cuatro claves (`sessionId`, nombre, edad y sexo; política identity-only/1);
 6. confirmar la transacción.
 
 No debe:
@@ -568,3 +568,5 @@ Este diseño no incorpora:
 - TLS;
 - despliegue de producción;
 - reconciliación automática de legado.
+
+La política de exposición vigente se aplica también al reanudar: no se devuelve tratamiento. Se conserva el snapshot histórico y los mensajes; no se puede deshacer información que el alumno ya vio con la política anterior.

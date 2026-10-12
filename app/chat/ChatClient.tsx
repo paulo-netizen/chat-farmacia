@@ -327,11 +327,6 @@ export default function ChatClient() {
   <li>
     <strong>Sexo:</strong> {sessionData.sexo}
   </li>
-
-  <li>
-    <strong>Tratamiento disponible en Receta Electrónica:</strong>{' '}
-    {sessionData.tratamiento}
-  </li>
 </ul>
       </div>
 

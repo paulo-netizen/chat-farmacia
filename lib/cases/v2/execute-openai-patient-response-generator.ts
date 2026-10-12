@@ -5,7 +5,7 @@ import type {
   ChatCompletionMessageParam,
 } from 'openai/resources/chat/completions/completions';
 
-import { buildPatientChatSystemPromptV2 } from './patient-chat-prompt';
+import { buildPatientChatSystemPromptV3 } from './patient-chat-prompt';
 import type { PatientResponseAcceptedConversationMessageV2 } from './patient-response-validation-context';
 import type {
   PatientResponseAttemptV2,
@@ -261,7 +261,7 @@ function buildMessages(
       : ({ role: 'assistant', content: message.content } as const);
   });
 
-  let systemPrompt = buildPatientChatSystemPromptV2(input.clinicalContent);
+  let systemPrompt = buildPatientChatSystemPromptV3(input.clinicalContent);
   if (input.attempt === 'initial') {
     if (input.retryViolationCodes !== undefined) {
       fail(

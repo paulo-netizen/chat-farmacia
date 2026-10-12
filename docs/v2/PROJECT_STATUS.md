@@ -449,3 +449,9 @@ En paralelo pueden cerrarse:
 - M2 y M3: autoría, generación, auditoría y publicación docente.
 
 El cierre de esos frentes paralelos es especialmente importante antes del despliegue definitivo.
+
+## Entrega de visibilidad inicial — 2026-10-12
+
+Nueva decisión docente: nombre, edad y sexo exclusivamente; tratamiento se obtiene en entrevista. DTO servidor y chat corregidos, datos clínicos e históricos conservados, prompt versionado identity-only/1. Dos [borradores de desarrollo](27_SPFA_DEVELOPMENT_DRAFTS.md), Indicación sin falta de adherencia y Dispensación con olvidos, pendientes de revisión y materialización en editor. No publicados ni académicamente aceptados.
+
+Comparación SPFA 2026 pendiente: no se recibió la guía exacta accesible; no se ha sustituido por otra edición ni se han alterado protocolos clínicos sin fuente. Seguimiento e informe permanecen componentes condicionados, sin servicios nuevos. Sin puntos: M6 64%, proyecto 51.53%, M6/M6-E PARTIAL, PED2 abierto y D3B OPEN / VALIDATION DEBT.

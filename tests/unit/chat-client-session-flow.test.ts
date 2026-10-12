@@ -136,11 +136,12 @@ describe('ChatClient explicit session flow source guard', () => {
       expect(source).not.toContain(forbidden);
     }
 
+    expect(source).not.toContain('sessionData.tratamiento');
+    expect(source).not.toContain('Tratamiento disponible en Receta Electrónica:');
     for (const publicLabel of [
       'Nombre:',
       'Edad:',
       'Sexo:',
-      'Tratamiento disponible en Receta Electrónica:',
     ]) {
       expect(source).toContain(publicLabel);
     }

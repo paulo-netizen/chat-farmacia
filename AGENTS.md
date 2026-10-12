@@ -26,7 +26,7 @@ If split documents and `00_MASTER_SPEC.md` conflict, stop and report the discrep
 
 ## Critical product rules
 
-- Student-visible patient data before the interview are limited to: name, age, sex, and treatment.
+- Student-visible patient data before the interview are limited to: name, age, and sex. Treatment must be discovered during the interview, according to case facts and disclosure rules.
 - Hidden clinical/contextual information must remain server-side.
 - Never expose `ground_truth`, rubric internals, PRM/RNM answers, adherence answers, barriers, correct interventions, or questionnaire answer keys to the student client before completion.
 - The patient model must always remain in the patient role.

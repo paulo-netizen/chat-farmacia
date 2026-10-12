@@ -13,8 +13,7 @@ Antes de comenzar la conversación, el estudiante solo puede ver:
 
 - nombre;
 - edad;
-- sexo;
-- tratamiento.
+- sexo.
 
 No debe ver:
 
@@ -231,8 +230,7 @@ La demanda no debe revelar automáticamente la no adherencia.
 6. El estudiante ve:
    - nombre;
    - edad;
-   - sexo;
-   - tratamiento.
+   - sexo.
 7. El paciente emite demanda inicial.
 8. Entrevista libre.
 9. El estudiante decide finalizar.
@@ -474,3 +472,7 @@ Debe poder:
 - impedir evaluaciones múltiples incoherentes.
 
 ---
+
+### Decisión docente de visibilidad — 2026-10-12
+
+Antes de la entrevista solo se exponen nombre, edad y sexo. El tratamiento permanece protegido y el estudiante debe obtenerlo preguntando; el paciente lo revela conforme a los hechos y reglas del caso. Esta decisión sustituye la lista anterior, sin modificar registros ni recalificar sesiones históricas. El nombre interno histórico `publicProfile` no autoriza a serializar todos sus campos al estudiante: la proyección servidor aplica una lista positiva de tres campos.

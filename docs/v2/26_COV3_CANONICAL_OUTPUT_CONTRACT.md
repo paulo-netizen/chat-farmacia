@@ -1,5 +1,8 @@
 # COV3 — Contrato canónico de salida y revisión integral offline
 
+> Compatibilidad histórica (2026-10-12): las referencias a tratamiento público de este contrato describen fixtures/versiones offline anteriores. La política actual del producto solo expone nombre, edad y sexo. No reutilizar esas fuentes públicas para acreditar conocimiento del tratamiento en nuevos casos; debe proceder de la entrevista. No se reescriben resultados ni expectativas históricas. No hay integración productiva COV autorizada.
+
+
 11 de octubre de 2026. Base `4e44048d972dd2879351f406e0920d17801a7fec`, rama `chatusal-v2`,
 árbol inicialmente limpio. Alcance: contrato, proyección, adaptación, validación y pruebas COV3.
 **Sin inferencias ni conteos.** No se cambian fixtures, expectativas, scoring ni porcentajes.

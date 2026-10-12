@@ -10,7 +10,7 @@ const validSource = {
 };
 
 describe('createStudentSessionDto', () => {
-  it('construye un objeto nuevo con exactamente las cinco claves permitidas', () => {
+  it('construye un objeto nuevo con exactamente las cuatro claves permitidas', () => {
     const source = {
       ...validSource,
       ground_truth: { tipo_no_adherencia: 'no intencionada' },
@@ -24,14 +24,13 @@ describe('createStudentSessionDto', () => {
     const result = createStudentSessionDto(source);
 
     expect(Object.keys(result).sort()).toEqual(
-      ['edad', 'nombre', 'sessionId', 'sexo', 'tratamiento'].sort(),
+      ['edad', 'nombre', 'sessionId', 'sexo'].sort(),
     );
     expect(result).toEqual({
       sessionId: validSource.sessionId,
       nombre: 'María',
       edad: 67,
       sexo: 'Mujer',
-      tratamiento: 'Metformina 850 mg',
     });
     expect(result).not.toBe(source);
     expect(Object.values(result).some((value) => typeof value === 'object')).toBe(
@@ -70,8 +69,6 @@ describe('createStudentSessionDto', () => {
     ['nombre', '   '],
     ['sexo', undefined],
     ['sexo', { value: 'Mujer' }],
-    ['tratamiento', undefined],
-    ['tratamiento', ['Metformina']],
   ])('rechaza el campo público inválido %s=%p', (field, value) => {
     expect(() =>
       createStudentSessionDto({ ...validSource, [field]: value }),
@@ -84,4 +81,12 @@ describe('createStudentSessionDto', () => {
       expect(() => createStudentSessionDto(source)).toThrow();
     },
   );
+});
+
+it('never accesses or serializes treatment, even when hidden data are hostile', () => {
+  const source = { ...validSource };
+  Object.defineProperty(source, 'tratamiento', { get() { throw new Error('hidden'); } });
+  expect(createStudentSessionDto(source)).toEqual({
+    sessionId: validSource.sessionId, nombre: 'María', edad: 67, sexo: 'Mujer',
+  });
 });

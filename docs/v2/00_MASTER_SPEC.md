@@ -67,8 +67,7 @@ Antes de comenzar la conversación, el estudiante solo puede ver:
 
 - nombre;
 - edad;
-- sexo;
-- tratamiento.
+- sexo.
 
 No debe ver:
 
@@ -335,8 +334,7 @@ Mínimo:
 - case session id;
 - nombre;
 - edad;
-- sexo;
-- tratamiento.
+- sexo.
 
 No contiene:
 
@@ -1073,8 +1071,7 @@ Los fallos críticos impiden publicación hasta revisión/corrección.
 6. El estudiante ve:
    - nombre;
    - edad;
-   - sexo;
-   - tratamiento.
+   - sexo.
 7. El paciente emite demanda inicial.
 8. Entrevista libre.
 9. El estudiante decide finalizar.
@@ -2236,3 +2233,13 @@ Nunca debe preferirse una respuesta «más creativa» si para producirla el paci
 ---
 
 # FIN DE LA ESPECIFICACIÓN MAESTRA v0.1
+
+### Decisión docente de visibilidad — 2026-10-12
+
+Antes de la entrevista solo se exponen nombre, edad y sexo. El tratamiento permanece protegido y el estudiante debe obtenerlo preguntando; el paciente lo revela conforme a los hechos y reglas del caso. Esta decisión sustituye la lista anterior, sin modificar registros ni recalificar sesiones históricas. El nombre interno histórico `publicProfile` no autoriza a serializar todos sus campos al estudiante: la proyección servidor aplica una lista positiva de tres campos.
+
+### Alcance de la entrega actual — 2026-10-12
+
+El recorrido a completar comprende Indicación Farmacéutica y Dispensación, con posible falta de adherencia. Seguimiento e informe son componentes condicionados por el caso, no servicios adicionales a implementar ahora. Las posibilidades de ampliación descritas en esta especificación no autorizan ampliaciones de esta entrega.
+
+La guía SPFA 2026 mencionada no está disponible en los adjuntos accesibles. No se ha aprobado ni aplicado una nueva versión clínica por inferencia desde otra edición. La comparación por páginas queda pendiente de la fuente exacta; véase [borradores y contraste pendiente](27_SPFA_DEVELOPMENT_DRAFTS.md).

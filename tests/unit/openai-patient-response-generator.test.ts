@@ -8,7 +8,7 @@ import {
   type OpenAiPatientResponseGeneratorConfigV2,
   type OpenAiPatientResponseGeneratorInputV2,
 } from '@/lib/cases/v2/execute-openai-patient-response-generator';
-import { buildPatientChatSystemPromptV2 } from '@/lib/cases/v2/patient-chat-prompt';
+import { buildPatientChatSystemPromptV3 } from '@/lib/cases/v2/patient-chat-prompt';
 import type { SessionPatientClinicalContentV2 } from '@/lib/cases/v2/session-clinical-content-types';
 
 const clinicalContent: SessionPatientClinicalContentV2 = {
@@ -107,7 +107,7 @@ describe('executeOpenAiPatientResponseGeneratorV2', () => {
 
     const params = create.mock.calls[0][0];
     expect(params.messages).toEqual([
-      { role: 'system', content: buildPatientChatSystemPromptV2(clinicalContent) },
+      { role: 'system', content: buildPatientChatSystemPromptV3(clinicalContent) },
       { role: 'user', content: '¿Cómo toma la medicación?' },
       { role: 'assistant', content: 'Normalmente por la mañana.' },
       { role: 'user', content: '¿Olvida alguna dosis?' },

@@ -1,5 +1,8 @@
 # M6-COV1 — Evaluación offline del informe de derivación escrito
 
+> Compatibilidad histórica (2026-10-12): las referencias a tratamiento público de este contrato describen fixtures/versiones offline anteriores. La política actual del producto solo expone nombre, edad y sexo. No reutilizar esas fuentes públicas para acreditar conocimiento del tratamiento en nuevos casos; debe proceder de la entrevista. No se reescriben resultados ni expectativas históricas. No hay integración productiva COV autorizada.
+
+
 Actualización: [calibración COV1–COV3](25_COV_SEMANTIC_CALIBRATION.md), instrucciones `/2`.
 «Me mareo» no respalda «sensación de giro»: evidencia de fidelidad INSUFFICIENT y afirmación específica
 UNSUPPORTED con captura completa. Se mantienen contratos de estados; no se reetiquetan resultados

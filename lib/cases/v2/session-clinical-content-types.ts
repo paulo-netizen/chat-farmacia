@@ -38,6 +38,7 @@ export class SessionClinicalContentErrorV2 extends Error {
 
 export type LegacySessionPatientDataV2 = Readonly<
   StudentCasePublicData & {
+    tratamiento: string;
     motivo_consulta?: string;
     antecedentes?: string;
     contexto?: string;

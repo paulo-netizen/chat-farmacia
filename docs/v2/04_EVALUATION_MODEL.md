@@ -425,3 +425,7 @@ El feedback no debe ser genérico.
 Debe apoyarse en la transcripción.
 
 ---
+
+### Evidencia del tratamiento — decisión 2026-10-12
+
+El tratamiento no es información pública inicial. En el contrato SPFA vigente solo edad y sexo son objetivos `PUBLIC_PROFILE`; `MEDICATION_ENTITY` y `MEDICATION_FACT` requieren evidencia de entrevista. El conocimiento del evaluador no demuestra que el estudiante haya obtenido el dato. No se recalifican registros históricos ni se reinterpretan resultados COV anteriores cuya configuración consideraba otras fuentes públicas. Esos fixtures históricos no se convierten en casos nuevos de alumnado.

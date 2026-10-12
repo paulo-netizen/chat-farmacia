@@ -122,7 +122,7 @@ describe('resolveStudentPublicCaseVersionV2', () => {
     expect(result).toEqual({
       caseId: 17,
       caseVersionId: CASE_VERSION_ID,
-      publicCaseData: publicProfile,
+      publicCaseData: { nombre: publicProfile.nombre, edad: publicProfile.edad, sexo: publicProfile.sexo },
     });
     expect(result.publicCaseData).not.toBe(
       (row.content as ReturnType<typeof legacyContent>).spec,
@@ -137,7 +137,7 @@ describe('resolveStudentPublicCaseVersionV2', () => {
     expect(result).toEqual({
       caseId: 17,
       caseVersionId: CASE_VERSION_ID,
-      publicCaseData: publicProfile,
+      publicCaseData: { nombre: publicProfile.nombre, edad: publicProfile.edad, sexo: publicProfile.sexo },
     });
     expect(result.publicCaseData).not.toBe(
       content.sourceOfTruth.patientFacts.publicProfile,
@@ -155,7 +155,7 @@ describe('resolveStudentPublicCaseVersionV2', () => {
       ['caseId', 'caseVersionId', 'publicCaseData'].sort(),
     );
     expect(Object.keys(result.publicCaseData).sort()).toEqual(
-      ['edad', 'nombre', 'sexo', 'tratamiento'].sort(),
+      ['edad', 'nombre', 'sexo'].sort(),
     );
     expect(Object.isFrozen(result)).toBe(true);
     expect(Object.isFrozen(result.publicCaseData)).toBe(true);
@@ -288,7 +288,6 @@ describe('resolveStudentPublicCaseVersionV2', () => {
     ['edad', 67.5],
     ['edad', 'sesenta y siete'],
     ['sexo', null],
-    ['tratamiento', []],
   ])('rejects invalid legacy public field %s=%p', (field, value) => {
     expectResolutionError(
       () =>
@@ -368,7 +367,6 @@ describe('resolveStudentPublicCaseVersionV2', () => {
     ['nombre', 17],
     ['edad', Infinity],
     ['sexo', {}],
-    ['tratamiento', ''],
   ])('rejects invalid generated public field %s=%p', (field, value) => {
     const content = generatedContent();
     expectResolutionError(
@@ -535,13 +533,13 @@ describe('resolveStudentPublicCaseVersionForResumeV2', () => {
     expect(result).toEqual({
       caseId: 17,
       caseVersionId: CASE_VERSION_ID,
-      publicCaseData: publicProfile,
+      publicCaseData: { nombre: publicProfile.nombre, edad: publicProfile.edad, sexo: publicProfile.sexo },
     });
     expect(Object.keys(result).sort()).toEqual(
       ['caseId', 'caseVersionId', 'publicCaseData'].sort(),
     );
     expect(Object.keys(result.publicCaseData).sort()).toEqual(
-      ['edad', 'nombre', 'sexo', 'tratamiento'].sort(),
+      ['edad', 'nombre', 'sexo'].sort(),
     );
     expect(Object.isFrozen(result)).toBe(true);
     expect(Object.isFrozen(result.publicCaseData)).toBe(true);

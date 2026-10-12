@@ -309,3 +309,7 @@ Debe cumplir:
 - compatibilidad razonable con el resto del sistema.
 
 ---
+
+### Visibilidad inicial identity-only/1
+
+Crear y recuperar sesiones legacy y v2 devuelve únicamente `sessionId`, `nombre`, `edad`, `sexo`; no tratamiento, incluyendo fuentes con secretos adicionales. El paciente conserva sus datos clínicos y puede revelar el tratamiento ante preguntas legítimas. La lista pública no lee siquiera propiedades clínicas. Los objetivos de medicación no se acreditan como información pública. Estas pruebas técnicas no certifican el comportamiento semántico de un modelo real ni validan académicamente los borradores.

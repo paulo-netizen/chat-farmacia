@@ -2,7 +2,7 @@ import { readFileSync } from 'node:fs';
 
 import { describe, expect, it } from 'vitest';
 
-import { buildPatientChatSystemPromptV2 } from '../../lib/cases/v2/patient-chat-prompt';
+import { buildPatientChatSystemPromptV2, buildPatientChatSystemPromptV3 } from '../../lib/cases/v2/patient-chat-prompt';
 import type { SessionPatientClinicalContentV2 } from '../../lib/cases/v2/session-clinical-content-types';
 
 const ids = {
@@ -341,4 +341,15 @@ describe('patient prompt adapter architecture', () => {
     expect(source).not.toMatch(/@\/lib\/db|from ['"]pg['"]|next\/server/);
     expect(source).not.toMatch(/@\/lib\/openai|\bOpenAI\b|process\.env|fetch\s*\(|app\/api/);
   });
+});
+
+it('applies identity-only disclosure without removing clinical treatment or rewriting V2', () => {
+  const content = legacyContent();
+  const before = JSON.stringify(content);
+  const current = buildPatientChatSystemPromptV3(content);
+  expect(current).toContain('identity-only/1');
+  expect(current).toContain('mediante preguntas');
+  expect(current).toContain('Metformina');
+  expect(buildPatientChatSystemPromptV2(content)).not.toContain('identity-only/1');
+  expect(JSON.stringify(content)).toBe(before);
 });
