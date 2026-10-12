@@ -2,7 +2,17 @@
 
 ## Baseline oficial
 
-Actual — revisión integral offline COV3 (11 de octubre): contrato canónico /4, proveedor /5 y
+Actual — ronda diagnóstica canónica COV3 (11 de octubre): **4/4 técnicamente válidos; 12/12 criterios
+coincidentes**, sin fallos ni omitidos. Cuatro conteos e inferencias nuevas, sin reintentos; soporte
+de citas, adopción, temporalidad y retirada revisados. Preparado para validación independiente,
+sin aceptación final; R3 pendiente separado. 22 tests nuevos y 149 regresiones PASS, TypeScript
+y diff-check PASS; suite offline anterior reutilizada. Acumulado: 18 inferencias, **0.1866032 USD**
+calculables; reservas retenidas **1.855056 USD** y 41 conteos de coste desconocido. Total facturado
+no conocido. [Resultados y decisión funcional](25_COV_SEMANTIC_CALIBRATION.md).
+Personalización 0/4; M6 64%, proyecto 51.53%, M6/M6-E PARTIAL, PED2 abierto, perfiles productivos
+no aprobados y D3B OPEN / VALIDATION DEBT. Sin acreditación ni integración productiva.
+
+Histórico — revisión integral offline COV3 (11 de octubre): contrato canónico /4, proveedor /5 y
 diagnósticos por campo /3. [Matriz y evidencia](26_COV3_CANONICAL_OUTPUT_CONTRACT.md).
 Cuatro ejemplos completos representables sin alterar expectativas; 63 tests nuevos y suite offline
 única **3.786 PASS / 67 SKIPPED**. TypeScript/diff-check PASS; lint sin configurar, no completado.

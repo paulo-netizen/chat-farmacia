@@ -25,7 +25,14 @@ El repositorio dispone de una suite automatizada amplia. M6-A, M6-B, M6-C, M6-D1
 
 ## Estado vigente y próximo frente funcional
 
-Actual — revisión integral offline COV3: contrato /4, representación /5, referencias tipadas,
+Actual — ronda diagnóstica canónica COV3: **4/4 ejemplos técnicamente válidos, 12/12 criterios
+coincidentes**, cuatro conteos y cuatro inferencias sin reintentos. Evidencias revisadas: adopción,
+temporalidad, comprobación y retirada coherentes. Preparado para validación independiente, aún
+no superada; R3 pendiente separado. [Resultados, costes y límites](docs/v2/25_COV_SEMANTIC_CALIBRATION.md).
+22 pruebas nuevas y 149 regresiones PASS; TypeScript/diff-check PASS. Coste acumulado calculable
+0.1866032 USD, reservas retenidas 1.855056 USD; 41 conteos de coste desconocido. Sin nuevos puntos.
+
+Histórico — revisión integral offline COV3: contrato /4, representación /5, referencias tipadas,
 dificultad canónica por propuesta y diagnósticos localizados /3. [Matriz y recorridos completos](docs/v2/26_COV3_CANONICAL_OUTPUT_CONTRACT.md)
 de P1, P2-WITHDRAW, P3-ADOPT y P4-LATE. 63 tests nuevos; suite offline única 3.786 PASS / 67 SKIPPED;
 TypeScript/diff-check PASS. Lint no completado por falta de configuración, sin configurar ESLint.

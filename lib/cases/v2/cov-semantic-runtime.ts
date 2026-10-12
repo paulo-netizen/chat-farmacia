@@ -1,3 +1,4 @@
+import { isCompatibleCovParseFailure } from './cov-received-response';
 import type OpenAI from 'openai';
 import { z } from 'zod';
 import { zodTextFormat } from 'openai/helpers/zod';
@@ -140,6 +141,7 @@ function buildRuntimes(configInput: CovRuntimeConfig, client: CovClient, session
       const usage = covSafeMetadata(response);
       if ((session && (response.service_tier !== 'default' || usage.inputTokens === undefined || usage.outputTokens === undefined)) || response.status !== 'completed' || response.model !== config.model || response.error ||
         response.output.some(item => item.type === 'message' && item.content.some(c => c.type === 'refusal'))) throw new CovTransportError('RESPONSE_ENVELOPE_INVALID');
+      if (session) session.receivedCompatible(response);
       failure = 'PROVIDER_SCHEMA_INVALID';
       if (capability === 'COV3' && proposalScoped === 'canonical') {
         if(q.contractVersion !== 'personalization-request/4') throw new CovTransportError('REQUEST_INVALID');
@@ -149,10 +151,14 @@ function buildRuntimes(configInput: CovRuntimeConfig, client: CovClient, session
       if (result.requestDigest !== q.requestDigest) throw new CovTransportError('REQUEST_DIGEST_MISMATCH');
       return adaptCovSources(capability, result, q);
     } catch (error) {
-      if (session) {
-        try { if (reserved) session.metadata(error); session.stop(); } catch { throw new CovTransportError('STOP_RECORD_FAILED'); }
-      }
       const diagnostic = covDiagnostic(error, failure);
+      if (session) {
+        try {
+          if (reserved) session.metadata(error);
+          if (reserved && isCompatibleCovParseFailure(error)) session.receivedCompatible(error);
+          if (!session.mayContinueReceivedFailure(diagnostic)) session.stop();
+        } catch { throw new CovTransportError('STOP_RECORD_FAILED'); }
+      }
       throw new CovTransportError(diagnostic.code, diagnostic.causes, diagnostic.issues);
     }
   }

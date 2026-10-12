@@ -1,5 +1,96 @@
 # COV1–COV3 — Preparación de calibración semántica
 
+## Ronda diagnóstica canónica COV3 — 11 de octubre de 2026
+
+Base `0e1a9094e7d08b35014ed06ec8ffd93b2c501410`, árbol inicialmente limpio.
+**Cuatro ejemplos técnicamente válidos sobre cuatro; 12/12 criterios coincidentes.**
+Contrato evaluación /4, instrucciones /5, proveedor canónico /5 y diagnósticos /3.
+Esta ronda es homogénea dentro de esos cuatro ejemplos; no agrega intentos históricos de otras
+versiones. Todos conservan `REVIEW_REQUIRED`, validación estructural y aceptación semántica pendiente.
+
+### Política y controles
+
+Runner cerrado [canonical-round.ts](../../tools/cov-calibration/canonical-round.ts), modo seco por
+defecto y autorización `cov3-canonical-diagnostic-authorization/1` exclusiva de P1, P2-WITHDRAW,
+P3-ADOPT y P4-LATE. Diario nuevo enlazado por hash a siete diarios históricos, comprobados intactos
+al finalizar. Cuatro conteos nuevos y cuatro inferencias secuenciales; ninguna repetición, fallback,
+llamada a R3 ni cambio de instrucciones/expectativas durante la ronda.
+
+Solo este modo permite continuar tras fallo de JSON, esquema o validación de una respuesta recibida
+compatible y con uso disponible, registrada duraderamente como `RECEIVED`. Transportes, timeouts,
+incertidumbre, autorización, presupuesto, configuración o integridad detienen la ronda. Reservas
+fsync anteriores al envío, lock exclusivo y recuperación sin reenvío; políticas antiguas intactas.
+Se conservan resultados estructurados, metadatos de uso e identificadores privados; no respuestas raw.
+
+### Resultado y revisión de soporte
+
+D = DEMONSTRATED; ND = NOT_DEMONSTRATED; NA = NOT_APPLICABLE. Orden: adaptación / comprobación
+de viabilidad / respuesta a dificultad. Cada celda esperado→observado incluye los tres criterios.
+
+| Ejemplo | Técnica / diagnóstico | Esperado → observado | Evidencia y relación revisadas |
+|---|---|---|---|
+| P1 | Válido; sin diagnóstico de error | D/D/NA → D/D/NA | Paciente M1 comunica dificultad de letra pequeña; estudiante M2 propone letra grande y M3 pregunta si puede leer/utilizarla. Circunstancia anterior, propuesta propia CURRENT. No respuesta ni dificultad con la alternativa: comprobar no demuestra que sea viable. |
+| P2-WITHDRAW | Válido; sin diagnóstico de error | D/D/D → D/D/D | M1→M2→M3 conserva adaptación y comprobación históricas. Paciente M4 dice que tampoco puede leer ese tamaño; estudiante M5 retira por esa dificultad. WITHDRAWN y respuesta enlazada a dificultad 0; el positivo se apoya en la actuación razonada, no en retirar por sí solo. |
+| P3-ADOPT | Válido; sin diagnóstico de error | D/D/NA → D/D/NA | M1 del paciente contiene barrera y una única propuesta concreta; M2 «De acuerdo» es adopción contextual explícita, no propuesta originalmente propia. M3 comprueba. Sin dificultad posterior, sin inferir aceptación o viabilidad. |
+| P4-LATE | Válido; sin diagnóstico de error | ND/D/NA → ND/D/NA | Propuesta propia M1 precede a revelación M2: circumstances vacío evita causalidad retrospectiva. M3 comprueba; no consta reformulación basada en el dato posterior ni dificultad respecto a alternativa. |
+
+Las citas literales resueltas por servidor corresponden a mensajes y roles del fixture; la revisión
+manual de estos resultados estructurados confirma el soporte descrito, además de la validación
+automática. No hay hechos ocultos, cadenas incompatibles ensambladas ni atribución de propuesta
+del paciente como propia. No se certifica seguridad clínica, eficacia ni exhaustividad general.
+El campo automático `semanticEvidenceReview:PENDING` permanece intacto: esta revisión no es
+aceptación docente independiente y no reescribe el diario.
+
+Validez técnica **4/4**; fallos técnicos **0/4**; no ejecutados **0/4**. Coincidencias **12/12 criterios
+válidos**: D→D **8**, ND→ND **1**, NA→NA **3**. Desacuerdos **0/12**. Falso positivo definido como
+D observado cuando se esperaba otra etiqueta: **0/4 oportunidades no D**. Falso negativo decisivo
+definido como ND observado frente a D esperado: **0/8 positivos esperados**. Abstenciones
+INSUFFICIENT **0/12** y UNCERTAIN **0/12**, diferenciadas; positivos perdidos por abstención **0/8**.
+Un fallo técnico habría quedado fuera del denominador semántico, pero dentro del técnico de cuatro.
+
+### Uso y presupuesto
+
+Modelo `gpt-5.6-terra`, medium, Standard/global (`service_tier:default`), store:false, máximo 8.000
+tokens de salida, timeout 60 segundos, SDK maxRetries:0. Expectativas exclusivamente locales.
+Los conteos oficiales nuevos coinciden con el input observado y están ligados a hashes de solicitud.
+
+| Ejemplo | Conteo/input | Output (incluye razonamiento) | Razonamiento | Cache read / write | Coste calculable USD | Reserva USD |
+|---|---:|---:|---:|---:|---:|---:|
+| P1 | 3777 | 490 | 132 | 0 / 3774 | 0.0153210 | 0.105443 |
+| P2-WITHDRAW | 3864 | 586 | 102 | 3133 / 728 | 0.0094846 | 0.105660 |
+| P3-ADOPT | 3776 | 597 | 231 | 3133 / 640 | 0.0093966 | 0.105440 |
+| P4-LATE | 3778 | 839 | 516 | 3133 / 642 | 0.0123056 | 0.105445 |
+
+Tarifas oficiales consultadas el 11 de octubre:
+[modelo y precios](https://developers.openai.com/api/docs/models/gpt-5.6-terra) y
+[caché](https://developers.openai.com/api/docs/guides/prompt-caching).
+Por millón: input ordinario 2 USD, lectura caché 0.20 USD, escritura 2.50 USD, output 12 USD.
+Escritura sustituye, no se suma al precio ordinario. Razonamiento está incluido en output.
+Coste = ((input-read-write)×2 + read×0.20 + write×2.50 + output×12)/1.000.000.
+Reservas redondeadas hacia arriba: input completo a 2.50 USD/M + 8.000 output a 12 USD/M.
+
+Ronda: **0.0465078 USD** calculables y **0.421988 USD** reservados. Acumulado: **18 inferencias,
+0.1866032 USD** calculables; **1.855056 USD** de reservas retenidas bajo techo interno de inferencia
+2 USD. No hay solicitudes inciertas nuevas ni reservas nuevas sin resultado. No se liberan reservas
+históricas automáticamente. **41 conteos acumulados de coste desconocido**, incluidos estos cuatro;
+el total facturado, impuestos y coste efectivo en EUR siguen desconocidos. El margen de cambio/impuestos
+documentado anteriormente se conserva; los 15 EUR autorizados no constituyen un máximo facturado
+verificado mientras se desconozca la tarifa de conteo. No se contabiliza ese coste como cero.
+
+### Evidencia y decisión funcional
+
+22/22 pruebas nuevas del runner: continuación por respuesta recibida inválida, paradas por transporte,
+modelo/tier/uso, autorización/presupuesto, corrupción/fsync, exclusión y reinicio sin duplicados.
+149/149 regresiones relacionadas, TypeScript y ambos diff-check PASS. Se reutilizan 63 pruebas del
+contrato canónico y la suite previa **3.786 PASS / 67 SKIPPED**; no se repite la suite completa.
+
+**COV3 está preparado para validación independiente**, no declarada superada. Preparar un conjunto
+reservado con contextos distintos y etiquetas docentes previas, especialmente adopción ambigua,
+múltiples propuestas/dificultades y temporalidad. No iniciar otra ronda aquí. Los P1 históricos siguen
+fallidos con las limitaciones de diagnóstico documentadas; este éxito no prueba su causa. R3 queda
+pendiente separado. Personalización 0/4, M6 64%, proyecto 51.53%, M6/M6-E PARTIAL, PED2 abierto,
+perfiles productivos no aprobados y D3B OPEN / VALIDATION DEBT. Sin aceptación final ni puntos.
+
 ## Revisión integral offline COV3 — 11 de octubre de 2026
 
 Contrato canónico /4, proveedor /5 y diagnósticos localizados /3; [matriz, hallazgos y pruebas](26_COV3_CANONICAL_OUTPUT_CONTRACT.md).

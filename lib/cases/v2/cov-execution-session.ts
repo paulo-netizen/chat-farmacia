@@ -1,3 +1,5 @@
+import { validateCov3RoundGrant, cov3ReceivedFailureIsIndependent, type Cov3RoundGrant } from './cov3-round-policy';
+import type { CovDiagnostic } from './cov-diagnostics';
 import { mkdirSync, openSync, closeSync, writeSync, fsyncSync, readFileSync, unlinkSync, realpathSync } from 'node:fs';
 import { isAbsolute, join, resolve } from 'node:path';
 import { covHash, covReservationMicroUsd, validateCovGrant, type CovGrant, type CovManifest } from './cov-experiment-policy';
@@ -24,26 +26,27 @@ export function covSafeMetadata(value: unknown): CovSafeMetadata {
   }
   return result;
 }
-type Event = { kind: 'INIT' | 'RESERVED' | 'METADATA' | 'RESULT' | 'STOP'; id?: string; data: unknown };
+type Event = { kind: 'INIT' | 'RESERVED' | 'METADATA' | 'RESULT' | 'STOP' | 'RECEIVED'; id?: string; data: unknown };
 type RecordLine = { seq: number; previous: string; event: Event; checksum: string };
 const sessions = new WeakSet<CovExecutionSession>();
 
 /** Single-host, append-only, fsync-before-send. A stale lock is NEVER stolen automatically. */
 export class CovExecutionSession {
-  private grant: CovGrant | CovR2Grant | CovContinuationGrant | CovSourceRunGrant | CovCompletionGrant;
+  private grant: CovGrant | CovR2Grant | CovContinuationGrant | CovSourceRunGrant | CovCompletionGrant | Cov3RoundGrant;
   private fd = -1;
   private lockFd = -1;
   private lockPath = '';
   private chain = '0'.repeat(64);
   private sequence = 0;
   private reserved = new Set<string>();
+  private receivedIds = new Set<string>();
   private results = new Map<string, unknown>();
   private spent = 0;
   private activeId: string | undefined;
   private closed = false;
   private failed = false;
   private busy = false;
-  private constructor(grant: CovGrant | CovR2Grant | CovContinuationGrant | CovSourceRunGrant | CovCompletionGrant) { this.grant = grant; }
+  private constructor(grant: CovGrant | CovR2Grant | CovContinuationGrant | CovSourceRunGrant | CovCompletionGrant | Cov3RoundGrant) { this.grant = grant; }
 
   static open(authorization: unknown, manifest: CovManifest): CovExecutionSession {
     return this.openValidated(validateCovGrant(authorization, manifest));
@@ -57,10 +60,13 @@ export class CovExecutionSession {
   static openSourceRun(authorization: unknown, manifest: CovManifest): CovExecutionSession {
     return this.openValidated(validateCovSourceRunGrant(authorization, manifest));
   }
+  static openCanonicalDiagnostics(authorization: unknown, manifest: CovManifest): CovExecutionSession {
+    return this.openValidated(validateCov3RoundGrant(authorization, manifest));
+  }
   static openCompletion(authorization: unknown, manifest: CovManifest): CovExecutionSession {
     return this.openValidated(validateCovCompletionGrant(authorization, manifest));
   }
-  private static openValidated(grant: CovGrant | CovR2Grant | CovContinuationGrant | CovSourceRunGrant | CovCompletionGrant): CovExecutionSession {
+  private static openValidated(grant: CovGrant | CovR2Grant | CovContinuationGrant | CovSourceRunGrant | CovCompletionGrant | Cov3RoundGrant): CovExecutionSession {
     if (!isAbsolute(grant.ledgerDirectory)) throw new Error('COV_LEDGER_PATH_INVALID');
     const directory = resolve(grant.ledgerDirectory);
     mkdirSync(directory, { recursive: true, mode: 0o700 });
@@ -105,7 +111,11 @@ export class CovExecutionSession {
       if (!event.id || !this.reserved.has(event.id) || this.results.has(event.id)) throw new Error('COV_JOURNAL_INVALID');
       this.results.set(event.id, event.data);
       // A crash between RESULT and STOP must not turn a technical failure into permission to continue.
-      if ((event.data as { result?: { status?: string } } | null)?.result?.status === 'TECHNICAL_FAILURE') this.failed = true;
+      const result = (event.data as { result?: { status?: string; diagnostic?: CovDiagnostic } } | null)?.result;
+      if (result?.status === 'TECHNICAL_FAILURE' && !this.independentFailure(event.id, result.diagnostic)) this.failed = true;
+    } else if (event.kind === 'RECEIVED') {
+      if (this.grant.version !== 'cov3-canonical-diagnostic-authorization/1' || !event.id || !this.reserved.has(event.id) || this.receivedIds.has(event.id) || event.data !== true) throw new Error('COV_JOURNAL_INVALID');
+      this.receivedIds.add(event.id);
     } else if (event.kind === 'STOP') this.failed = true;
     else if (event.kind !== 'INIT' && event.kind !== 'METADATA') throw new Error('COV_JOURNAL_INVALID');
   }
@@ -142,6 +152,18 @@ export class CovExecutionSession {
       (metadata.outputTokens !== undefined && metadata.outputTokens > this.grant.config.maxOutputTokens)) {
       this.stop(); throw new Error('COV_USAGE_EXCEEDS_RESERVATION');
     }
+  }
+  private independentFailure(id: string, diagnostic?: CovDiagnostic) {
+    return this.grant.version === 'cov3-canonical-diagnostic-authorization/1' && this.receivedIds.has(id) && cov3ReceivedFailureIsIndependent(diagnostic);
+  }
+  mayContinueReceivedFailure(diagnostic: CovDiagnostic) {
+    return !this.failed && !!this.activeId && this.independentFailure(this.activeId, diagnostic);
+  }
+  receivedCompatible(value: unknown) {
+    if (this.grant.version !== 'cov3-canonical-diagnostic-authorization/1') return;
+    const m = covSafeMetadata(value);
+    if (!this.activeId || m.inputTokens === undefined || m.outputTokens === undefined) throw new Error('COV_RECEIPT_METADATA_REQUIRED');
+    if (!this.receivedIds.has(this.activeId)) this.append({kind:'RECEIVED',id:this.activeId,data:true});
   }
   result(id: string, structuredEvaluation: unknown) {
     if (id !== this.activeId) throw new Error('COV_RESERVATION_REQUIRED');

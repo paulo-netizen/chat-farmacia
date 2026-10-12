@@ -1,3 +1,4 @@
+import { markCompatibleCovParseFailure } from '../../lib/cases/v2/cov-received-response';
 import OpenAI from 'openai';
 import { CovDiagnosticError } from '../../lib/cases/v2/cov-diagnostics';
 import { buildCalibrationFixtures } from './fixtures';
@@ -51,6 +52,7 @@ export function createCovClientFromSdk(sdk: Pick<OpenAI, 'baseURL' | 'responses'
         input_tokens_details: { cached_tokens: metadata.cachedTokens, cache_write_tokens: metadata.cacheWriteTokens },
         output_tokens_details: { reasoning_tokens: metadata.reasoningTokens },
       } });
+      markCompatibleCovParseFailure(error, response);
       throw error;
     }
   };
