@@ -25,7 +25,15 @@ El repositorio dispone de una suite automatizada amplia. M6-A, M6-B, M6-C, M6-D1
 
 ## Estado vigente y próximo frente funcional
 
-Actual — ronda diagnóstica canónica COV3: **4/4 ejemplos técnicamente válidos, 12/12 criterios
+Actual — R3 comprobado una vez el 12 de octubre: **TECHNICAL_FAILURE / VALIDATION /
+CRITERION_SUPPORT_MISSING**, sin reintento; ajuste semántico aún no verificado. COV1 bloqueado para
+aceptación; COV2/COV3 conservan evidencia favorable por sus versiones, sin repetir personalización.
+[Candidato congelado, 18 ejemplos completos y protocolo propuesto](docs/v2/27_COV_INDEPENDENT_VALIDATION_PROPOSAL.md)
+pendientes de revisión docente, sin ejecución ni uso para ajustar prompts. Nueve tests nuevos y
+63 regresiones PASS; TypeScript/diff-check PASS. Acumulado 0.2006372 USD calculables, reservas
+1.957064 USD y 42 conteos de coste desconocido. Sin aceptación final ni nuevos puntos.
+
+Histórico — ronda diagnóstica canónica COV3: **4/4 ejemplos técnicamente válidos, 12/12 criterios
 coincidentes**, cuatro conteos y cuatro inferencias sin reintentos. Evidencias revisadas: adopción,
 temporalidad, comprobación y retirada coherentes. Preparado para validación independiente, aún
 no superada; R3 pendiente separado. [Resultados, costes y límites](docs/v2/25_COV_SEMANTIC_CALIBRATION.md).

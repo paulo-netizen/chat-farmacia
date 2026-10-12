@@ -1,5 +1,6 @@
 import { validateCov3RoundGrant, cov3ReceivedFailureIsIndependent, type Cov3RoundGrant } from './cov3-round-policy';
 import type { CovDiagnostic } from './cov-diagnostics';
+import { validateCovR3CheckGrant, type CovR3CheckGrant } from './cov-r3-check-policy';
 import { mkdirSync, openSync, closeSync, writeSync, fsyncSync, readFileSync, unlinkSync, realpathSync } from 'node:fs';
 import { isAbsolute, join, resolve } from 'node:path';
 import { covHash, covReservationMicroUsd, validateCovGrant, type CovGrant, type CovManifest } from './cov-experiment-policy';
@@ -32,7 +33,7 @@ const sessions = new WeakSet<CovExecutionSession>();
 
 /** Single-host, append-only, fsync-before-send. A stale lock is NEVER stolen automatically. */
 export class CovExecutionSession {
-  private grant: CovGrant | CovR2Grant | CovContinuationGrant | CovSourceRunGrant | CovCompletionGrant | Cov3RoundGrant;
+  private grant: CovGrant | CovR2Grant | CovContinuationGrant | CovSourceRunGrant | CovCompletionGrant | Cov3RoundGrant | CovR3CheckGrant;
   private fd = -1;
   private lockFd = -1;
   private lockPath = '';
@@ -46,7 +47,7 @@ export class CovExecutionSession {
   private closed = false;
   private failed = false;
   private busy = false;
-  private constructor(grant: CovGrant | CovR2Grant | CovContinuationGrant | CovSourceRunGrant | CovCompletionGrant | Cov3RoundGrant) { this.grant = grant; }
+  private constructor(grant: CovGrant | CovR2Grant | CovContinuationGrant | CovSourceRunGrant | CovCompletionGrant | Cov3RoundGrant | CovR3CheckGrant) { this.grant = grant; }
 
   static open(authorization: unknown, manifest: CovManifest): CovExecutionSession {
     return this.openValidated(validateCovGrant(authorization, manifest));
@@ -60,13 +61,16 @@ export class CovExecutionSession {
   static openSourceRun(authorization: unknown, manifest: CovManifest): CovExecutionSession {
     return this.openValidated(validateCovSourceRunGrant(authorization, manifest));
   }
+  static openR3Check(authorization: unknown, manifest: CovManifest): CovExecutionSession {
+    return this.openValidated(validateCovR3CheckGrant(authorization, manifest));
+  }
   static openCanonicalDiagnostics(authorization: unknown, manifest: CovManifest): CovExecutionSession {
     return this.openValidated(validateCov3RoundGrant(authorization, manifest));
   }
   static openCompletion(authorization: unknown, manifest: CovManifest): CovExecutionSession {
     return this.openValidated(validateCovCompletionGrant(authorization, manifest));
   }
-  private static openValidated(grant: CovGrant | CovR2Grant | CovContinuationGrant | CovSourceRunGrant | CovCompletionGrant | Cov3RoundGrant): CovExecutionSession {
+  private static openValidated(grant: CovGrant | CovR2Grant | CovContinuationGrant | CovSourceRunGrant | CovCompletionGrant | Cov3RoundGrant | CovR3CheckGrant): CovExecutionSession {
     if (!isAbsolute(grant.ledgerDirectory)) throw new Error('COV_LEDGER_PATH_INVALID');
     const directory = resolve(grant.ledgerDirectory);
     mkdirSync(directory, { recursive: true, mode: 0o700 });

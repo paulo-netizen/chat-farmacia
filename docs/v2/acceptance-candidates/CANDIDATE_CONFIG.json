@@ -1,0 +1,52 @@
+{
+  "version": "cov-candidate-freeze/1",
+  "status": "PROPOSED_NOT_ACCEPTED",
+  "codeCommit": "4fdcbe3bfbe9016eececb6bdb91f4baf29b9f7c2",
+  "model": "gpt-5.6-terra",
+  "aliasNotImmutableSnapshot": true,
+  "configuration": {
+    "endpoint": "https://api.openai.com/v1",
+    "service_tier": "default",
+    "reasoning": {
+      "effort": "medium"
+    },
+    "store": false,
+    "max_output_tokens": 8000,
+    "timeoutMs": 60000,
+    "maxRetries": 0,
+    "maxInputBytes": 20000
+  },
+  "capabilities": [
+    {
+      "capability": "COV1",
+      "contractVersion": "referral-report-request/1",
+      "instructionsVersion": "referral-report-instructions/2",
+      "providerRepresentation": "referral-report-sources-adjudication/3",
+      "instructionsJsonSha256": "d8a3943d89e1396b52a3529b7f1200af744ea2fd6eec3a66307ab4f440bf7773",
+      "schemaJsonSha256": "c4172111bb475bf269e5ad167ee14af739409022ef9ca310194f674cec5448bc",
+      "referenceCalibrationId": "R3",
+      "requestHash": "4a8a1da5a3eb755b34cff234b29ef3acf177180a952f6071461d117a41d9c7ad"
+    },
+    {
+      "capability": "COV2",
+      "contractVersion": "follow-up-plan-request/1",
+      "instructionsVersion": "follow-up-plan-instructions/3",
+      "providerRepresentation": "follow-up-plan-sources-adjudication/2",
+      "instructionsJsonSha256": "501cc78e6dd7e403e26239b4bb1f56f423a5d719726a5b901549025cc0bac757",
+      "schemaJsonSha256": "3dc96083e45271a542c76ee7429a5bec5c956aacd07780dfac59d96ced2c166e",
+      "referenceCalibrationId": "S1",
+      "requestHash": "b128df887e388cab664e6e793c189b2122168cb1112421e557356bc689326b2b"
+    },
+    {
+      "capability": "COV3",
+      "contractVersion": "personalization-request/4",
+      "instructionsVersion": "personalization-instructions/5",
+      "providerRepresentation": "personalization-canonical-sources-adjudication/5",
+      "instructionsJsonSha256": "60c967531e31270481f7bdb9b15cc39e1813a23469196f4810b2d51ca4a7a846",
+      "schemaJsonSha256": "bba234a6af472ccc45e2854b960bd5508e8cb7a3546c098e97644dbaa9d21fcd",
+      "referenceCalibrationId": "P1",
+      "requestHash": "3f37c66dfb2475a4023d46a56073c52d07aded03511e69bbd901081d584b558f"
+    }
+  ],
+  "codeTree": "0e4bcf416f1f04cc803a329594b4e1f32d2bcbcf"
+}

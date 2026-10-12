@@ -2,7 +2,18 @@
 
 ## Baseline oficial
 
-Actual — ronda diagnóstica canónica COV3 (11 de octubre): **4/4 técnicamente válidos; 12/12 criterios
+Actual — comprobación única R3 (12 de octubre): **TECHNICAL_FAILURE / VALIDATION /
+CRITERION_SUPPORT_MISSING**. Cero criterios validados: no equivale a dos errores académicos.
+Un conteo y una inferencia, sin reintentos ni cambios de instrucciones. COV1 pendiente de diagnóstico
+offline antes de aceptación; COV2 y COV3 conservan sus evidencias favorables separadas por versión.
+[18 casos nuevos completos, candidato y protocolo](27_COV_INDEPENDENT_VALIDATION_PROPOSAL.md)
+propuestos para revisión docente, no ejecutados ni usados para ajuste; exposición documentada.
+9 tests nuevos y 63 regresiones PASS, TypeScript/diff-check PASS. Acumulado de 19 inferencias:
+**0.2006372 USD** calculables; reservas **1.957064 USD**, 42 conteos de coste desconocido.
+M6 64%, proyecto 51.53%, M6/M6-E PARTIAL, PED2 abierto, perfiles no aprobados y
+D3B OPEN / VALIDATION DEBT. Sin aceptación semántica final ni acreditación.
+
+Histórico — ronda diagnóstica canónica COV3 (11 de octubre): **4/4 técnicamente válidos; 12/12 criterios
 coincidentes**, sin fallos ni omitidos. Cuatro conteos e inferencias nuevas, sin reintentos; soporte
 de citas, adopción, temporalidad y retirada revisados. Preparado para validación independiente,
 sin aceptación final; R3 pendiente separado. 22 tests nuevos y 149 regresiones PASS, TypeScript

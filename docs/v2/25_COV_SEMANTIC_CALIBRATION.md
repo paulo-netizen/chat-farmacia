@@ -1,5 +1,17 @@
 # COV1–COV3 — Preparación de calibración semántica
 
+## Comprobación R3 y candidato — 12 de octubre de 2026
+
+R3 ejecutado una sola vez con instrucciones corregidas publicadas: **TECHNICAL_FAILURE /
+VALIDATION / CRITERION_SUPPORT_MISSING**. No hay etiquetas o claims validados para comparación
+semántica; no se reintenta ni se cambian instrucciones. [Resultado completo, presupuesto, candidato
+congelado y 18 ejemplos propuestos](27_COV_INDEPENDENT_VALIDATION_PROPOSAL.md).
+Conteo nuevo 2.403; coste calculable 0.014034 USD; reserva 0.102008 USD. Acumulado 19 inferencias,
+0.2006372 USD calculables, 1.957064 USD reservados y 42 conteos de coste desconocido.
+COV3 no se repite; candidatos no ejecutados ni usados para ajuste. Nueve tests nuevos y
+63 regresiones PASS, TypeScript y ambos diff-check PASS; sin suite completa repetida.
+Aceptación semántica y puntos pendientes, porcentajes/estados intactos.
+
 ## Ronda diagnóstica canónica COV3 — 11 de octubre de 2026
 
 Base `0e1a9094e7d08b35014ed06ec8ffd93b2c501410`, árbol inicialmente limpio.
