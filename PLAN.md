@@ -10,7 +10,7 @@ La fuente canónica del progreso, los porcentajes, los pesos M0–M11 y el check
 
 - M0 — Saneamiento y barreras de seguridad: **PARTIAL**.
 - M1 — Versionado y base de datos v2: **PARTIAL**.
-- M2 — Editor docente estructurado: **NOT STARTED**.
+- M2 — Editor docente estructurado: **PARTIAL** (borradores y preview implementados; workflow completo pendiente).
 - M3 — Generador, auditor y publicación: **PARTIAL**.
 - M4 — Runtime seguro del paciente: **CLOSED**.
 - M5 — Motor de protocolos SPFA: **CLOSED**.
@@ -233,15 +233,15 @@ M0/M1 y M2/M3 pueden cerrarse en paralelo, pero su deuda pendiente debe resolver
 
 ### M1 — versionado y persistencia editorial
 
-- soportar contenido `TEACHER_AUTHORED` y edición manual docente;
-- definir lineage/provenance editorial;
+- generalizar el borrador manual `TEACHER_CASE_DRAFT_V1` existente a contenido `TEACHER_AUTHORED` publicable;
+- completar lineage/provenance editorial general, conservando parent/autor ya persistidos;
 - completar repositorio y servicios generales de versiones;
 - exponer el lifecycle editorial completo mediante API.
 
 ### M2 — editor docente
 
-- construir el editor estructurado para hechos del paciente, evaluator, protocolos y controles editoriales;
-- validar borrador, preview y publicación sin edición JSON libre como flujo principal.
+- ampliar el editor estructurado existente a todos los contratos de evaluator/protocolos y controles editoriales;
+- completar aceptación conversacional, revisión y publicación; guardado, recuperación y preview de borradores ya implementados sin JSON libre.
 
 ### M3 — generación, auditoría y publicación
 
@@ -302,3 +302,15 @@ Realizado: editor estructurado, API con autorización/ownership, snapshots y pre
 Evidencia nueva: selección 200/200; PostgreSQL desechable 6/6; suite offline final 3839 PASS / 73 SKIPPED; TypeScript PASS. Navegador y HTTP reales verifican guardado/recuperación de ambos casos, errores de campos, autorización y ficha inicial de tres campos. Cero sesiones, mensajes, evaluaciones y asignaciones. Lint sigue requiriendo configuración interactiva, no realizada. Diff-check de trabajo y staged verificados antes del commit.
 
 Siguiente trabajo: conversión validada del borrador al runtime de paciente existente para previsualización no académica, seguida del workflow de revisión/publicación. No habilitar publicación legacy ni afirmar que el formulario ya es un caso ejecutable. Mantener porcentajes y estados canónicos.
+
+## Previsualización conversacional docente — 2026-10-12
+
+Base 00e5901; COV aislado y conservado. Incorporar una proyección de hechos del borrador al runtime seguro existente, sin fingir un paquete clínico publicado ni inventar personalidad o datos faltantes. El formato de preview versionado conserva reglas textuales de revelación; campos editoriales de solución, evaluación y etiquetas quedan fuera. Validación estructural y revisión del comportamiento real no equivalen a aprobación académica.
+
+Conversaciones privadas locales, instantáneas por revisión, autorización y ownership servidor, bloqueo de duplicados y reinicio explícito. No tablas ni sesiones académicas; sin migraciones productivas. Presupuesto compartido con histórico COV: conciliar diarios y reservas, conservar costes desconocidos, reservar antes de cada solicitud y limitar llamadas de demostración. Verificar transformación, fronteras, persistencia, navegador y runtime; actualizar M1–M3 por capacidad demostrada sin inventar pesos internos.
+
+Cierre técnico de esta entrega, 13 de octubre: recorrido de ambos borradores demostrado en navegador;
+14 inferencias/14 conteos, sin reintentos, 0,033726 USD nuevos calculables. Matiz semántico pendiente:
+María expresa una preferencia no definida al evitar una pregunta familiar; no inventa número de hijos.
+28 pruebas nuevas PASS, suite final 3867 PASS / 73 SKIPPED, TypeScript PASS; lint no configurado.
+M1/M2/M3 PARTIAL, sin acreditar porcentaje adicional. [Contrato, evidencia y pendientes](docs/v2/30_TEACHER_PATIENT_PREVIEW.md).

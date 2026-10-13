@@ -2,6 +2,13 @@
 
 ## Baseline oficial
 
+Actualización editorial del 13 de octubre: M1/M2/M3 **PARTIAL**. Editor estructurado con
+borradores persistidos y prueba paciente por revisión; M2 ya no está sin iniciar. Recorrido
+real de Lucía/María comprobado con 14 inferencias y 14 conteos, sin intentos académicos.
+28 pruebas nuevas y suite final **3867 PASS / 73 SKIPPED**, TypeScript PASS; lint pendiente
+de configuración. [Evidencia, costes y límites](30_TEACHER_PATIENT_PREVIEW.md).
+No acredita aceptación clínica ni nuevos puntos; se conserva el cálculo global y el histórico COV.
+
 Actual — comprobación única R3 (12 de octubre): **TECHNICAL_FAILURE / VALIDATION /
 CRITERION_SUPPORT_MISSING**. Cero criterios validados: no equivale a dos errores académicos.
 Un conteo y una inferencia, sin reintentos ni cambios de instrucciones. COV1 pendiente de diagnóstico
@@ -103,7 +110,7 @@ Los pesos y porcentajes se expresan como fracciones para el cálculo; por ejempl
 |---|---|---|---:|---:|---:|
 | M0 | Saneamiento y barreras de seguridad | PARTIAL | 60% | 8% | 4.80% |
 | M1 | Versionado y base de datos v2 | PARTIAL | 80% | 10% | 8.00% |
-| M2 | Editor docente estructurado | NOT STARTED | 0% | 8% | 0.00% |
+| M2 | Editor docente estructurado | PARTIAL | 0% acreditado¹ | 8% | 0.00% |
 | M3 | Generador, auditor y publicación | PARTIAL | 55% | 11% | 6.05% |
 | M4 | Runtime seguro del paciente | CLOSED | 100% | 10% | 10.00% |
 | M5 | Motor de protocolos SPFA | CLOSED | 100% | 15% | 15.00% |
@@ -182,14 +189,16 @@ dependencias. Véase la [evidencia de restauración](21_PHARMACEUTICAL_EVALUATIO
 
 Completado: lifecycle de versiones; snapshots Legacy; pinning de sesión; migraciones v2 de versionado y persistencia; boundaries de resolución ligados a versión.
 
-Pendiente: `TEACHER_AUTHORED`; persistencia de edición manual docente; lineage editorial; repositorio/servicio general de versiones; API completa del lifecycle editorial. Véanse el [modelo de datos](08_DATA_MODEL.md) y el [diseño de persistencia](11_CASE_VERSION_PERSISTENCE_DESIGN.md).
+Entregado adicionalmente: borradores manuales `TEACHER_CASE_DRAFT_V1`, guardado en versiones con parent/autor, recuperación y control de revisión. La prueba docente fija una instantánea privada de la revisión guardada, sin sesión académica. Pendiente: integración general `TEACHER_AUTHORED` publicable, repositorio/servicio general de versiones y lifecycle editorial completo. Véanse el [modelo de datos](08_DATA_MODEL.md) y la [previsualización docente](30_TEACHER_PATIENT_PREVIEW.md).
 
 ### M2 — Editor docente estructurado
 
 **Objetivo:** permitir autoría y revisión docente estructuradas sin depender de JSON libre.
-**Estado:** **NOT STARTED — 0%**.
+**Estado:** **PARTIAL — avance funcional demostrado; 0% acreditado en el cálculo histórico**.
 
-Pendiente: formularios, validación editorial, preview y workflow completo del editor. Véase el [workflow docente](06_TEACHER_WORKFLOW.md).
+Entregado: formularios estructurados de Lucía y María, validación, guardar/cerrar/reabrir, previsualizaciones estudiante/docente y entrada «Probar paciente» con autorización servidor e instantáneas. Pendiente: editor general, revisión/publicación completa y aceptación del recorrido conversacional real. Véase la [evidencia y límites](30_TEACHER_PATIENT_PREVIEW.md).
+
+¹ El estado funcional sustituye «sin iniciar». No existe un desglose interno aprobado que permita convertir este recorrido parcial en un porcentaje exacto; se conserva el cómputo global 51.53% hasta acreditar el desglose, sin inventar pesos ni declarar cerrado M2.
 
 ### M3 — Generador, auditor y publicación
 
@@ -198,7 +207,7 @@ Pendiente: formularios, validación editorial, preview y workflow completo del e
 
 Completado parcialmente: Teaching Brief; Structured Outputs; bundles generados; receipts/provenance; validación determinista y composición server-owned.
 
-Pendiente: auditor clínico separado; CIMA/AEMPS; persistencia y API del workflow; integración con el editor; revisión y publicación docente completas. Véanse [generación de casos](05_CASE_GENERATION.md) y [workflow docente](06_TEACHER_WORKFLOW.md).
+Integración parcial con el editor: borradores manuales persistidos y proyección paciente aislada para prueba docente. No equivale a integrar el generador ni aprobar los casos. Pendiente: auditor clínico separado; CIMA/AEMPS; persistencia/API del workflow generado; revisión y publicación docente completas. Véanse [generación de casos](05_CASE_GENERATION.md) y [workflow docente](06_TEACHER_WORKFLOW.md).
 
 ### M4 — Runtime seguro del paciente
 

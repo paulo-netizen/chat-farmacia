@@ -1,4 +1,5 @@
 import type { StudentCasePublicData } from '../student-session-dto';
+import type { TeacherPatientProjection } from './teacher-patient-projection';
 import type {
   DispensingSubtype,
   EvaluatorViewV2,
@@ -81,6 +82,7 @@ export type GeneratedSessionPatientClinicalContentV2 = Readonly<{
 }>;
 
 export type SessionPatientClinicalContentV2 =
+  | TeacherPatientProjection
   | LegacySessionPatientClinicalContentV2
   | GeneratedSessionPatientClinicalContentV2;
 

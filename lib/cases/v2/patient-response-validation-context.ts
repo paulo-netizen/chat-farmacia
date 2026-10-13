@@ -1,3 +1,4 @@
+import { teacherPatientProjectionSchema } from './teacher-patient-projection';
 import type {
   GeneratedSessionPatientClinicalContentV2,
   LegacySessionPatientClinicalContentV2,
@@ -156,6 +157,7 @@ export type GeneratedPatientResponseValidationContextV2 = Readonly<{
 }>;
 
 export type PatientResponseValidationContextV2 =
+  | import('./teacher-patient-projection').TeacherPatientProjection
   | LegacyPatientResponseValidationContextV2
   | GeneratedPatientResponseValidationContextV2;
 
@@ -652,9 +654,13 @@ function copyGeneratedContext(
   };
 }
 
+export function buildPatientResponseValidationContextV2(clinicalContent: LegacySessionPatientClinicalContentV2 | GeneratedSessionPatientClinicalContentV2): LegacyPatientResponseValidationContextV2 | GeneratedPatientResponseValidationContextV2;
+export function buildPatientResponseValidationContextV2(clinicalContent: import('./teacher-patient-projection').TeacherPatientProjection): import('./teacher-patient-projection').TeacherPatientProjection;
+export function buildPatientResponseValidationContextV2(clinicalContent: SessionPatientClinicalContentV2): PatientResponseValidationContextV2;
 export function buildPatientResponseValidationContextV2(
   clinicalContent: SessionPatientClinicalContentV2,
 ): PatientResponseValidationContextV2 {
+  if(clinicalContent.contentFormat==='TEACHER_DRAFT_PATIENT_V1')return teacherPatientProjectionSchema.parse(clinicalContent);
   return clinicalContent.contentFormat === 'LEGACY_V1_SNAPSHOT'
     ? copyLegacyContext(clinicalContent)
     : copyGeneratedContext(clinicalContent);

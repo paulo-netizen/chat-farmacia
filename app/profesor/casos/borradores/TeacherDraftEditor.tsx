@@ -3,9 +3,10 @@ import { useEffect, useState } from 'react';
 import Link from 'next/link';
 import { adherenceLabels, studentDraftPreview, type TeacherDraftFields, type TeacherDraftRecord } from '@/lib/cases/v2/teacher-case-draft';
 import styles from './editor.module.css';
+import PatientPreview from './PatientPreview';
 
 type Summary = {caseId:string;title:string;revision:number};
-type Section = 'edit'|'student'|'teacher';
+type Section = 'edit'|'student'|'teacher'|'test';
 async function request(url: string, init?: RequestInit) {
   const res=await fetch(url,{...init,cache:'no-store',headers:{'Content-Type':'application/json'}});
   const data=await res.json();
@@ -55,6 +56,8 @@ export default function TeacherDraftEditor() {
           <div className={styles.toolbar}><span className={styles.badge}>BORRADOR · v{draft.revision}{dirty?' · Sin guardar':''}</span><button disabled={busy||!dirty} onClick={save}>{busy?'Procesando…':'Guardar borrador'}</button><button disabled={busy} onClick={()=>{if(dirty){setError('Hay cambios sin guardar. Guarda o utiliza «Descartar cambios y cerrar».');return;}setDraft(null);setNotice('Borrador cerrado. Puedes volver a abrirlo desde Guardados.');}}>Cerrar</button>{dirty&&<button disabled={busy} onClick={()=>{setDraft(null);setDirty(false);setError('');}}>Descartar cambios y cerrar</button>}</div>
           <nav className={styles.tabs} aria-label="Vistas del borrador">{(['edit','student','teacher'] as const).map((tab,i)=><button key={tab} aria-pressed={section===tab} onClick={()=>setSection(tab)}>{['Editar','Vista estudiante','Vista docente'][i]}</button>)}</nav>
           <fieldset disabled={busy} className={styles.editor}>
+          {section==='test'&&<PatientPreview key={draft.versionId} draft={draft} onBack={()=>setSection('edit')}/>}
+          {section!=='test'&&<p><button disabled={dirty||busy} onClick={()=>setSection('test')}>Probar paciente</button>{dirty&&' Guarda los cambios antes de probar esta revisión.'}</p>}
           {section==='student'&&!preview&&<p role="alert">Completa nombre, edad y sexo para previsualizar la ficha.</p>}
           {section==='student'&&preview&&<section className={styles.panel} aria-label="Ficha inicial del estudiante"><h2>Ficha inicial del estudiante</h2><p>Antes de la entrevista. Vista previa de los campos actuales{dirty?', todavía sin guardar':''}.</p><dl><dt>Nombre</dt><dd>{preview.nombre}</dd><dt>Edad</dt><dd>{preview.edad}</dd><dt>Sexo</dt><dd>{preview.sexo}</dd></dl><p>El resto se descubre durante la entrevista. Aquí no se inicia una conversación ni un intento académico.</p></section>}
           {section==='teacher'&&<section className={styles.panel} aria-label="Contenido reservado al docente"><h2>Contenido reservado al docente</h2><p>{f.title} · {f.service==='INDICATION'?'Indicación':'Dispensación'}</p><h3>Demanda inicial</h3><p>{f.initialDemand}</p><h3>Tratamiento</h3><p>{f.treatment}</p><h3>Hechos y revelación</h3>{f.facts.map(x=><article key={x.id}><h4>{x.id} · {x.label}</h4><p>{x.value}</p><p><strong>Revelación: </strong>{x.disclosure}</p></article>)}<h3>Adherencia</h3><p>{adherenceLabels[f.adherence.conclusion]}</p><p>{f.adherence.period}</p><p>{f.adherence.evidence}</p><p>{f.adherence.interpretation}</p><h3>Solución propuesta</h3><p>{f.teacherSolution}</p><h3>Requisitos propuestos</h3>{f.requirements.map((r,i)=><article key={i}><h4>{r.label} · {r.applicability}</h4><p>{r.goal}</p><p>{r.rationale}</p><small>Hechos {r.factRefs.join(', ')} · Guía pp. {r.guidePages}</small></article>)}<h3>Cuestionario y respuestas</h3>{f.questionnaire.map((q,i)=><article key={i}><h4>{q.question}</h4><p>{q.answer}</p><small>Hechos {q.factRefs.join(', ')}</small></article>)}</section>}
@@ -69,7 +72,7 @@ export default function TeacherDraftEditor() {
             <section className={styles.panel}><h2>Cuestionario reservado</h2>{f.questionnaire.map((q,i)=><article key={i}><Field label={`Pregunta ${i+1}`} value={q.question} multiline onChange={question=>change({...f,questionnaire:f.questionnaire.map((v,j)=>j===i?{...v,question}:v)})}/><Field label={`Respuesta docente ${i+1}`} value={q.answer} multiline onChange={answer=>change({...f,questionnaire:f.questionnaire.map((v,j)=>j===i?{...v,answer}:v)})}/>{refs(q.factRefs,factRefs=>change({...f,questionnaire:f.questionnaire.map((v,j)=>j===i?{...v,factRefs}:v)}))}<button onClick={()=>change({...f,questionnaire:f.questionnaire.filter((_,j)=>j!==i)})}>Eliminar pregunta {i+1}</button></article>)}<button onClick={()=>change({...f,questionnaire:[...f.questionnaire,{question:'',answer:'',factRefs:[]}]})}>Añadir pregunta</button></section>
           </>}
           </fieldset>
-          <p className={styles.footer}>Pendientes: revisión docente, validación clínica específica y conversión a un caso ejecutable. Sin conversación de prueba ni publicación desde este editor.</p>
+          <p className={styles.footer}>La prueba docente usa la revisión guardada y requiere habilitación privada del runtime. Pendientes: revisión clínica específica, integración del paquete académico y publicación explícita. No introducir datos identificativos de pacientes reales.</p>
         </>}
       </div>
     </div>
