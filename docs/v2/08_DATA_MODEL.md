@@ -307,3 +307,13 @@ Cada fase debe tener pruebas y criterios de aceptación antes de pasar a la sigu
 ### Decisión docente de visibilidad — 2026-10-12
 
 Antes de la entrevista solo se exponen nombre, edad y sexo. El tratamiento permanece protegido y el estudiante debe obtenerlo preguntando; el paciente lo revela conforme a los hechos y reglas del caso. Esta decisión sustituye la lista anterior, sin modificar registros ni recalificar sesiones históricas. El nombre interno histórico `publicProfile` no autoriza a serializar todos sus campos al estudiante: la proyección servidor aplica una lista positiva de tres campos.
+
+### Binding editorial por revisión — 2026-10-14
+
+Migración 0006: `teacher_publication_candidates` vincula un borrador inmutable y un candidato
+`GENERATED_CASE_BUNDLE_V2` del mismo caso; conserva evidencia de auditoría. `teacher_publication_approvals`
+registra aprobación, docente, fecha y nota para ese candidato. Ambos registros son append-only.
+No se vuelve publicable el formato `TEACHER_CASE_DRAFT_V1`. La publicación exige la última
+revisión de autoría y archiva la publicación previa sin alterar su contenido ni sus sesiones.
+La preparación real de candidatos/auditorías desde el editor continúa pendiente; no basta
+una declaración del cliente. [Contrato y pruebas](31_TEACHER_REVIEW_PUBLICATION.md).

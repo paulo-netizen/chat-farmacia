@@ -2,7 +2,16 @@
 
 ## Baseline oficial
 
-Actualización editorial del 13 de octubre: M1/M2/M3 **PARTIAL**. Editor estructurado con
+Actualización editorial del 14 de octubre: M1/M2/M3 **PARTIAL**. Revisión y acciones explícitas
+de validación/publicación implementadas para candidatos canónicos auditados, ligadas a la
+revisión exacta. Nueva edición invalida la aprobación; la publicación conserva versiones
+anteriores. Lucía y María siguen borradores, bloqueadas por paquete/auditoría pendientes.
+No está cerrado el recorrido general de preparación del paquete desde el editor. Política
+paciente `/2` y comprobación puntual favorable de María, sin modificar su caso ni históricos.
+[Evidencia, límites y fichas clínicas](31_TEACHER_REVIEW_PUBLICATION.md).
+El desglose propuesto más abajo no modifica aún el **51.53%** acreditado.
+
+Actualización editorial histórica del 13 de octubre: M1/M2/M3 **PARTIAL**. Editor estructurado con
 borradores persistidos y prueba paciente por revisión; M2 ya no está sin iniciar. Recorrido
 real de Lucía/María comprobado con 14 inferencias y 14 conteos, sin intentos académicos.
 28 pruebas nuevas y suite final **3867 PASS / 73 SKIPPED**, TypeScript PASS; lint pendiente
@@ -189,14 +198,14 @@ dependencias. Véase la [evidencia de restauración](21_PHARMACEUTICAL_EVALUATIO
 
 Completado: lifecycle de versiones; snapshots Legacy; pinning de sesión; migraciones v2 de versionado y persistencia; boundaries de resolución ligados a versión.
 
-Entregado adicionalmente: borradores manuales `TEACHER_CASE_DRAFT_V1`, guardado en versiones con parent/autor, recuperación y control de revisión. La prueba docente fija una instantánea privada de la revisión guardada, sin sesión académica. Pendiente: integración general `TEACHER_AUTHORED` publicable, repositorio/servicio general de versiones y lifecycle editorial completo. Véanse el [modelo de datos](08_DATA_MODEL.md) y la [previsualización docente](30_TEACHER_PATIENT_PREVIEW.md).
+Entregado adicionalmente: borradores manuales `TEACHER_CASE_DRAFT_V1`, guardado en versiones con parent/autor, recuperación y control de revisión. La prueba docente fija una instantánea privada de la revisión guardada, sin sesión académica. Migración 0006 añade bindings/aprobaciones inmutables y publicación por revisión sobre paquetes canónicos preparados; probado en base desechable. Pendiente: integración general `TEACHER_AUTHORED` publicable y repositorio/servicio general de versiones. Véanse el [modelo de datos](08_DATA_MODEL.md) y la [revisión/publicación](31_TEACHER_REVIEW_PUBLICATION.md).
 
 ### M2 — Editor docente estructurado
 
 **Objetivo:** permitir autoría y revisión docente estructuradas sin depender de JSON libre.
 **Estado:** **PARTIAL — avance funcional demostrado; 0% acreditado en el cálculo histórico**.
 
-Entregado: formularios estructurados de Lucía y María, validación, guardar/cerrar/reabrir, previsualizaciones estudiante/docente y entrada «Probar paciente» con autorización servidor e instantáneas. Pendiente: editor general, revisión/publicación completa y aceptación del recorrido conversacional real. Véase la [evidencia y límites](30_TEACHER_PATIENT_PREVIEW.md).
+Entregado: formularios estructurados de Lucía y María, validación, guardar/cerrar/reabrir, previsualizaciones estudiante/docente y entrada «Probar paciente» con autorización servidor e instantáneas. Pestaña de revisión con gates visibles, confirmaciones y acciones separadas de validar/publicar. Pendiente: editor general de todos los campos canónicos, preparación del paquete y aceptación clínica de los casos; los botones no sustituyen esos requisitos. Véase la [evidencia y límites](31_TEACHER_REVIEW_PUBLICATION.md).
 
 ¹ El estado funcional sustituye «sin iniciar». No existe un desglose interno aprobado que permita convertir este recorrido parcial en un porcentaje exacto; se conserva el cómputo global 51.53% hasta acreditar el desglose, sin inventar pesos ni declarar cerrado M2.
 
@@ -207,7 +216,38 @@ Entregado: formularios estructurados de Lucía y María, validación, guardar/ce
 
 Completado parcialmente: Teaching Brief; Structured Outputs; bundles generados; receipts/provenance; validación determinista y composición server-owned.
 
-Integración parcial con el editor: borradores manuales persistidos y proyección paciente aislada para prueba docente. No equivale a integrar el generador ni aprobar los casos. Pendiente: auditor clínico separado; CIMA/AEMPS; persistencia/API del workflow generado; revisión y publicación docente completas. Véanse [generación de casos](05_CASE_GENERATION.md) y [workflow docente](06_TEACHER_WORKFLOW.md).
+Integración parcial con el editor: borradores manuales persistidos, proyección paciente aislada y servicio de revisión/publicación de candidatos canónicos auditados. No equivale a integrar el generador ni aprobar los casos. Pendiente: auditor clínico separado; CIMA/AEMPS; preparación/persistencia del workflow generado desde el editor y aceptación del recorrido general. Véanse [generación de casos](05_CASE_GENERATION.md), [workflow docente](06_TEACHER_WORKFLOW.md) y [controles entregados](31_TEACHER_REVIEW_PUBLICATION.md).
+
+#### Propuesta de desglose M1–M3 — pendiente de aprobación, sin acreditar
+
+No se ha encontrado un desglose interno aprobado para atribuir porcentajes exactos a estas
+nuevas piezas. Propuesta concreta: conservar íntegros los bloques históricos de M1 (80) y
+M3 (55), y desglosar solo sus saldos; para M2 definir por primera vez 100 puntos internos.
+Estos puntos son de progreso del proyecto, nunca pesos de notas del estudiante.
+
+| Milestone | Entregable propuesto | Puntos internos | Evidencia/estado actual |
+|---|---|---:|---|
+| M1 | Baseline histórico ya acreditado | 80 | Conservado, sin nuevo cómputo |
+| M1 | Persistencia y revisión inmutable de borradores manuales | 10 | Implementado y probado; candidato a acreditar tras aprobar este desglose |
+| M1 | Repositorio general de versiones y compatibilidad editorial completa | 10 | Parcial; no acreditar por la migración 0006 sola |
+| M2 | Autoría estructurada completa del paquete académico | 35 | Parcial: campos clínicos textuales, no todas las secciones tipadas |
+| M2 | Guardar/cerrar/reabrir y errores de edición | 15 | Demostrado |
+| M2 | Vistas estudiante/docente e información reservada | 15 | Demostrado |
+| M2 | Previsualización conversacional aislada por revisión | 15 | Implementada y comprobada puntualmente; sin aprobación clínica de casos |
+| M2 | Interfaz de revisión/validación/publicación del recorrido general | 10 | Acciones entregadas; preparación/auditoría del candidato pendientes |
+| M2 | Aceptación del editor general y usabilidad | 10 | Pendiente |
+| M3 | Baseline histórico ya acreditado | 55 | Conservado, sin nuevo cómputo |
+| M3 | Auditor clínico independiente y comprobación farmacológica | 15 | Pendiente, no sustituido por schema/compliance |
+| M3 | Integración persistida generador → candidato desde editor | 10 | Pendiente |
+| M3 | Servicio de aprobación/publicación con gates y trazabilidad | 10 | Implementado para candidato preparado; falta aceptación del recorrido general |
+| M3 | Aceptación de creación → auditoría → publicación con casos revisados | 10 | Pendiente |
+
+Totales propuestos: M1 **100**, M2 **100**, M3 **100**. Separación para evitar doble cómputo:
+M1 acredita almacenamiento/versionado; M2 interacción docente; M3 generación/auditoría y
+servicio editorial. La evidencia compartida no otorga puntos adicionales por sí misma.
+**Sin aplicar todavía este desglose:** M1 80%, M2 0% acreditado (funcionalmente PARTIAL),
+M3 55%; aportes 8.00 + 0.00 + 6.05. Proyecto **51.53%**. No se mantienen estados «sin iniciar»
+para funcionalidades ya demostradas ni se declara cerrado ningún bloque completo.
 
 ### M4 — Runtime seguro del paciente
 

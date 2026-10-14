@@ -236,19 +236,19 @@ M0/M1 y M2/M3 pueden cerrarse en paralelo, pero su deuda pendiente debe resolver
 - generalizar el borrador manual `TEACHER_CASE_DRAFT_V1` existente a contenido `TEACHER_AUTHORED` publicable;
 - completar lineage/provenance editorial general, conservando parent/autor ya persistidos;
 - completar repositorio y servicios generales de versiones;
-- exponer el lifecycle editorial completo mediante API.
+- completar el lifecycle general; ya existe API de validación/publicación para candidatos canónicos auditados y ligados a una revisión (14-10).
 
 ### M2 — editor docente
 
 - ampliar el editor estructurado existente a todos los contratos de evaluator/protocolos y controles editoriales;
-- completar aceptación conversacional, revisión y publicación; guardado, recuperación y preview de borradores ya implementados sin JSON libre.
+- completar aceptación del editor general y preparación del paquete académico; guardado, recuperación, preview y acciones de revisión/publicación ya implementados con gates, sin simular auditorías pendientes.
 
 ### M3 — generación, auditoría y publicación
 
 - añadir auditor clínico independiente;
 - integrar la validación CIMA/AEMPS acordada;
 - persistir y exponer el workflow mediante API/editor;
-- completar revisión y publicación docente.
+- conectar el productor de candidatos y el auditor real al servicio de revisión/publicación por revisión ya implementado.
 
 ### M6–M11
 
@@ -314,3 +314,26 @@ Cierre técnico de esta entrega, 13 de octubre: recorrido de ambos borradores de
 María expresa una preferencia no definida al evitar una pregunta familiar; no inventa número de hijos.
 28 pruebas nuevas PASS, suite final 3867 PASS / 73 SKIPPED, TypeScript PASS; lint no configurado.
 M1/M2/M3 PARTIAL, sin acreditar porcentaje adicional. [Contrato, evidencia y pendientes](docs/v2/30_TEACHER_PATIENT_PREVIEW.md).
+
+## Revisión y publicación docente — 2026-10-14
+
+Base 6349190. COV preservado aparte. Corregir la inferencia de preferencias ante datos ausentes
+mediante política paciente versionada, conservando la evidencia histórica. Comprobar solo el
+turno necesario con presupuesto acumulado y nuevo diario; no repetir calibraciones.
+
+Implementar revisión y aprobación por versión, con chequeos estructurales separados de auditoría
+clínica y revisión humana. La publicación reutilizará GENERATED_CASE_BUNDLE_V2 y el lifecycle
+existente; un borrador textual incompleto no se convertirá inventando personalidad, protocolos,
+rúbricas ni categorías clínicas. Sin paquete canónico validado/evidencia clínica vigente,
+validación y publicación quedan bloqueadas y se muestran los pendientes. Migración aditiva
+para candidatos y trazabilidad, probada solo en PostgreSQL desechable. Demostración con candidato
+sintético, nunca aprobación de Lucía/María. Propuesta explícita de desglose M1–M3 si no existe.
+
+Resultado: política `teacher-patient/2` distingue evasiva de preferencia inventada, conservando
+`/1`. Un turno real nuevo de María respondió de forma no informativa y fue aceptado; no se
+añadió preferencia al caso. Dos inferencias/dos conteos, 0.011496 USD nuevos calculables;
+costes desconocidos e históricos conservados. Publicación por revisión implementada para
+candidatos canónicos preparados, con auditoría obligatoria y aprobación humana independiente.
+No se ha cerrado la preparación del paquete desde el editor ni el auditor clínico real:
+Lucía y María siguen borradores. [Contrato, evidencia y fichas](docs/v2/31_TEACHER_REVIEW_PUBLICATION.md).
+Desglose M1–M3 propuesto en PROJECT_STATUS, no aplicado; global 51.53% conservado.

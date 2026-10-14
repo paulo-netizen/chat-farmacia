@@ -2,6 +2,12 @@
 
 Este documento define el flujo del profesor: creación, generación IA, revisión, edición, previsualización, validación, publicación y revisión de evaluaciones.
 
+Estado implementado al 14-10-2026: editor y preview de borradores; revisión con gates separados
+y acciones de validar/publicar por revisión para paquetes canónicos preparados. Falta integrar
+la preparación del paquete y el auditor clínico real; no se simula su aprobación. Véanse
+[controles, prueba sintética y limitaciones](31_TEACHER_REVIEW_PUBLICATION.md). Lucía y María
+siguen borradores. Los requisitos siguientes siguen siendo el contrato objetivo completo.
+
 ## 5. Ciclo de vida de los casos
 
 Estados recomendados conceptualmente:

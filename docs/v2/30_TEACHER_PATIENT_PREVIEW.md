@@ -56,3 +56,13 @@ Uso nuevo: **26.628 tokens de entrada** (16.650 lectura de caché, 9.936 escritu
 ## Pendientes
 
 Revisión clínica y de revelación de ambos borradores; integración del paquete académico completo, auditor/generador, CIMA/AEMPS y publicación explícita; permisos, retención, operación multiinstancia y política productiva de presupuesto. M1/M2/M3 permanecen parciales; M2 ya no está «sin iniciar». Sin nuevos pesos ni acreditación: M6 64%, proyecto 51.53%, M6/M6-E PARTIAL, PED2 abierto y D3B OPEN / VALIDATION DEBT.
+
+## Actualización del 14 de octubre — sin reinterpretar el registro anterior
+
+La preferencia de María se trata como una afirmación personal sin soporte, no solo como estilo.
+`teacher-patient/2` aclara generación y validación; `/1` permanece idéntico para las instantáneas
+históricas. Una nueva comprobación mínima aceptó «No sabría qué decirle sobre eso», sin añadir
+la preferencia al caso. Las acciones de validar/publicar están implementadas para candidatos
+canónicos auditados; la preparación del paquete y la auditoría clínica real siguen pendientes.
+[Evidencia, costes, límites y fichas](31_TEACHER_REVIEW_PUBLICATION.md). Este añadido sustituye
+únicamente el estado actual de esas piezas, no las cifras ni resultados históricos de arriba.

@@ -4,7 +4,7 @@ import { caseVersionIdSchema, teacherDraftFieldsSchema, type TeacherDraftRecord 
 const text = z.string().trim().min(1).max(4000);
 export const teacherPatientProjectionSchema = z.object({
   contentFormat: z.literal('TEACHER_DRAFT_PATIENT_V1'),
-  projectionVersion: z.literal('teacher-patient/1'),
+  projectionVersion: z.enum(['teacher-patient/1','teacher-patient/2']),
   caseVersionId: caseVersionIdSchema,
   identity: z.object({nombre:text.max(100),edad:z.number().int().min(0).max(120),sexo:text.max(60)}).strict(),
   initialDemand: text,
@@ -26,7 +26,7 @@ export function projectTeacherPatient(draft: TeacherDraftRecord): TeacherPatient
   }
   if(draft.status!=='TEACHER_DRAFT')throw new TeacherPatientProjectionError(['Estado borrador']);
   const f=parsed.data;
-  return teacherPatientProjectionSchema.parse({contentFormat:'TEACHER_DRAFT_PATIENT_V1',projectionVersion:'teacher-patient/1',caseVersionId:draft.versionId,
+  return teacherPatientProjectionSchema.parse({contentFormat:'TEACHER_DRAFT_PATIENT_V1',projectionVersion:'teacher-patient/2',caseVersionId:draft.versionId,
     identity:f.identity,initialDemand:f.initialDemand,treatment:f.treatment,
     facts:f.facts.map(x=>({factId:x.id,value:x.value,disclosure:x.disclosure}))});
 }
@@ -43,3 +43,14 @@ No conviertas autorreporte de tomas en una clasificación global de adherencia. 
 Para información ausente, no inventes valores positivos, negativos ni historia de desconocimiento. Puedes responder de forma no informativa («No sabría qué decirle sobre eso») sin afirmar un hecho clínico, familiar o social nuevo.
 No amplíes datos por inferencia: vivir sola no dice si tiene hijos; no disponer de medición no demuestra normalidad.
 `.trim();
+
+// Keep /1 byte-for-byte for pinned historical conversations.
+export function teacherPatientRules(projection: Pick<TeacherPatientProjection,'projectionVersion'>): string {
+  if (projection.projectionVersion === 'teacher-patient/1') return TEACHER_PATIENT_RULES;
+  return TEACHER_PATIENT_RULES.replace('teacher-patient/1','teacher-patient/2') + `
+PREFERENCIAS Y EVASIVAS
+Una evasiva no autoriza inventar una preferencia, emoción, intención o motivo del personaje. Decir que prefiere no hablar de algo atribuye una preferencia personal y requiere soporte explícito en sus hechos o reglas de revelación; la mera ausencia del dato no lo proporciona.
+Ante un dato ausente, utiliza una respuesta no informativa sin añadir una actitud ni una explicación personal. No inventes vergüenza, rechazo, desconfianza ni recuerdos para justificarla.
+Una preferencia expresamente definida en el caso puede representarse según su regla de revelación. No se prohíben las evasivas sustentadas en el personaje.
+Para la clasificación de seguridad, una preferencia o motivo personal sin soporte es UNSUPPORTED_FACT; una respuesta no informativa que no afirma hechos nuevos no lo es por sí sola.`;
+}

@@ -4,9 +4,10 @@ import Link from 'next/link';
 import { adherenceLabels, studentDraftPreview, type TeacherDraftFields, type TeacherDraftRecord } from '@/lib/cases/v2/teacher-case-draft';
 import styles from './editor.module.css';
 import PatientPreview from './PatientPreview';
+import PublicationReview from './PublicationReview';
 
 type Summary = {caseId:string;title:string;revision:number};
-type Section = 'edit'|'student'|'teacher'|'test';
+type Section = 'edit'|'student'|'teacher'|'test'|'review';
 async function request(url: string, init?: RequestInit) {
   const res=await fetch(url,{...init,cache:'no-store',headers:{'Content-Type':'application/json'}});
   const data=await res.json();
@@ -44,7 +45,7 @@ export default function TeacherDraftEditor() {
   let preview: ReturnType<typeof studentDraftPreview> | null=null;
   if(f&&section==='student'){try{preview=studentDraftPreview(f);}catch{ /* Keep incomplete edits editable. */ }}
   return <main className={styles.main}>
-    <header><Link href="/profesor/casos">← Casos del docente</Link><p className={styles.kicker}>AUTORÍA · SPFA 2026</p><h1>Borradores de desarrollo</h1><p>Edita hechos y criterios, guarda una nueva versión y revisa las dos vistas. Ninguna acción de esta página publica el caso ni crea una sesión de estudiante.</p></header>
+    <header><Link href="/profesor/casos">← Casos del docente</Link><p className={styles.kicker}>AUTORÍA · SPFA 2026</p><h1>Borradores de desarrollo</h1><p>Edita hechos y criterios, guarda una nueva versión y revisa las dos vistas. La publicación requiere auditoría y aprobación explícitas de una revisión concreta. La previsualización no crea sesiones de estudiante.</p></header>
     <div className={styles.layout}>
       <aside className={styles.sidebar}><h2>Casos de partida</h2><p>Al abrirlos por primera vez se guarda una copia de trabajo para tu cuenta. Volver a abrir conserva tus cambios.</p>
         <button disabled={busy} onClick={()=>load('lucia',true)}>Abrir Lucía · Indicación</button><button disabled={busy} onClick={()=>load('maria',true)}>Abrir María · Dispensación</button>
@@ -54,8 +55,9 @@ export default function TeacherDraftEditor() {
         {error&&<div role="alert" className={styles.error}>{error}</div>}{notice&&<div role="status" className={styles.notice}>{notice}</div>}
         {!f||!draft?<section className={styles.panel}><h2>Elige un caso para comenzar</h2><p>La solución docente y los tratamientos son información reservada. Las plantillas y sus etiquetas requieren revisión docente; no acreditan puntos.</p></section>:<>
           <div className={styles.toolbar}><span className={styles.badge}>BORRADOR · v{draft.revision}{dirty?' · Sin guardar':''}</span><button disabled={busy||!dirty} onClick={save}>{busy?'Procesando…':'Guardar borrador'}</button><button disabled={busy} onClick={()=>{if(dirty){setError('Hay cambios sin guardar. Guarda o utiliza «Descartar cambios y cerrar».');return;}setDraft(null);setNotice('Borrador cerrado. Puedes volver a abrirlo desde Guardados.');}}>Cerrar</button>{dirty&&<button disabled={busy} onClick={()=>{setDraft(null);setDirty(false);setError('');}}>Descartar cambios y cerrar</button>}</div>
-          <nav className={styles.tabs} aria-label="Vistas del borrador">{(['edit','student','teacher'] as const).map((tab,i)=><button key={tab} aria-pressed={section===tab} onClick={()=>setSection(tab)}>{['Editar','Vista estudiante','Vista docente'][i]}</button>)}</nav>
+          <nav className={styles.tabs} aria-label="Vistas del borrador">{(['edit','student','teacher','review'] as const).map((tab,i)=><button key={tab} aria-pressed={section===tab} onClick={()=>setSection(tab)}>{['Editar','Vista estudiante','Vista docente','Revisión y publicación'][i]}</button>)}</nav>
           <fieldset disabled={busy} className={styles.editor}>
+          {section==='review'&&<PublicationReview key={draft.versionId} draft={draft} dirty={dirty}/>}
           {section==='test'&&<PatientPreview key={draft.versionId} draft={draft} onBack={()=>setSection('edit')}/>}
           {section!=='test'&&<p><button disabled={dirty||busy} onClick={()=>setSection('test')}>Probar paciente</button>{dirty&&' Guarda los cambios antes de probar esta revisión.'}</p>}
           {section==='student'&&!preview&&<p role="alert">Completa nombre, edad y sexo para previsualizar la ficha.</p>}
@@ -72,7 +74,7 @@ export default function TeacherDraftEditor() {
             <section className={styles.panel}><h2>Cuestionario reservado</h2>{f.questionnaire.map((q,i)=><article key={i}><Field label={`Pregunta ${i+1}`} value={q.question} multiline onChange={question=>change({...f,questionnaire:f.questionnaire.map((v,j)=>j===i?{...v,question}:v)})}/><Field label={`Respuesta docente ${i+1}`} value={q.answer} multiline onChange={answer=>change({...f,questionnaire:f.questionnaire.map((v,j)=>j===i?{...v,answer}:v)})}/>{refs(q.factRefs,factRefs=>change({...f,questionnaire:f.questionnaire.map((v,j)=>j===i?{...v,factRefs}:v)}))}<button onClick={()=>change({...f,questionnaire:f.questionnaire.filter((_,j)=>j!==i)})}>Eliminar pregunta {i+1}</button></article>)}<button onClick={()=>change({...f,questionnaire:[...f.questionnaire,{question:'',answer:'',factRefs:[]}]})}>Añadir pregunta</button></section>
           </>}
           </fieldset>
-          <p className={styles.footer}>La prueba docente usa la revisión guardada y requiere habilitación privada del runtime. Pendientes: revisión clínica específica, integración del paquete académico y publicación explícita. No introducir datos identificativos de pacientes reales.</p>
+          <p className={styles.footer}>La prueba docente usa la revisión guardada y requiere habilitación privada del runtime. La pestaña Revisión y publicación muestra los requisitos pendientes del paquete académico y de su auditoría. No introducir datos identificativos de pacientes reales.</p>
         </>}
       </div>
     </div>

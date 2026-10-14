@@ -24,7 +24,11 @@ const {Pool}=require('pg');const assert=require('node:assert/strict');
    for(const method of ['GET','POST','DELETE'])assert.equal((await fetch(base+'/api/teacher-previews/'+view.id,{method,headers:{cookie:student,origin:base}})).status,403);
    const closed=await fetch(base+'/api/teacher-previews/'+view.id,{method:'DELETE',headers:{cookie:teacher,origin:base}});assert.equal(closed.status,200);assert.equal((await closed.json()).status,'CLOSED');
   }
-  for(const table of ['sessions','messages','evaluations','case_assignments']) assert.equal((await db.query(`SELECT count(*)::int n FROM ${table}`)).rows[0].n,0);
+  // Other isolated selection tests may deliberately create synthetic sessions.
+  // Preview must not create academic data for either saved demonstration case.
+  const cases=list.drafts.map(d=>d.caseId);
+  for(const table of ['sessions','case_assignments'])assert.equal((await db.query(`SELECT count(*)::int n FROM ${table} WHERE case_id=ANY($1::bigint[])`,[cases])).rows[0].n,0);
+  for(const table of ['messages','evaluations'])assert.equal((await db.query(`SELECT count(*)::int n FROM ${table} r JOIN sessions s ON s.id=r.session_id WHERE s.case_id=ANY($1::bigint[])`,[cases])).rows[0].n,0);
   console.log('PASS: both saved drafts; authenticated HTTP projection; student/anonymous denied; zero academic sessions/messages/evaluations/assignments.');
  }finally{await db.end();}
 })().catch(()=>{console.error('Disposable HTTP verification failed; no sensitive response recorded.');process.exitCode=1;});

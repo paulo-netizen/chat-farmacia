@@ -32,16 +32,17 @@ export function createTeacherDraftStore(db: Pick<Pool, 'connect'>) {
     if (!caseIdValid(caseId)) throw new TeacherDraftError('NOT_FOUND',404);
     const owner = await c.query('SELECT id FROM cases WHERE id=$1 AND (created_by=$2 OR $3) FOR UPDATE', [caseId, actorId, admin]);
     if (!owner.rowCount) throw new TeacherDraftError('NOT_FOUND',404);
-    const row = (await c.query('SELECT * FROM case_versions WHERE case_id=$1 ORDER BY version_number DESC LIMIT 1', [caseId])).rows[0];
+    const row = (await c.query("SELECT * FROM case_versions WHERE case_id=$1 AND content_format='TEACHER_CASE_DRAFT_V1' ORDER BY version_number DESC LIMIT 1", [caseId])).rows[0];
     if (!row || row.content_format !== TEACHER_DRAFT_FORMAT) throw new TeacherDraftError('NOT_FOUND',404);
     return record(row);
   }
   async function insert(c: PoolClient, actorId: string, caseId: string, templateId: TeacherDraftTemplateId, fields: TeacherDraftFields, parent?: TeacherDraftRecord) {
     const id = `casever_${randomUUID()}`;
+    const next = (await c.query('SELECT COALESCE(MAX(version_number),0)+1 n FROM case_versions WHERE case_id=$1',[caseId])).rows[0].n;
     const content = { schemaVersion: 'teacher-case-draft/1', caseVersionId: id, templateId, reference: SPFA_2026_REFERENCE, fields };
     const r = await c.query(`INSERT INTO case_versions (id,case_id,version_number,parent_version_id,status,source_kind,content_format,content,created_by)
       VALUES ($1,$2,$3,$4,'TEACHER_DRAFT','TEACHER_AUTHORED',$5,$6,$7) RETURNING *`,
-      [id,caseId,(parent?.revision ?? 0)+1,parent?.versionId ?? null,TEACHER_DRAFT_FORMAT,content,actorId]);
+      [id,caseId,next,parent?.versionId ?? null,TEACHER_DRAFT_FORMAT,content,actorId]);
     return record(r.rows[0]);
   }
   return {
