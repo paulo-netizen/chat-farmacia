@@ -337,3 +337,35 @@ candidatos canónicos preparados, con auditoría obligatoria y aprobación human
 No se ha cerrado la preparación del paquete desde el editor ni el auditor clínico real:
 Lucía y María siguen borradores. [Contrato, evidencia y fichas](docs/v2/31_TEACHER_REVIEW_PUBLICATION.md).
 Desglose M1–M3 propuesto en PROJECT_STATUS, no aplicado; global 51.53% conservado.
+
+## Preparación y auditoría de borradores — 2026-10-14
+
+Base 7f78a0e. Conservar COV fuera de la entrega. Preparar desde la revisión guardada un
+expediente académico versionado con fuentes y proyecciones separadas, requisitos y cuestionario
+sin completar datos mediante inferencias. Añadir comprobación CIMA con procedencia, auditoría
+acotada y pendientes explícitos; integrar su lectura en revisión/publicación. Registrar cada
+preparación de forma inmutable, con autorización servidor y comprobación de revisión vigente.
+Probar en base desechable, incluyendo indisponibilidad de fuentes, edición concurrente y ausencia
+de publicación/sesiones. Sin aprobar Lucía/María ni modificar contratos de evaluación COV.
+
+### Open decisions — preparación clínica
+
+El contrato académico publicado exige RNM explícito (`no_rnm`, riesgo o RNM) y derivación
+binaria. Los borradores no acreditan ausencia de RNM y Lucía tiene la derivación pendiente
+del protocolo específico. No convertir «no determinable» en `no_rnm` ni en «no derivar».
+Personalidad, taxonomías aplicadas y opciones calificables tampoco pueden inventarse para
+satisfacer el schema. La preparación debe localizar estos bloqueos antes de construir el
+candidato ejecutable; no presentar el expediente de revisión como bundle nativo validado.
+
+Resultado del 16-10-2026: preparación inmutable integrada en revisión/publicación, consulta CIMA
+con certificado verificado y auditor separado ejecutado desde el editor para Lucía v3 y María v2.
+Hallazgos visibles y conservados; ambas siguen sin aprobación/candidato publicable. Se exponen los
+cinco campos/decisiones pendientes, sin construir un bundle ficticio. Dos conteos/dos inferencias,
+0.099873 USD nuevos calculables; acumulado 0.3457322 USD, reservas 3.053625 USD y 60 conteos de
+coste desconocido. Sin nuevas solicitudes inciertas ni calibración COV.
+
+Verificación: 31/31 focalizadas, 6/6 preparación/auditoría PostgreSQL desechable y 7/7 regresión
+de publicación; suite offline 3909 PASS / 86 SKIPPED, TypeScript PASS. Recorrido de ambos casos
+en navegador con fuentes, auditoría y gates bloqueados. [Fichas completas y límites](docs/v2/32_TEACHER_ACADEMIC_PREPARATION.md).
+Propuesta canónica explícita en PROJECT_STATUS: M1 90, M2 45, M3 65 y global 57.23% **si se
+aprueba el desglose**, sin aplicarlo automáticamente; 51.53% acreditado conservado.

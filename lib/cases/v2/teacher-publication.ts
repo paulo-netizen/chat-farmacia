@@ -42,6 +42,7 @@ export function createTeacherPublicationStore(db:Pick<Pool,'connect'>) {
  async function inspect(c:PoolClient,caseId:string) {
   const draft=(await c.query("SELECT * FROM case_versions WHERE case_id=$1 AND content_format='TEACHER_CASE_DRAFT_V1' ORDER BY version_number DESC LIMIT 1",[caseId])).rows[0];
   if(!draft)throw new TeacherDraftError('NOT_FOUND',404);
+  const preparation=(await c.query('SELECT p.id,p.created_at,p.package,p.audit,a.result clinical_result FROM teacher_academic_preparations p LEFT JOIN teacher_clinical_audits a ON a.preparation_id=p.id WHERE p.draft_version_id=$1 AND p.case_id=$2 ORDER BY p.created_at DESC,p.id DESC LIMIT 1',[draft.id,caseId])).rows[0]??null;
   const row=(await c.query(`SELECT v.*,p.audit_status,p.audit_kind,p.audit_reference,a.reviewed_at,a.reviewer_id,a.note
    FROM teacher_publication_candidates p JOIN case_versions v ON v.id=p.candidate_version_id
    LEFT JOIN teacher_publication_approvals a ON a.candidate_version_id=v.id
@@ -52,7 +53,7 @@ export function createTeacherPublicationStore(db:Pick<Pool,'connect'>) {
   const checks={draftStructure:validDraft?'PASS':'FAIL',canonicalPackage:row?(checkPublicationPackage(row)?'PASS':'FAIL'):'MISSING',
    requirements:applicabilityResolved?'PASS':'PENDING',clinicalAudit:row?.audit_status??'PENDING',humanReview:row?.reviewed_at?'APPROVED':'PENDING'};
   const ready=checks.draftStructure==='PASS'&&checks.requirements==='PASS'&&checks.canonicalPackage==='PASS'&&['PASS','WARNING'].includes(checks.clinicalAudit);
-  return {draft,row,view:{draftVersionId:draft.id,revision:draft.version_number,checks,candidate:row?{versionId:row.id,status:row.status,
+  return {draft,row,view:{draftVersionId:draft.id,revision:draft.version_number,preparation,checks,candidate:row?{versionId:row.id,status:row.status,
     auditKind:row.audit_kind,auditReference:row.audit_reference,reviewedAt:row.reviewed_at??null,reviewerId:row.reviewer_id??null,note:row.note??null,
     // Teacher-only API. Full canonical content must be available for correspondence review.
     content:row.content}:null,

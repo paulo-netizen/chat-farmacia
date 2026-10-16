@@ -2,7 +2,15 @@
 
 ## Baseline oficial
 
-Actualización editorial del 14 de octubre: M1/M2/M3 **PARTIAL**. Revisión y acciones explícitas
+Actualización editorial del 16 de octubre: M1/M2/M3 **PARTIAL**. Expedientes por revisión
+preparados desde Lucía/María y recuperados en revisión/publicación; fuentes CIMA con procedencia
+y dos juicios clínicos IA reales conservados, pendientes de aprobación humana. El expediente
+no es aún el bundle ejecutable: faltan decisiones/campos nativos y representación de incertidumbre.
+Ambos casos siguen borradores. [Fichas completas, auditoría y límites](32_TEACHER_ACADEMIC_PREPARATION.md).
+Propuesta concreta si se acepta el desglose: M1 90%, M2 45%, M3 65%, proyecto **57.23%**.
+No aplicada: el progreso acreditado sigue siendo **51.53%**.
+
+Actualización editorial histórica del 14 de octubre: M1/M2/M3 **PARTIAL**. Revisión y acciones explícitas
 de validación/publicación implementadas para candidatos canónicos auditados, ligadas a la
 revisión exacta. Nueva edición invalida la aprobación; la publicación conserva versiones
 anteriores. Lucía y María siguen borradores, bloqueadas por paquete/auditoría pendientes.
@@ -216,7 +224,7 @@ Entregado: formularios estructurados de Lucía y María, validación, guardar/ce
 
 Completado parcialmente: Teaching Brief; Structured Outputs; bundles generados; receipts/provenance; validación determinista y composición server-owned.
 
-Integración parcial con el editor: borradores manuales persistidos, proyección paciente aislada y servicio de revisión/publicación de candidatos canónicos auditados. No equivale a integrar el generador ni aprobar los casos. Pendiente: auditor clínico separado; CIMA/AEMPS; preparación/persistencia del workflow generado desde el editor y aceptación del recorrido general. Véanse [generación de casos](05_CASE_GENERATION.md), [workflow docente](06_TEACHER_WORKFLOW.md) y [controles entregados](31_TEACHER_REVIEW_PUBLICATION.md).
+Integración parcial con el editor: borradores manuales persistidos, proyección paciente aislada y servicio de revisión/publicación de candidatos canónicos auditados. El 16 de octubre se añade expediente inmutable, consulta CIMA y auditor independiente con doce dimensiones, ejecutado una vez sobre cada borrador real de desarrollo. No equivale a integrar el generador, producir el bundle nativo completo ni aprobar los casos. Pendiente: completar decisiones/representaciones nativas, revisión clínica humana, preparación del candidato ejecutable e integración del workflow generado. Véanse [generación](05_CASE_GENERATION.md), [workflow docente](06_TEACHER_WORKFLOW.md) y [auditoría y límites](32_TEACHER_ACADEMIC_PREPARATION.md).
 
 #### Propuesta de desglose M1–M3 — pendiente de aprobación, sin acreditar
 
@@ -225,22 +233,22 @@ nuevas piezas. Propuesta concreta: conservar íntegros los bloques históricos d
 M3 (55), y desglosar solo sus saldos; para M2 definir por primera vez 100 puntos internos.
 Estos puntos son de progreso del proyecto, nunca pesos de notas del estudiante.
 
-| Milestone | Entregable propuesto | Puntos internos | Evidencia/estado actual |
-|---|---|---:|---|
-| M1 | Baseline histórico ya acreditado | 80 | Conservado, sin nuevo cómputo |
-| M1 | Persistencia y revisión inmutable de borradores manuales | 10 | Implementado y probado; candidato a acreditar tras aprobar este desglose |
-| M1 | Repositorio general de versiones y compatibilidad editorial completa | 10 | Parcial; no acreditar por la migración 0006 sola |
-| M2 | Autoría estructurada completa del paquete académico | 35 | Parcial: campos clínicos textuales, no todas las secciones tipadas |
-| M2 | Guardar/cerrar/reabrir y errores de edición | 15 | Demostrado |
-| M2 | Vistas estudiante/docente e información reservada | 15 | Demostrado |
-| M2 | Previsualización conversacional aislada por revisión | 15 | Implementada y comprobada puntualmente; sin aprobación clínica de casos |
-| M2 | Interfaz de revisión/validación/publicación del recorrido general | 10 | Acciones entregadas; preparación/auditoría del candidato pendientes |
-| M2 | Aceptación del editor general y usabilidad | 10 | Pendiente |
-| M3 | Baseline histórico ya acreditado | 55 | Conservado, sin nuevo cómputo |
-| M3 | Auditor clínico independiente y comprobación farmacológica | 15 | Pendiente, no sustituido por schema/compliance |
-| M3 | Integración persistida generador → candidato desde editor | 10 | Pendiente |
-| M3 | Servicio de aprobación/publicación con gates y trazabilidad | 10 | Implementado para candidato preparado; falta aceptación del recorrido general |
-| M3 | Aceptación de creación → auditoría → publicación con casos revisados | 10 | Pendiente |
+| Milestone | Entregable propuesto | Puntos internos | Acreditar si se acepta | Evidencia/pendiente |
+|---|---|---:|---:|---|
+| M1 | Baseline histórico | 80 | 80 | Ya acreditado; sin duplicarlo |
+| M1 | Persistencia y revisión inmutable de borradores manuales | 10 | 10 | Guardado, concurrencia, historial y auditorías por revisión probados en PostgreSQL desechable |
+| M1 | Repositorio general de versiones y compatibilidad editorial completa | 10 | 0 | Parcial; falta autoría nativa general |
+| M2 | Autoría estructurada completa del paquete académico | 35 | 0 | Expediente y campos clínicos disponibles; no todas las secciones nativas |
+| M2 | Guardar/cerrar/reabrir y errores de edición | 15 | 15 | Recorrido de interfaz y regresiones de persistencia |
+| M2 | Vistas estudiante/docente e información reservada | 15 | 15 | DTO inicial de tres campos, autorización y separación verificadas |
+| M2 | Previsualización conversacional aislada por revisión | 15 | 15 | Instantáneas, controles y comprobación puntual real histórica; sin aprobación académica |
+| M2 | Interfaz general de revisión/validación/publicación | 10 | 0 | Acciones y auditoría visibles; falta preparar candidato nativo desde ambos casos |
+| M2 | Aceptación del editor general y usabilidad | 10 | 0 | Pendiente |
+| M3 | Baseline histórico | 55 | 55 | Ya acreditado; sin duplicarlo |
+| M3 | Auditor clínico independiente y comprobación farmacológica | 15 | 0 | Implementado y ejecutado puntualmente; faltan aceptación de calidad y cobertura clínica general |
+| M3 | Integración persistida generador → candidato desde editor | 10 | 0 | Pendiente |
+| M3 | Servicio de aprobación/publicación con gates y trazabilidad | 10 | 10 | Gates, permisos, versiones, archivo y selección probados con paquete sintético; no certifica clínica |
+| M3 | Aceptación de creación → auditoría → publicación con casos revisados | 10 | 0 | Pendiente; Lucía y María no publicadas |
 
 Totales propuestos: M1 **100**, M2 **100**, M3 **100**. Separación para evitar doble cómputo:
 M1 acredita almacenamiento/versionado; M2 interacción docente; M3 generación/auditoría y
@@ -248,6 +256,13 @@ servicio editorial. La evidencia compartida no otorga puntos adicionales por sí
 **Sin aplicar todavía este desglose:** M1 80%, M2 0% acreditado (funcionalmente PARTIAL),
 M3 55%; aportes 8.00 + 0.00 + 6.05. Proyecto **51.53%**. No se mantienen estados «sin iniciar»
 para funcionalidades ya demostradas ni se declara cerrado ningún bloque completo.
+
+**Cálculo si Paulo acepta la propuesta:** M1 90/100 × 10% = **9.00** puntos globales;
+M2 45/100 × 8% = **3.60**; M3 65/100 × 11% = **7.15**. Los otros milestones aportan
+**37.48** sin cambios: `37.48 + 9.00 + 3.60 + 7.15 = 57.23%`.
+Incremento propuesto **5.70** puntos, no aplicado. Los 15 puntos del auditor no se conceden
+por obtener dos respuestas válidas. No se atribuyen puntos independientes a migraciones,
+auditorías o borradores. Fuente canónica: este documento.
 
 ### M4 — Runtime seguro del paciente
 

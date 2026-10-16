@@ -37,6 +37,8 @@ describe.skipIf(!enabled)('publication in verified disposable PostgreSQL only',(
    for(const f of ['0001_v1_baseline.sql','0002_v2_case_versioning.sql','0003_v2_spfa_evaluation_persistence.sql','0004_v2_pharmaceutical_evaluation_persistence.sql','0005_v2_teacher_case_drafts.sql'])await db.query(readFileSync(`db/migrations/${f}`,'utf8'));
   }
   if(!(await db.query("SELECT to_regclass('public.teacher_publication_candidates') t")).rows[0].t)await db.query(readFileSync('db/migrations/0006_v2_teacher_publication.sql','utf8'));
+  if(!(await db.query("SELECT to_regclass('public.teacher_academic_preparations') t")).rows[0].t)await db.query(readFileSync('db/migrations/0007_v2_teacher_preparation.sql','utf8'));
+  if(!(await db.query("SELECT to_regclass('public.teacher_clinical_audits') t")).rows[0].t)await db.query(readFileSync('db/migrations/0008_v2_teacher_clinical_audits.sql','utf8'));
  });
  beforeEach(async()=>{actor=await user('teacher');other=await user('teacher');student=await user('student');});
  afterAll(async()=>{await db?.end();});

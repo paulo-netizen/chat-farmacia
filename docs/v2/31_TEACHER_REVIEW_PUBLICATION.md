@@ -3,6 +3,9 @@
 Entrega del 14 de octubre de 2026; base `634919029d27077c5324e088176c9eddd4d16246`.
 Complementa [el editor](28_TEACHER_DRAFT_EDITOR_SPFA_2026.md) y [la prueba paciente](30_TEACHER_PATIENT_PREVIEW.md).
 
+Registro histórico de esa entrega. El 16 de octubre se añadió [preparación y auditoría real](32_TEACHER_ACADEMIC_PREPARATION.md)
+de los expedientes de Lucía/María; el paquete nativo completo y su aprobación siguen pendientes.
+
 ## Resultado y límite funcional
 
 El editor permite revisar el contenido reservado, consultar requisitos de publicación y ejecutar
