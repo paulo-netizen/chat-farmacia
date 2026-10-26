@@ -131,7 +131,7 @@ function buildTargets(reference: PharmaceuticalClinicalReferenceV2): Pharmaceuti
   for (const assessment of conclusions.rnmAssessments) {
     const ref = conclusionRef(assessment.conclusionId);
     add(targets, caseId, 'IDENTIFICATION', 'RNM_STATUS', ref, { kind: 'ENUM', value: assessment.value.status });
-    if (assessment.value.status !== 'no_rnm') {
+    if (assessment.value.status !== 'no_rnm' && assessment.value.status !== 'not_determinable') {
       if (assessment.value.classification !== undefined) {
         add(targets, caseId, 'INTERPRETATION', 'RNM_CLASSIFICATION', ref, { kind: 'TAXONOMY_TERM', value: taxonomy(assessment.value.classification) });
       }

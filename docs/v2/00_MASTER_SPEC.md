@@ -2252,3 +2252,8 @@ Dispensación: verificar destinatario y cuestiones normativas; distinguir inicio
 Los PRM son posibles causas, no resultados clínicos; no inferir RNM manifestado de omisiones aisladas (pp. 33–37, 44–46, 54–55). La falta de conocimiento del uso no aplica en inicio (p. 34). En adherencia, ausencia de omisiones referidas no equivale a adherencia global demostrada: explicitar métodos, periodo y límites; conservar no determinable y no aplicable según corresponda (pp. 80–82). El contrato ya admite el tipo errático; se alinea su lista documental con p. 81.
 
 Un Episodio de Seguimiento de una incidencia no equivale al Servicio de Seguimiento Farmacoterapéutico (p. 44). No se amplía esta entrega a servicios adicionales, puntuaciones o resultados longitudinales obligatorios.
+
+
+### Autoría nativa versionada — 25-10-2026
+
+El borrador docente estructurado puede convertirse directamente a `TEACHER_CASE_BUNDLE_V1`, conservando revisión y procedencia, sin expediente intermedio ni publicación automática. `rnm-assessment/2` representa RNM no determinable con razón explícita; no es ausencia ni riesgo confirmado. Perfil, requisitos y cuestionario propuestos requieren revisión. Las dimensiones opcionales no definidas usan `authoring-unknown/1`; no se inventan valores negativos. La auditoría y aprobación quedan pendientes para cada candidato. Contratos y sesiones históricos no se recalifican. [Contrato, propuestas completas y límites](33_NATIVE_TEACHER_AUTHORING.md).

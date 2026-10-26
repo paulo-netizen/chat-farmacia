@@ -14,6 +14,12 @@ export default function PublicationReview({draft,dirty}:{draft:TeacherDraftRecor
  const [data,setData]=useState<any>(null),[error,setError]=useState(''),[busy,setBusy]=useState(false),[note,setNote]=useState('');
  const [checks,setChecks]=useState<Record<string,boolean>>({});
  const [sources,setSources]=useState<string[]>([]);
+ const [nativeIssues,setNativeIssues]=useState<{field:string;decision:string}[]>([]);
+ async function convert(){setBusy(true);setError('');try{
+  const response=await fetch(`/api/teacher-drafts/${draft.caseId}/native`,{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({expectedDraftVersionId:draft.versionId})});
+  const result=await response.json();if(!response.ok)throw Error(`${result.error??'Conversión no confirmada.'}${result.fields?.length?' Campos: '+result.fields.join(', '):''}`);
+  setNativeIssues(result.missing??[]);await load();
+ }catch(e){setError(e instanceof Error?e.message:'Conversión no confirmada.');}finally{setBusy(false);}}
  async function load(init?:RequestInit){
   const r=await fetch(`/api/teacher-drafts/${draft.caseId}/review`,{...init,cache:'no-store',headers:{'Content-Type':'application/json'}});
   const d=await r.json();if(!r.ok)throw Error(d.error??'Revisión no disponible.');setData(d);
@@ -38,11 +44,13 @@ export default function PublicationReview({draft,dirty}:{draft:TeacherDraftRecor
   <p>La estructura correcta no acredita coherencia clínica. La auditoría tampoco sustituye tu revisión humana. Validar registra la aprobación de esta revisión; publicar es una acción distinta.</p>
   {error&&<p role="alert">{error}</p>}
   {dirty&&<p>Guarda los cambios antes de revisar. Toda nueva revisión requiere su propia aprobación.</p>}
-  <fieldset disabled={busy||dirty}><legend>Preparar expediente de esta revisión</legend>
+  <section aria-label="Conversión nativa"><h3>Crear paquete académico desde la revisión guardada</h3><p>Convierte hechos, perfil, evaluación, protocolo y cuestionario con validación nativa. No crea otro expediente, no ejecuta IA ni aprueba o publica el caso.</p><button disabled={busy||dirty} onClick={convert}>Convertir a paquete nativo</button>{nativeIssues.length>0&&<ul role="alert">{nativeIssues.map((x,i)=><li key={i}><strong>{x.field}</strong>: {x.decision}</li>)}</ul>}</section>
+  {!draft.fields.nativeAuthoring&&<fieldset disabled={busy||dirty}><legend>Preparar expediente de esta revisión</legend>
    <p>Conserva hechos, proyecciones, protocolo, solución y cuestionario sin rellenar lagunas. Selecciona las fichas oficiales que deseas consultar como comparación; no se atribuye una marca al paciente. Consultar CIMA no ejecuta una auditoría clínica IA ni aprueba la pauta individual.</p>
    {([['metformin850','Metformina 850 mg · CIMA 68167'],['enalapril20','Enalapril 20 mg · CIMA 63355']] as const).map(([key,label])=><label key={key} style={{display:'block'}}><input type="checkbox" checked={sources.includes(key)} onChange={e=>setSources(e.target.checked?[...sources,key]:sources.filter(s=>s!==key))}/>{label}</label>)}
    <button onClick={prepare}>Preparar y comprobar fuentes</button>
-  </fieldset>
+  </fieldset>}
+  {draft.fields.nativeAuthoring&&<p>La auditoría de revisiones anteriores no aprueba este paquete. El candidato nativo permanece con auditoría pendiente; no se crea otro expediente.</p>}
   {data&&<><ul><li>Estructura del borrador: {data.checks.draftStructure}</li><li>Aplicabilidad de requisitos: {data.checks.requirements}</li><li>Paquete académico canónico: {data.checks.canonicalPackage}</li><li>Auditoría clínica: {data.checks.clinicalAudit}</li><li>Revisión humana: {data.checks.humanReview}</li></ul>
    {data.preparation&&<section aria-label="Expediente académico preparado"><h3>Expediente conservado para revisión</h3>
     <p>Revisión {data.preparation.package.sourceRevision} · {data.preparation.created_at}. Vinculado a {data.preparation.package.draftVersionId}.</p>

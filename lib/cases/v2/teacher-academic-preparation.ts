@@ -5,6 +5,7 @@ import { SPFA_2026_REFERENCE, teacherDraftFieldsSchema, type TeacherDraftRecord 
 import { projectTeacherPatient } from './teacher-patient-projection';
 import { createStudentCasePublicData } from '../student-session-dto';
 import { teacherOfficialFetch } from './teacher-official-fetch';
+import {teacherNativeIssues} from './build-teacher-native-package';
 
 export const PREPARATION_VERSION = 'teacher-academic-preparation/1';
 export const sourceCatalog = {
@@ -60,7 +61,7 @@ export function prepareAcademicReview(input:TeacherDraftRecord) {
       questionnaire:f.questionnaire.map((q,i)=>({id:`question-${i+1}`,...q,format:'OPEN_RESPONSE_REVIEW' as const,approval:'PROPOSED' as const})),
     },
     // This is a complete review dossier, NOT a fabricated native execution bundle.
-    nativePackage:{status:'BLOCKED' as const,format:'GENERATED_CASE_BUNDLE_V2',missing:[
+    nativePackage:f.nativeAuthoring?{status:teacherNativeIssues(draft).length?'BLOCKED':'AUTHORING_COMPLETE',format:'TEACHER_CASE_BUNDLE_V1',missing:teacherNativeIssues(draft)}:{status:'BLOCKED' as const,format:'GENERATED_CASE_BUNDLE_V2',missing:[
       {code:'COMMUNICATION_PROFILE_UNDEFINED',field:'patient.communicationProfile',decision:'Definir explícitamente el perfil de representación; no inferir personalidad de la adherencia.'},
       {code:'RNM_DECISION_UNRESOLVED',field:'evaluator.rnmAssessments',decision:'El contrato nativo exige RNM/riesgo/no RNM. No determinable no equivale a ausencia. Conservar la incertidumbre y resolver su representación antes de publicar.'},
       {code:'REFERRAL_DECISION_UNRESOLVED',field:'evaluator.referral',decision:'Completar la decisión y los criterios de derivación con su fuente y aplicabilidad; no inferir no derivación.'},

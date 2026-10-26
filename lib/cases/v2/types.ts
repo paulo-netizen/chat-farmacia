@@ -52,6 +52,7 @@ export type DisclosureDelay =
 
 type DisclosureBase = {
   delayedBy?: DisclosureDelay[];
+  authoringCondition?: { contractVersion:'teacher-disclosure/1'; condition:string };
 };
 
 export type DisclosureRule = DisclosureBase &
@@ -94,6 +95,7 @@ export type PatientDatum<T> =
   | DefinedPatientDatum<T>
   | {
       state: 'not_defined';
+      contractVersion?: 'authoring-unknown/1';
     }
   | {
       state: 'not_applicable';

@@ -2,7 +2,10 @@
 
 ## Baseline oficial
 
-Actualización editorial del 16 de octubre: M1/M2/M3 **PARTIAL**. Expedientes por revisión
+Actualización del 26 de octubre: conversión nativa de las propuestas estructuradas de Lucía y María a paquete académico docente, con RNM no determinable versionado, perfil, requisitos tipados, derivación y cuestionarios calificables. Ambos permanecen borradores sin aprobación; auditoría de sus nuevos candidatos PENDING. [Alcance y decisiones](33_NATIVE_TEACHER_AUTHORING.md). **51.53% acreditado y 57.23% propuesto**, separados hasta aceptación de Paulo. M1/M2/M3 siguen PARTIAL.
+
+
+Actualización editorial histórica del 16 de octubre: M1/M2/M3 **PARTIAL**. Expedientes por revisión
 preparados desde Lucía/María y recuperados en revisión/publicación; fuentes CIMA con procedencia
 y dos juicios clínicos IA reales conservados, pendientes de aprobación humana. El expediente
 no es aún el bundle ejecutable: faltan decisiones/campos nativos y representación de incertidumbre.

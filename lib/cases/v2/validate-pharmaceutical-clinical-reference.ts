@@ -144,7 +144,7 @@ function inspectRnmAssessments(value: unknown, path: string): void {
     const assessment = conclusion(
       item,
       itemPath,
-      ['status', 'classification', 'medicationRefs', 'followUpEpisodeRef'],
+      ['status', 'classification', 'medicationRefs', 'followUpEpisodeRef', 'contractVersion', 'reason'],
     );
     optionalTaxonomyTerm(assessment.classification, `${itemPath}.value.classification`);
   });

@@ -266,6 +266,14 @@ function parseDisclosureRule(value: unknown, path: string): DisclosureRule {
           `${path}.delayedBy`,
         ) as DisclosureDelay[]);
   const base = delayedBy === undefined ? {} : { delayedBy };
+  const condition = source.authoringCondition;
+  let authoringCondition: DisclosureRule['authoringCondition'];
+  if (condition !== undefined) {
+    const c = asRecord(condition, `${path}.authoringCondition`);
+    if(c.contractVersion !== 'teacher-disclosure/1' || Object.keys(c).some(k=>!['contractVersion','condition'].includes(k)))fail(`${path}.authoringCondition`,'invalid versioned condition');
+    authoringCondition={contractVersion:'teacher-disclosure/1',condition:nonEmptyString(c.condition,`${path}.authoringCondition.condition`)};
+    Object.assign(base,{authoringCondition});
+  }
 
   if (mode === 'spontaneous' || mode === 'open_question') {
     return { mode, ...base };
@@ -305,6 +313,10 @@ function parsePatientDatum<T>(
   const state = source.state;
 
   if (state === 'not_defined') {
+    if (source.contractVersion !== undefined) {
+      if(source.contractVersion !== 'authoring-unknown/1' || Object.keys(source).some(k=>!['state','contractVersion'].includes(k)))fail(path,'invalid versioned unknown');
+      return {state,contractVersion:'authoring-unknown/1'};
+    }
     return { state };
   }
 

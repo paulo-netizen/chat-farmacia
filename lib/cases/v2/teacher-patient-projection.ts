@@ -1,10 +1,12 @@
 import { z } from 'zod';
+import {communicationProfileSchema} from './teacher-native-authoring';
 import { caseVersionIdSchema, teacherDraftFieldsSchema, type TeacherDraftRecord } from './teacher-case-draft';
 
 const text = z.string().trim().min(1).max(4000);
 export const teacherPatientProjectionSchema = z.object({
   contentFormat: z.literal('TEACHER_DRAFT_PATIENT_V1'),
-  projectionVersion: z.enum(['teacher-patient/1','teacher-patient/2']),
+  projectionVersion: z.enum(['teacher-patient/1','teacher-patient/2','teacher-patient/3']),
+  communicationProfile:communicationProfileSchema.optional(),
   caseVersionId: caseVersionIdSchema,
   identity: z.object({nombre:text.max(100),edad:z.number().int().min(0).max(120),sexo:text.max(60)}).strict(),
   initialDemand: text,
@@ -12,6 +14,7 @@ export const teacherPatientProjectionSchema = z.object({
   treatment: text,
   facts: z.array(z.object({factId:z.string().regex(/^F[1-9][0-9]{0,3}$/),value:text,disclosure:text}).strict()).min(1).max(40),
 }).strict().superRefine((x,c)=>{
+  if((x.projectionVersion==='teacher-patient/3')!==(x.communicationProfile!==undefined))c.addIssue({code:'custom',path:['communicationProfile'],message:'Profile requires teacher-patient/3'});
   if(new Set(x.facts.map(f=>f.factId)).size!==x.facts.length)c.addIssue({code:'custom',path:['facts'],message:'Duplicate facts'});
 });
 export type TeacherPatientProjection = z.infer<typeof teacherPatientProjectionSchema>;
@@ -26,7 +29,7 @@ export function projectTeacherPatient(draft: TeacherDraftRecord): TeacherPatient
   }
   if(draft.status!=='TEACHER_DRAFT')throw new TeacherPatientProjectionError(['Estado borrador']);
   const f=parsed.data;
-  return teacherPatientProjectionSchema.parse({contentFormat:'TEACHER_DRAFT_PATIENT_V1',projectionVersion:'teacher-patient/2',caseVersionId:draft.versionId,
+  return teacherPatientProjectionSchema.parse({contentFormat:'TEACHER_DRAFT_PATIENT_V1',projectionVersion:f.nativeAuthoring?.communicationProfile?'teacher-patient/3':'teacher-patient/2',...(f.nativeAuthoring?.communicationProfile?{communicationProfile:f.nativeAuthoring.communicationProfile}:{}),caseVersionId:draft.versionId,
     identity:f.identity,initialDemand:f.initialDemand,treatment:f.treatment,
     facts:f.facts.map(x=>({factId:x.id,value:x.value,disclosure:x.disclosure}))});
 }
@@ -46,6 +49,7 @@ No amplíes datos por inferencia: vivir sola no dice si tiene hijos; no disponer
 
 // Keep /1 byte-for-byte for pinned historical conversations.
 export function teacherPatientRules(projection: Pick<TeacherPatientProjection,'projectionVersion'>): string {
+  if(projection.projectionVersion==='teacher-patient/3')return teacherPatientRules({projectionVersion:'teacher-patient/2'}).replace('teacher-patient/2','teacher-patient/3').replace('No hay personalidad definida: no inventes rasgos, historia ni etiquetas académicas.','communicationProfile es una propuesta explícita de estilo de representación. Solo modula la forma de responder, nunca autoriza nuevos conocimientos, preferencias, historia ni etiquetas académicas.');
   if (projection.projectionVersion === 'teacher-patient/1') return TEACHER_PATIENT_RULES;
   return TEACHER_PATIENT_RULES.replace('teacher-patient/1','teacher-patient/2') + `
 PREFERENCIAS Y EVASIVAS

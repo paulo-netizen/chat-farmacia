@@ -317,3 +317,8 @@ No se vuelve publicable el formato `TEACHER_CASE_DRAFT_V1`. La publicación exig
 revisión de autoría y archiva la publicación previa sin alterar su contenido ni sus sesiones.
 La preparación real de candidatos/auditorías desde el editor continúa pendiente; no basta
 una declaración del cliente. [Contrato y pruebas](31_TEACHER_REVIEW_PUBLICATION.md).
+
+
+### Autoría nativa versionada — 25-10-2026
+
+El borrador docente estructurado puede convertirse directamente a `TEACHER_CASE_BUNDLE_V1`, conservando revisión y procedencia, sin expediente intermedio ni publicación automática. `rnm-assessment/2` representa RNM no determinable con razón explícita; no es ausencia ni riesgo confirmado. Perfil, requisitos y cuestionario propuestos requieren revisión. Las dimensiones opcionales no definidas usan `authoring-unknown/1`; no se inventan valores negativos. La auditoría y aprobación quedan pendientes para cada candidato. Contratos y sesiones históricos no se recalifican. [Contrato, propuestas completas y límites](33_NATIVE_TEACHER_AUTHORING.md).

@@ -774,6 +774,7 @@ function conclusionMaterial(
         conclusion.value.followUpEpisodeRef ?? null,
       ];
     case 'rnm_assessment':
+      if (conclusion.value.status === 'not_determinable') return [conclusion.kind,conclusion.value.contractVersion,conclusion.value.status,conclusion.value.reason];
       return conclusion.value.status === 'no_rnm'
         ? [conclusion.kind, conclusion.value.status]
         : [

@@ -94,7 +94,8 @@ export type PharmaceuticalPrmFindingContextV2 = Readonly<{
 
 export type PharmaceuticalRnmAssessmentContextV2 = Readonly<{
   assessmentRef: ConclusionId;
-  status: 'rnm' | 'risk_of_rnm' | 'no_rnm';
+  status: 'rnm' | 'risk_of_rnm' | 'no_rnm' | 'not_determinable';
+  evidenceLimitation?: string;
   classification?: Readonly<TaxonomyTermRef>;
   medicationRefs: readonly MedicationId[];
 }>;

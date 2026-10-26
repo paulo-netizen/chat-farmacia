@@ -1,4 +1,5 @@
 import { z } from 'zod';
+import { nativeAuthoringSchema, typedRequirementSchema, gradableQuestionSchema } from './teacher-native-authoring';
 import { createStudentCasePublicData } from '../student-session-dto';
 
 export const TEACHER_DRAFT_FORMAT = 'TEACHER_CASE_DRAFT_V1' as const;
@@ -25,16 +26,18 @@ export const teacherDraftFieldsSchema = z.object({
     interpretation: text,
   }).strict(),
   teacherSolution: text,
+  nativeAuthoring: nativeAuthoringSchema.optional(),
   requirements: z.array(z.object({
     label: text.max(160), goal: text,
     applicability: z.enum(['APPLICABLE', 'NOT_APPLICABLE', 'UNDETERMINED']),
     rationale: text, factRefs: refs, guidePages: text.max(100),
+    native: typedRequirementSchema.optional(),
   }).strict()).min(1).max(30),
-  questionnaire: z.array(z.object({ question: text, answer: text, factRefs: refs }).strict()).min(1).max(30),
+  questionnaire: z.array(z.object({ question: text, answer: text, factRefs: refs, gradable:gradableQuestionSchema.optional() }).strict()).min(1).max(30),
 }).strict().superRefine((d, ctx) => {
   const ids = new Set(d.facts.map(f => f.id));
   if (ids.size !== d.facts.length) ctx.addIssue({ code: 'custom', path: ['facts'], message: 'Cada hecho debe tener una referencia diferente.' });
-  const groups = [d.adherence.factRefs, ...d.requirements.map(r => r.factRefs), ...d.questionnaire.map(q => q.factRefs)];
+  const groups = [d.adherence.factRefs, ...d.requirements.map(r => r.factRefs), ...d.questionnaire.map(q => q.factRefs),d.nativeAuthoring?.rnm?.factRefs??[],d.nativeAuthoring?.referral&&'factRefs' in d.nativeAuthoring.referral?d.nativeAuthoring.referral.factRefs:[]];
   if (groups.some(g => g.some(r => !ids.has(r)))) ctx.addIssue({ code: 'custom', path: ['facts'], message: 'Hay referencias a hechos que no existen. Corrige las referencias antes de guardar.' });
   if (d.requirements.some(r => r.applicability === 'APPLICABLE' && !r.factRefs.length)) ctx.addIssue({ code: 'custom', path: ['requirements'], message: 'Relaciona cada requisito aplicable con al menos un hecho.' });
 });

@@ -39,6 +39,10 @@ const FORBIDDEN_RUNTIME_KEYS = new Set([
 ]);
 
 function copyDisclosure(disclosure: DisclosureRule): DisclosureRule {
+  if (disclosure.authoringCondition !== undefined) {
+    const {authoringCondition,...historical}=disclosure;
+    return {...copyDisclosure(historical),authoringCondition:{...authoringCondition}};
+  }
   const delayedBy =
     disclosure.delayedBy === undefined
       ? undefined
@@ -86,6 +90,9 @@ function projectDatum<T>(
   copyValue: (value: T) => T = identity,
 ): RuntimePatientDatum<T> | undefined {
   if (datum.state === 'not_defined') {
+    // Explicit authoring extension: omit an undefined optional datum without
+    // turning it into a clinical negative, inapplicability or patient knowledge.
+    if (datum.contractVersion === 'authoring-unknown/1') return undefined;
     throw new PatientFactsValidationError(
       path,
       'not_defined is forbidden in patient runtime view',

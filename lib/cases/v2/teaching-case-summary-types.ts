@@ -102,6 +102,7 @@ export type RnmFindingSummary = {
 };
 
 export type RnmSummary =
+  | { contractVersion:'rnm-assessment/2'; status:'not_determinable'; reason:string; rnmCount:0; riskOfRnmCount:0; findings:readonly [] }
   | {
       status: 'no_rnm';
       rnmCount: 0;

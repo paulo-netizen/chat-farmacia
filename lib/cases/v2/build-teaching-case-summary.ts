@@ -442,7 +442,7 @@ function projectRnmFinding(
   inventory: MedicationInventory,
   path: string,
 ): RnmFindingSummary {
-  if (assessment.value.status === 'no_rnm') {
+  if (assessment.value.status === 'no_rnm' || assessment.value.status === 'not_determinable') {
     fail(path, 'no_rnm is not an RNM finding');
   }
   return {
@@ -462,6 +462,11 @@ function buildRnm(
   evaluator: EvaluatorViewV2,
   inventory: MedicationInventory,
 ): RnmSummary {
+  const unresolved = evaluator.rnmAssessments.find(a => a.value.status === 'not_determinable');
+  if (unresolved?.value.status === 'not_determinable') {
+    if (evaluator.rnmAssessments.length !== 1) fail('evaluator.rnmAssessments','unresolved assessment cannot coexist with findings');
+    return {...unresolved.value,rnmCount:0,riskOfRnmCount:0,findings:[]};
+  }
   const noRnm = evaluator.rnmAssessments.filter(
     (assessment) => assessment.value.status === 'no_rnm',
   );
@@ -897,7 +902,7 @@ function projectAddressedConclusion(
   }
   const rnm = addressed.rnmById.get(reference);
   if (rnm !== undefined) {
-    if (rnm.value.status === 'no_rnm') {
+    if (rnm.value.status === 'no_rnm' || rnm.value.status === 'not_determinable') {
       fail(path, 'no_rnm cannot be addressed by an intervention');
     }
     return {

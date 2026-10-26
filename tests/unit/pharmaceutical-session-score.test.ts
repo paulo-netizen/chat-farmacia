@@ -46,7 +46,7 @@ function fixture(o: Options = {}) {
   const base = pharmaceuticalD3ClinicalReferenceV1(false);
   const cc = base.clinicalConclusions;
   const rnm = cc.rnmAssessments[0].value;
-  if (rnm.status === 'no_rnm') throw new Error('test source must initially provide medication scope');
+  if (rnm.status === 'no_rnm' || rnm.status === 'not_determinable') throw new Error('test source must initially provide medication scope');
   const prmFindings = o.group ? [...cc.prm.findings, ...(o.repeated ? [{ ...cc.prm.findings[0],
     conclusionId: 'conclusion_d3000000-0000-4000-8000-000000000099',
     value: { ...cc.prm.findings[0].value, medicationRefs: rnm.medicationRefs },

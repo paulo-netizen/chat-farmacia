@@ -29,6 +29,7 @@ export const PATIENT_RESPONSE_VALIDATOR_CONTRACT_VERSION_V2 = '1.0' as const;
 export const PATIENT_RESPONSE_SAFETY_POLICY_VERSION_V2 = '1.0' as const;
 
 export type PatientResponseValidationDisclosureRuleV2 = Readonly<{
+  authoringCondition?: DisclosureRule['authoringCondition'];
   mode: DisclosureRule['mode'];
   domains?: readonly DisclosureDomain[];
   minimumRapport?: number;
@@ -219,6 +220,7 @@ function copyDisclosure(
     fail(`${path}.mode`);
   }
   return {
+    ...(disclosure.authoringCondition?{authoringCondition:{...disclosure.authoringCondition}}:{}),
     mode: disclosure.mode,
     ...('domains' in disclosure
       ? { domains: disclosure.domains.map((domain) => domain) }

@@ -116,6 +116,11 @@ export type RnmAssessment = EvaluatorConclusion<
   | {
       status: 'no_rnm';
     }
+  | {
+      contractVersion: 'rnm-assessment/2';
+      status: 'not_determinable';
+      reason: string;
+    }
 >;
 
 export type PrmRnmRelation = EvaluatorConclusion<

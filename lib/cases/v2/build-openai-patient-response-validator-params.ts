@@ -1,5 +1,6 @@
 import type { PatientResponseValidationRequestV2 } from './patient-response-validation-context';
 import { teacherPatientRules } from './teacher-patient-projection';
+import {TEACHER_DISCLOSURE_RULES} from './teacher-native-authoring';
 import {
   OPENAI_PATIENT_RESPONSE_VALIDATOR_TEXT_FORMAT_V1,
   OpenAiPatientResponseValidatorBoundaryErrorV2,
@@ -83,7 +84,7 @@ export function buildOpenAiPatientResponseValidatorParamsV2(
     return {
       instructions: request.validationContext.contentFormat==='TEACHER_DRAFT_PATIENT_V1'
         ? `${PATIENT_RESPONSE_VALIDATOR_INSTRUCTIONS_V2}\nInterpretación exclusiva de TEACHER_DRAFT_PATIENT_V1 (no cambia contratos históricos):\n${teacherPatientRules(request.validationContext)}\nNo interpretes el permiso de respuesta no informativa como un hecho sobre el paciente. Clasifica sin representar al paciente.`
-        : PATIENT_RESPONSE_VALIDATOR_INSTRUCTIONS_V2,
+        : PATIENT_RESPONSE_VALIDATOR_INSTRUCTIONS_V2+(JSON.stringify(request.validationContext).includes('"authoringCondition":')?'\n'+TEACHER_DISCLOSURE_RULES:''),
       input: JSON.stringify({
         contractVersion: request.contractVersion,
         safetyPolicyVersion: request.safetyPolicyVersion,

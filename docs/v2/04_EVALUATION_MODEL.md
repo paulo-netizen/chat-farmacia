@@ -429,3 +429,8 @@ Debe apoyarse en la transcripción.
 ### Evidencia del tratamiento — decisión 2026-10-12
 
 El tratamiento no es información pública inicial. En el contrato SPFA vigente solo edad y sexo son objetivos `PUBLIC_PROFILE`; `MEDICATION_ENTITY` y `MEDICATION_FACT` requieren evidencia de entrevista. El conocimiento del evaluador no demuestra que el estudiante haya obtenido el dato. No se recalifican registros históricos ni se reinterpretan resultados COV anteriores cuya configuración consideraba otras fuentes públicas. Esos fixtures históricos no se convierten en casos nuevos de alumnado.
+
+
+### Autoría nativa versionada — 25-10-2026
+
+El borrador docente estructurado puede convertirse directamente a `TEACHER_CASE_BUNDLE_V1`, conservando revisión y procedencia, sin expediente intermedio ni publicación automática. `rnm-assessment/2` representa RNM no determinable con razón explícita; no es ausencia ni riesgo confirmado. Perfil, requisitos y cuestionario propuestos requieren revisión. Las dimensiones opcionales no definidas usan `authoring-unknown/1`; no se inventan valores negativos. La auditoría y aprobación quedan pendientes para cada candidato. Contratos y sesiones históricos no se recalifican. [Contrato, propuestas completas y límites](33_NATIVE_TEACHER_AUTHORING.md).

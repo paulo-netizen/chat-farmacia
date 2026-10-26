@@ -398,7 +398,7 @@ function assertSummaryStructure(
   ) {
     fail('summary.prm', 'status is inconsistent with findings');
   }
-  if (summary.rnm.status === 'no_rnm') {
+  if (summary.rnm.status === 'no_rnm' || summary.rnm.status === 'not_determinable') {
     if (summary.rnm.findings.length !== 0) {
       fail('summary.rnm', 'no_rnm cannot contain findings');
     }
@@ -853,6 +853,12 @@ function compareRnm(
   checks: CheckCollector,
 ): void {
   const plan = brief.rnm;
+  // Historical generation briefs cannot express this versioned authoring decision.
+  // Never pass a historical no-RNM/risk requirement by substituting uncertainty.
+  if (summary.rnm.status === 'not_determinable') {
+    checks.add('rnm','rnm_status','brief.rnm','unresolved');
+    return;
+  }
   if (isForbidden(plan)) {
     checks.add('rnm', 'rnm_status', 'brief.rnm', summary.rnm.status === 'no_rnm' ? 'pass' : 'fail');
     return;

@@ -1,4 +1,5 @@
 import { createStudentCasePublicData } from '../student-session-dto';
+import { validateTeacherNativePackage, TEACHER_NATIVE_FORMAT } from './build-teacher-native-package';
 import { attachSpfaProtocolSetToGeneratedCaseCoreV2 } from './attach-spfa-protocol-set';
 import { createPatientRuntimeViewV2 } from './patient-runtime';
 import type {
@@ -81,6 +82,7 @@ function validateInput(input: SessionClinicalCaseVersionContentInputV2): {
   }
   if (
     input.contentFormat !== 'LEGACY_V1_SNAPSHOT' &&
+    input.contentFormat !== TEACHER_NATIVE_FORMAT &&
     input.contentFormat !== 'GENERATED_CASE_BUNDLE_V2'
   ) {
     fail('unsupported_content_format', 'contentFormat');
@@ -132,6 +134,13 @@ function generatedRecords(
   spfaProtocolSet: RecordValue;
   persistedRuntime: RecordValue;
 } {
+  if(input.contentFormat===TEACHER_NATIVE_FORMAT){
+    if(input.sourceKind!=='TEACHER_AUTHORED'||input.legacyStatus!==null)fail('source_format_mismatch','sourceKind');
+    try {
+      const bundle=validateTeacherNativePackage(input.content,validated.caseVersionId);
+      return {patientFacts:bundle.sourceOfTruth.patientFacts as unknown as RecordValue,evaluator:bundle.sourceOfTruth.evaluator as unknown as RecordValue,spfaProtocolSet:bundle.sourceOfTruth.spfaProtocolSet as unknown as RecordValue,persistedRuntime:bundle.derived.patientRuntime as unknown as RecordValue};
+    } catch {fail('invalid_case_version_content','content');}
+  }
   if (
     input.sourceKind !== 'AI_GENERATED' ||
     input.contentFormat !== 'GENERATED_CASE_BUNDLE_V2' ||
@@ -322,7 +331,7 @@ export function resolveSessionSpfaClinicalContentV2(
   input: SessionClinicalCaseVersionContentInputV2,
 ): SpfaIntegratedGeneratedCaseCoreV2 {
   const validated = validateInput(input);
-  if (input.contentFormat !== 'GENERATED_CASE_BUNDLE_V2') {
+  if (input.contentFormat !== 'GENERATED_CASE_BUNDLE_V2' && input.contentFormat !== TEACHER_NATIVE_FORMAT) {
     fail('spfa_evaluation_not_available', 'contentFormat');
   }
 

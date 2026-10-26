@@ -8,6 +8,17 @@ La fuente canónica del progreso, los porcentajes, los pesos M0–M11 y el check
 
 ## Estado actual
 
+### Autoría nativa — cierre técnico, 2026-10-25
+
+Completar la conversión desde los campos guardados del editor, sin otro expediente
+intermedio: RNM no determinable versionado, perfil explícito, requisitos tipados,
+derivación y cuestionario calificable. Los contratos históricos y los nueve archivos
+COV ajenos se conservan. Representación y resolutores verificados offline. La auditoría de los nuevos candidatos sigue pendiente; no se hereda el juicio de una revisión anterior.
+Riesgos: consumidores que equiparan «no RNM» con cualquier estado sin hallazgos,
+bindings de revisión y atribución indebida de decisiones todavía propuestas.
+Lucía y María seguirán sin aprobación ni publicación académica. El 57,23 % sigue
+siendo una propuesta; el progreso acreditado sigue en 51,53 %.
+
 - M0 — Saneamiento y barreras de seguridad: **PARTIAL**.
 - M1 — Versionado y base de datos v2: **PARTIAL**.
 - M2 — Editor docente estructurado: **PARTIAL** (borradores y preview implementados; workflow completo pendiente).
@@ -369,3 +380,14 @@ de publicación; suite offline 3909 PASS / 86 SKIPPED, TypeScript PASS. Recorrid
 en navegador con fuentes, auditoría y gates bloqueados. [Fichas completas y límites](docs/v2/32_TEACHER_ACADEMIC_PREPARATION.md).
 Propuesta canónica explícita en PROJECT_STATUS: M1 90, M2 45, M3 65 y global 57.23% **si se
 aprueba el desglose**, sin aplicarlo automáticamente; 51.53% acreditado conservado.
+
+
+### Resultado — autoría nativa, 25-10-2026
+
+Conversión directa del borrador guardado al bundle docente versionado; perfil, requisitos, derivación y ocho preguntas propuestas por caso editables sin JSON. RNM no determinable explícito, sin transformar olvidos en daño ni autorreporte en adherencia global. Migración 0009 solo en base desechable. [Fichas, cuestionarios, fuentes, decisiones y límites](docs/v2/33_NATIVE_TEACHER_AUTHORING.md).
+
+Verificación nueva: 13/13 focalizadas, 2/2 PostgreSQL desechable, suite offline corregida 3922 PASS / 88 SKIPPED y TypeScript PASS. Primera ejecución bloqueada por importación server-only en el validador puro y permisos de archivos temporales; corregida la importación y repetida fuera del sandbox. Lint no completado: solicita configuración, que no se modifica. No se reutiliza la auditoría clínica previa para esta revisión. Sin llamadas live, conteos o gasto nuevo; acumulado histórico y partidas desconocidas sin cambios.
+
+Open decisions: criterio de derivación de Lucía ante fuentes con distinto alcance de diabetes; clasificación/intervención y reevaluación de María; aprobación de perfiles, requisitos y claves nuevas. La conexión de auditoría al candidato nativo es pendiente técnico, no decisión docente. Progreso 51,53% acreditado / 57,23% propuesto.
+
+Cierre en navegador del 26-10-2026: Lucía v5 recuperada y María v3 guardada/convertida, paquetes PASS y auditoría/revisión PENDING, publicación deshabilitada. Vista inicial de María limitada a nombre, edad y sexo. Las comprobaciones de autorización, aislamiento y revisiones quedan en las pruebas nativas.

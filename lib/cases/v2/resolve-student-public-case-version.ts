@@ -189,7 +189,7 @@ function resolveStudentPublicCaseVersionWithStatusPolicy(
 
   if (
     row.content_format !== 'LEGACY_V1_SNAPSHOT' &&
-    row.content_format !== 'GENERATED_CASE_BUNDLE_V2'
+    row.content_format !== 'GENERATED_CASE_BUNDLE_V2' && row.content_format !== 'TEACHER_CASE_BUNDLE_V1'
   ) {
     fail('unsupported_content_format', 'content_format');
   }

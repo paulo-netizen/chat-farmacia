@@ -19,9 +19,10 @@ export function checkPublicationPackage(row: any): boolean {
   const caseId=Number(row.case_id);
   if(!Number.isSafeInteger(caseId)||caseId<=0)return false;
   const input={caseId,caseVersionId:row.id,sourceKind:row.source_kind,legacyStatus:row.legacy_status,contentFormat:row.content_format,content:row.content};
-  if(row.content_format!=='GENERATED_CASE_BUNDLE_V2')return false;
+  if(!['GENERATED_CASE_BUNDLE_V2','TEACHER_CASE_BUNDLE_V1'].includes(row.content_format))return false;
   resolveSessionPatientClinicalContentV2(input);resolveSessionEvaluatorClinicalContentV2(input);resolveSessionSpfaClinicalContentV2(input);
   resolveStudentPublicCaseVersionV2({...row,case_id:caseId,status:'PUBLISHED'});
+  if(row.content_format==='TEACHER_CASE_BUNDLE_V1')return true;
   const r=row.content.derived.complianceReport;
   return r?.hasHardFailures===false && r.counts?.failed===0 && Array.isArray(r.dimensions) && r.dimensions.every((d:any)=>Array.isArray(d.checks)&&d.checks.every((c:any)=>c.status!=='fail'));
  } catch {return false;}

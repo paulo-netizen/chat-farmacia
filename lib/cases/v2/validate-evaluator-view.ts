@@ -497,9 +497,22 @@ function parseRnmAssessment(value: unknown, path: string): RnmAssessment {
   const conclusionValue = asRecord(source.value, `${path}.value`);
   const status = controlledValue(
     conclusionValue.status,
-    ['rnm', 'risk_of_rnm', 'no_rnm'] as const,
+    ['rnm', 'risk_of_rnm', 'no_rnm', 'not_determinable'] as const,
     `${path}.value.status`,
   );
+  if (status === 'not_determinable') {
+    if (conclusionValue.contractVersion !== 'rnm-assessment/2' ||
+        Object.keys(conclusionValue).some(key => !['contractVersion','status','reason'].includes(key))) {
+      fail(`${path}.value`, 'not_determinable requires rnm-assessment/2 without findings');
+    }
+    if (typeof conclusionValue.reason !== 'string' || !conclusionValue.reason.trim()) {
+      fail(`${path}.value.reason`, 'must explain the evidence limitation');
+    }
+    return { conclusionId, kind:'rnm_assessment', value:{contractVersion:'rnm-assessment/2',status,reason:conclusionValue.reason} };
+  }
+  if (conclusionValue.contractVersion !== undefined || conclusionValue.reason !== undefined) {
+    fail(`${path}.value`, 'historical RNM values cannot carry a new contract discriminator');
+  }
   if (status === 'no_rnm') {
     if (
       conclusionValue.classification !== undefined ||
@@ -1533,14 +1546,14 @@ function validateCrossReferences(
     fail('rnmAssessments', 'must explicitly contain an RNM assessment');
   }
   const noRnmCount = evaluator.rnmAssessments.filter(
-    (assessment) => assessment.value.status === 'no_rnm',
+    (assessment) => assessment.value.status === 'no_rnm' || assessment.value.status === 'not_determinable',
   ).length;
   if (noRnmCount > 0 && evaluator.rnmAssessments.length !== 1) {
     fail('rnmAssessments', 'no_rnm cannot coexist with RNM or risk findings');
   }
   evaluator.rnmAssessments.forEach((assessment, index) => {
     const path = `rnmAssessments[${index}].value`;
-    if (assessment.value.status === 'no_rnm') return;
+    if (assessment.value.status === 'no_rnm' || assessment.value.status === 'not_determinable') return;
     validateMedicationRefs(
       assessment.value.medicationRefs,
       `${path}.medicationRefs`,
@@ -1591,7 +1604,10 @@ function validateCrossReferences(
     }
   });
   evaluator.prm.findings.forEach((finding, index) => {
-    if (!relatedPrmIds.has(finding.conclusionId)) {
+    // rnm-assessment/2 explicitly permits a known process problem while its
+    // outcome remains undetermined. Never fabricate a causal/risk relation.
+    const outcomeUndetermined=evaluator.rnmAssessments.length===1&&evaluator.rnmAssessments[0].value.status==='not_determinable';
+    if (!relatedPrmIds.has(finding.conclusionId) && !outcomeUndetermined) {
       fail(
         `prm.findings[${index}]`,
         'PRM must participate in at least one PRM-RNM relation',
@@ -1898,7 +1914,7 @@ function validateCrossReferences(
       }
       if (
         conclusion.kind === 'rnm_assessment' &&
-        (conclusion as RnmAssessment).value.status === 'no_rnm'
+        ['no_rnm','not_determinable'].includes((conclusion as RnmAssessment).value.status)
       ) {
         fail(referencePath, 'no_rnm cannot be addressed by an intervention');
       }

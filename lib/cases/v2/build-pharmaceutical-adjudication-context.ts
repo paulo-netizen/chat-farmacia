@@ -287,6 +287,7 @@ function prmContext(finding: PrmFinding): PharmaceuticalPrmFindingContextV2 {
 }
 
 function rnmContext(assessment: RnmAssessment): PharmaceuticalRnmAssessmentContextV2 {
+  if (assessment.value.status === 'not_determinable') return {assessmentRef:assessment.conclusionId,status:assessment.value.status,evidenceLimitation:assessment.value.reason,medicationRefs:[]};
   if (assessment.value.status === 'no_rnm') {
     return {
       assessmentRef: assessment.conclusionId,
@@ -532,7 +533,7 @@ function refsFromConclusion(
   const prm = index.prmFindings.get(conclusionReference);
   if (prm !== undefined) return [...prm.value.medicationRefs];
   const rnm = index.rnmAssessments.get(conclusionReference);
-  if (rnm !== undefined) return rnm.value.status === 'no_rnm' ? [] : [...rnm.value.medicationRefs];
+  if (rnm !== undefined) return rnm.value.status === 'no_rnm' || rnm.value.status === 'not_determinable' ? [] : [...rnm.value.medicationRefs];
   const adherence = index.adherenceAssessments.get(conclusionReference);
   if (adherence !== undefined) return [...adherence.value.medicationRefs];
   const type = index.adherenceTypes.get(conclusionReference);
@@ -602,7 +603,7 @@ function validateAllMedicationReferences(
   const groups: ReadonlyArray<readonly [readonly unknown[], string]> = [
     ...reference.clinicalConclusions.incidence.findings.map((item, index) => [item.value.medicationRefs, `clinicalReference.clinicalConclusions.incidence.findings[${index}].value.medicationRefs`] as const),
     ...reference.clinicalConclusions.prm.findings.map((item, index) => [item.value.medicationRefs, `clinicalReference.clinicalConclusions.prm.findings[${index}].value.medicationRefs`] as const),
-    ...reference.clinicalConclusions.rnmAssessments.flatMap((item, index) => item.value.status === 'no_rnm' ? [] : [[item.value.medicationRefs, `clinicalReference.clinicalConclusions.rnmAssessments[${index}].value.medicationRefs`] as const]),
+    ...reference.clinicalConclusions.rnmAssessments.flatMap((item, index) => item.value.status === 'no_rnm' || item.value.status === 'not_determinable' ? [] : [[item.value.medicationRefs, `clinicalReference.clinicalConclusions.rnmAssessments[${index}].value.medicationRefs`] as const]),
     ...reference.clinicalConclusions.adherence.assessments.map((item, index) => [item.value.medicationRefs, `clinicalReference.clinicalConclusions.adherence.assessments[${index}].value.medicationRefs`] as const),
   ];
   for (const [references, path] of groups) {

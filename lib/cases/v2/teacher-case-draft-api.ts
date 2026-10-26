@@ -18,7 +18,13 @@ export function draftError(error: unknown) {
   if (error instanceof ZodError) {
     // Error paths/messages from unknown keys or provider values must not be reflected.
     const labels: Record<string,string> = { title:'Título', identity:'Identidad', initialDemand:'Demanda', treatment:'Tratamiento', facts:'Hechos y referencias', adherence:'Adherencia', requirements:'Requisitos y referencias', questionnaire:'Cuestionario', teacherSolution:'Solución docente', expectedVersionId:'Versión', templateId:'Plantilla', service:'Servicio' };
-    const fields = [...new Set(error.issues.map(i => labels[String(i.path[0] === 'fields' ? i.path[1] : i.path[0])] ?? 'Datos del borrador'))];
+    labels.nativeAuthoring='Autoría nativa: perfil, clínica y derivación';
+    const nativeLabels:Record<string,string>={communicationProfile:'Perfil comunicativo',profileRationale:'Justificación del perfil',rnm:'RNM',clinical:'Mapeo clínico',referral:'Derivación'};
+    const fields = [...new Set(error.issues.map(i => {
+      const path=i.path[0]==='fields'?i.path.slice(1):i.path;
+      const index=typeof path[1]==='number'?` ${path[1]+1}`:'';
+      return path[0]==='nativeAuthoring'?(nativeLabels[String(path[1])]??labels.nativeAuthoring):(labels[String(path[0])]??'Datos del borrador')+index;
+    }))];
     return draftJson({ error:'Revisa los campos obligatorios, sus límites y las referencias a hechos.', fields },400);
   }
   if (error instanceof TeacherDraftError) {
