@@ -36,6 +36,12 @@ export default function PublicationReview({draft,dirty}:{draft:TeacherDraftRecor
    if(!r.ok)throw Error('No se pudo conservar la preparación. Comprueba la revisión guardada y vuelve a cargar.');await load();
   }catch(e){setError(e instanceof Error?e.message:'Preparación no confirmada.');}finally{setBusy(false);}
  }
+ async function nativeAudit(action:'prepare'|'run'){
+  setBusy(true);setError('');try{
+   const r=await fetch(`/api/teacher-drafts/${draft.caseId}/native-audit`,{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({action,expectedDraftVersionId:draft.versionId,candidateVersionId:data.candidate.versionId,...(action==='prepare'?{sourceKeys:sources}:{})})});
+   const result=await r.json();if(!r.ok)throw Error(result.error??'Auditoría nativa no confirmada; no repitas una ejecución incierta.');await load();
+  }catch(e){setError(e instanceof Error?e.message:'Auditoría nativa no confirmada.');}finally{setBusy(false);}
+ }
  async function audit(){setBusy(true);setError('');try{
   const r=await fetch(`/api/teacher-drafts/${draft.caseId}/audit`,{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({preparationId:data.preparation.id})});
   if(!r.ok)throw Error('Auditoría no confirmada. Requiere autorización privada y presupuesto; no repitas una solicitud incierta.');await load();
@@ -50,7 +56,7 @@ export default function PublicationReview({draft,dirty}:{draft:TeacherDraftRecor
    {([['metformin850','Metformina 850 mg · CIMA 68167'],['enalapril20','Enalapril 20 mg · CIMA 63355']] as const).map(([key,label])=><label key={key} style={{display:'block'}}><input type="checkbox" checked={sources.includes(key)} onChange={e=>setSources(e.target.checked?[...sources,key]:sources.filter(s=>s!==key))}/>{label}</label>)}
    <button onClick={prepare}>Preparar y comprobar fuentes</button>
   </fieldset>}
-  {draft.fields.nativeAuthoring&&<p>La auditoría de revisiones anteriores no aprueba este paquete. El candidato nativo permanece con auditoría pendiente; no se crea otro expediente.</p>}
+  {draft.fields.nativeAuthoring&&<p>La auditoría de revisiones anteriores no aprueba este paquete. La auditoría se vincula directamente al candidato nativo; no se crea otro expediente.</p>}
   {data&&<><ul><li>Estructura del borrador: {data.checks.draftStructure}</li><li>Aplicabilidad de requisitos: {data.checks.requirements}</li><li>Paquete académico canónico: {data.checks.canonicalPackage}</li><li>Auditoría clínica: {data.checks.clinicalAudit}</li><li>Revisión humana: {data.checks.humanReview}</li></ul>
    {data.preparation&&<section aria-label="Expediente académico preparado"><h3>Expediente conservado para revisión</h3>
     <p>Revisión {data.preparation.package.sourceRevision} · {data.preparation.created_at}. Vinculado a {data.preparation.package.draftVersionId}.</p>
@@ -68,6 +74,18 @@ export default function PublicationReview({draft,dirty}:{draft:TeacherDraftRecor
    </section>}
    {data.checks.requirements==='PENDING'&&<p>Resuelve los requisitos «Por determinar» antes de validar esta revisión. La adherencia no determinable sigue siendo un resultado permitido.</p>}
    {!data.candidate&&<p>Falta preparar y auditar el paquete académico vinculado a esta revisión. Los textos libres no permiten completar automáticamente personalidad, protocolos y evaluación. Este borrador no está listo para publicación; no se inventarán datos ni se simulará la auditoría.</p>}
+   {draft.fields.nativeAuthoring&&data.candidate&&<section aria-label="Auditoría del paquete nativo"><h3>Auditoría de esta revisión</h3>
+    {!data.nativeAudit?<><p>Fija las fuentes y la configuración para este paquete exacto. Esta acción consulta CIMA, pero no llama a la IA ni aprueba el caso.</p>{([['metformin850','Metformina 850 mg · CIMA'],['enalapril20','Enalapril 20 mg · CIMA']] as const).map(([key,label])=><label key={key}><input type="checkbox" checked={sources.includes(key)} onChange={e=>setSources(e.target.checked?[...sources,key]:sources.filter(s=>s!==key))}/>{label}</label>)}<button disabled={busy||dirty||sources.length===0} onClick={()=>nativeAudit('prepare')}>Vincular fuentes sin ejecutar IA</button></>:<>
+     <p>Vínculo vigente: {data.nativeAudit.current?'SÍ':'NO · configuración o contenido diferente'}. Ejecución: {data.nativeAudit.execution}. Resultado clínico: {data.nativeAudit.status}.</p>
+     <p>Fuentes disponibles no equivalen a adecuación clínica. INSUFFICIENT y FAIL bloquean; WARNING exige resolución docente. Una edición exige otra auditoría y aprobación; los históricos se conservan.</p>
+     {data.nativeAudit.sources.map((s:any)=><p key={s.key}><a href={s.url} target="_blank" rel="noreferrer">{s.key}</a>: {s.status} · {s.retrievedAt}{s.truncated?' · extracto truncado':''}</p>)}
+     <details><summary>Procedencia y configuración fijadas</summary><p>Candidato: {data.candidate.versionId}; revisión: {data.draftVersionId}</p><p>Contenido: {data.nativeAudit.content_hash}</p><p>Fuentes: {data.nativeAudit.sources_hash}</p><p>Solicitud: {data.nativeAudit.request_hash}</p><Content value={data.nativeAudit.configuration}/></details>
+     {data.nativeAudit.result?.judgment.dimensions.map((d:any)=><article key={d.id}><h4>{dimensionLabels[d.id]} · {d.status}</h4><p>{d.reason}</p><p>Propuesta para decisión docente: {d.proposal||'Sin propuesta adicional'}</p><p>Hechos: {d.factRefs.join(', ')}. Fuentes: {d.sourceKeys.join(', ')}</p></article>)}
+     {data.nativeAudit.error_code&&<p role="alert">Fallo técnico: {data.nativeAudit.error_code}. No autoriza reintentar ni aprobar.</p>}
+     <button disabled={busy||dirty||!data.nativeAudit.current||data.nativeAudit.execution!=='PREPARED'||!data.nativeAuditExecutionAvailable} onClick={()=>nativeAudit('run')}>Ejecutar auditoría autorizada</button>
+     <p>Requiere autorización privada específica, presupuesto y revisión definitiva. No se ha ejecutado IA al vincular fuentes.</p>
+    </>}
+   </section>}
    {data.candidate&&<><p>Estado: {data.candidate.status} · Auditoría: {data.candidate.auditKind} · {data.candidate.auditReference}</p>
     {data.candidate.auditKind==='SYNTHETIC_TEST'&&<p><strong>Solo demostración sintética en base desechable. No es aprobación clínica real.</strong></p>}
     <details><summary>Paquete académico reservado: hechos, protocolos y evaluación</summary><Content value={data.candidate.content}/></details>

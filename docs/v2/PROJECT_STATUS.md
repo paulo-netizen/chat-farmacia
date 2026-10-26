@@ -2,6 +2,9 @@
 
 ## Baseline oficial
 
+Actualización actual del 26 de octubre: auditoría conectada directamente al candidato nativo exacto, con fuentes/configuración fijadas, reserva única, conservación histórica e invalidación tras edición. Lucía v5 y María v3 preparadas desde el editor sin nuevas inferencias: auditoría y revisión humana PENDING. [Evidencia y límites](34_NATIVE_PACKAGE_AUDIT.md). Se mantienen **51.53% acreditado / 57.23% propuesto**, sin nuevo cálculo ni aprobación docente.
+
+
 Actualización del 26 de octubre: conversión nativa de las propuestas estructuradas de Lucía y María a paquete académico docente, con RNM no determinable versionado, perfil, requisitos tipados, derivación y cuestionarios calificables. Ambos permanecen borradores sin aprobación; auditoría de sus nuevos candidatos PENDING. [Alcance y decisiones](33_NATIVE_TEACHER_AUTHORING.md). **51.53% acreditado y 57.23% propuesto**, separados hasta aceptación de Paulo. M1/M2/M3 siguen PARTIAL.
 
 

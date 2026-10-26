@@ -279,3 +279,7 @@ Evidencia nueva de esta entrega: 13/13 pruebas unitarias de conversión; 2/2 int
 En navegador, Lucía v5 se recuperó con paquete canónico PASS, y María v2 cargó la propuesta, se guardó como v3 y se convirtió con PASS. Ambas muestran auditoría y revisión humana PENDING, con validar/publicar deshabilitados. La ficha previa de María mostró solo nombre, edad y sexo. Los tests verifican también ese límite en el resolver público, no solo en la presentación. Se conservaron hechos y revisiones anteriores. Sin sesiones, asignaciones ni aprobación académica creadas por la conversión.
 
 La evidencia live anterior pertenece a otras revisiones; no acredita fidelidad semántica del perfil /3 ni aprobación de estos paquetes. No hubo nuevas inferencias, conteos o auditorías: el coste acumulado previo y sus partidas desconocidas permanecen sin cambios. El trabajo COV preexistente queda fuera del checkpoint.
+
+### Actualización posterior: conexión nativa (26-10-2026)
+
+La conexión técnica que figuraba pendiente en el cierre anterior está implementada: [auditoría sobre el candidato exacto](34_NATIVE_PACKAGE_AUDIT.md). No altera las propuestas clínicas, perfiles ni las 16 preguntas de este documento. Lucía y María conservan auditoría y revisión humana PENDING, sin nuevas inferencias ni aprobación.

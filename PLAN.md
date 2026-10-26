@@ -8,6 +8,16 @@ La fuente canónica del progreso, los porcentajes, los pesos M0–M11 y el check
 
 ## Estado actual
 
+### Auditoría del candidato nativo — alcance completado, 26-10-2026
+
+Vincular fuentes, configuración y juicio al paquete nativo y revisión exactos, sin
+otro expediente. Reutilizar el auditor y los gates editoriales; claim duradero antes
+del envío, sin locks durante transporte, sin reintento de resultado incierto.
+Migración aditiva para evidencia de auditoría; conservar contratos/históricos.
+Verificar con transporte simulado y PostgreSQL desechable; Lucía/María solo preparación,
+sin inferencias ni aprobación. COV ajeno preservado aparte. 51,53% acreditado y
+57,23% propuesto sin cambios. Hoja docente con 16 preguntas, no 16 cuestionarios.
+
 ### Autoría nativa — cierre técnico, 2026-10-25
 
 Completar la conversión desde los campos guardados del editor, sin otro expediente
@@ -391,3 +401,7 @@ Verificación nueva: 13/13 focalizadas, 2/2 PostgreSQL desechable, suite offline
 Open decisions: criterio de derivación de Lucía ante fuentes con distinto alcance de diabetes; clasificación/intervención y reevaluación de María; aprobación de perfiles, requisitos y claves nuevas. La conexión de auditoría al candidato nativo es pendiente técnico, no decisión docente. Progreso 51,53% acreditado / 57,23% propuesto.
 
 Cierre en navegador del 26-10-2026: Lucía v5 recuperada y María v3 guardada/convertida, paquetes PASS y auditoría/revisión PENDING, publicación deshabilitada. Vista inicial de María limitada a nombre, edad y sexo. Las comprobaciones de autorización, aislamiento y revisiones quedan en las pruebas nativas.
+
+### Resultado — auditoría nativa, 26-10-2026
+
+Conexión directa al candidato y revisión, fuentes/configuración/solicitud fijadas y resultados inmutables. Reserva única sin locks durante IA, edición invalida reutilización y aprobación; gate nativo de publicación conectado. Migración 0010 solo en base desechable. Lucía v5 y María v3 verificadas en navegador con fuentes AVAILABLE, sin claims ni inferencias, auditoría/revisión PENDING. [Evidencia y límites](docs/v2/34_NATIVE_PACKAGE_AUDIT.md). Se conservan 51,53% acreditado y 57,23% propuesto. Las decisiones clínicas y las 16 preguntas de documento 33 siguen sin aprobación.

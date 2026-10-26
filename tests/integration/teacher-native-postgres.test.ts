@@ -14,6 +14,7 @@ describe.skipIf(process.env.RUN_TEACHER_DRAFT_POSTGRES!=='1')('native conversion
   db=new Pool({host:'127.0.0.1',port:55451,user:'postgres',database:'chatusal_editor_disposable',ssl:false});
   expect((await db.query("SELECT current_database() db,shobj_description(oid,'pg_database') marker FROM pg_database WHERE datname=current_database()")).rows).toEqual([{db:'chatusal_editor_disposable',marker:'teacher-editor-20261012-disposable'}]);
   if(!(await db.query("SELECT to_regclass('public.teacher_native_revision_once') t")).rows[0].t)await db.query(readFileSync('db/migrations/0009_v2_teacher_native_package.sql','utf8'));
+  if(!(await db.query("SELECT to_regclass('public.teacher_native_audit_bindings') t")).rows[0].t)await db.query(readFileSync('db/migrations/0010_v2_teacher_native_audits.sql','utf8'));
  });
  afterAll(async()=>{await db?.end();});
  it.each(['lucia','maria'] as const)('saves, converts and recovers %s without approval or student effects',async template=>{

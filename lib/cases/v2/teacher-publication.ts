@@ -1,4 +1,5 @@
 import 'server-only';
+import {readNativeAudit} from './teacher-native-audit-store';
 import type { Pool, PoolClient } from 'pg';
 import { z } from 'zod';
 import { TeacherDraftError } from './teacher-case-draft-store';
@@ -48,13 +49,14 @@ export function createTeacherPublicationStore(db:Pick<Pool,'connect'>) {
    FROM teacher_publication_candidates p JOIN case_versions v ON v.id=p.candidate_version_id
    LEFT JOIN teacher_publication_approvals a ON a.candidate_version_id=v.id
    WHERE p.draft_version_id=$1 AND p.case_id=$2 ORDER BY v.version_number DESC LIMIT 1`,[draft.id,caseId])).rows[0];
+  const nativeAudit=row?.content_format==='TEACHER_CASE_BUNDLE_V1'?await readNativeAudit(c,row):null;
   const parsedDraft=teacherDraftFieldsSchema.safeParse(draft.content.fields);
   const validDraft=parsedDraft.success;
   const applicabilityResolved=parsedDraft.success&&parsedDraft.data.requirements.every(r=>r.applicability!=='UNDETERMINED');
   const checks={draftStructure:validDraft?'PASS':'FAIL',canonicalPackage:row?(checkPublicationPackage(row)?'PASS':'FAIL'):'MISSING',
-   requirements:applicabilityResolved?'PASS':'PENDING',clinicalAudit:row?.audit_status??'PENDING',humanReview:row?.reviewed_at?'APPROVED':'PENDING'};
+   requirements:applicabilityResolved?'PASS':'PENDING',clinicalAudit:row?.content_format==='TEACHER_CASE_BUNDLE_V1'?(nativeAudit?.status??'PENDING'):row?.audit_status??'PENDING',humanReview:row?.reviewed_at?'APPROVED':'PENDING'};
   const ready=checks.draftStructure==='PASS'&&checks.requirements==='PASS'&&checks.canonicalPackage==='PASS'&&['PASS','WARNING'].includes(checks.clinicalAudit);
-  return {draft,row,view:{draftVersionId:draft.id,revision:draft.version_number,preparation,checks,candidate:row?{versionId:row.id,status:row.status,
+  return {draft,row,view:{draftVersionId:draft.id,revision:draft.version_number,preparation,nativeAudit,nativeAuditExecutionAvailable:Boolean(process.env.TEACHER_AUDIT_AUTH&&process.env.OPENAI_API_KEY),checks,candidate:row?{versionId:row.id,status:row.status,
     auditKind:row.audit_kind,auditReference:row.audit_reference,reviewedAt:row.reviewed_at??null,reviewerId:row.reviewer_id??null,note:row.note??null,
     // Teacher-only API. Full canonical content must be available for correspondence review.
     content:row.content}:null,
