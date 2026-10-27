@@ -283,3 +283,7 @@ La evidencia live anterior pertenece a otras revisiones; no acredita fidelidad s
 ### Actualización posterior: conexión nativa (26-10-2026)
 
 La conexión técnica que figuraba pendiente en el cierre anterior está implementada: [auditoría sobre el candidato exacto](34_NATIVE_PACKAGE_AUDIT.md). No altera las propuestas clínicas, perfiles ni las 16 preguntas de este documento. Lucía y María conservan auditoría y revisión humana PENDING, sin nuevas inferencias ni aprobación.
+
+## Revisión posterior de cuestionarios — 27-10-2026
+
+Las 16 preguntas anteriores se conservan como histórico. M8 incorpora una [revisión nueva de enunciados y distractores](35_SESSION_QUESTIONNAIRE.md), cargable desde el editor sin cambiar hechos ni solución. Las claves de Lucía 5/7 y María 3/6/8 permanecen pendientes de decisión clínica y bloquean conversión de esa nueva revisión. No hay aprobación ni publicación académica.

@@ -2,6 +2,7 @@
 
 import { FormEvent, useCallback, useEffect, useState } from 'react';
 import { useRouter } from 'next/navigation';
+import QuestionnaireLinks from './QuestionnaireLinks';
 import {
   createStudentSessionDto,
   type StudentSessionDto,
@@ -60,10 +61,6 @@ export default function ChatClient() {
   const [startingCase, setStartingCase] = useState(false);
   const [sending, setSending] = useState(false);
   const [showEval, setShowEval] = useState(false);
-  const [evalTipo, setEvalTipo] = useState('');
-  const [evalBarrera, setEvalBarrera] = useState('');
-  const [evalInterv, setEvalInterv] = useState('');
-  const [evalResult, setEvalResult] = useState<any>(null);
   const [error, setError] = useState<string | null>(null);
 
   const loadActiveSession = useCallback(
@@ -195,38 +192,15 @@ export default function ChatClient() {
     }
   }
 
-  async function handleEvalSubmit(e: FormEvent) {
-    e.preventDefault();
-    const sessionId = sessionData?.sessionId;
-    if (!sessionId) return;
-    const intervenciones = evalInterv
-      .split(',')
-      .map((s) => s.trim())
-      .filter(Boolean);
+  async function handleFinish() {
+    if (!sessionData || sending || showEval) return;
+    setShowEval(true);setError(null);
     try {
-      const res = await fetch('/api/evaluations', {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({
-          sessionId,
-          tipo_no_adherencia: evalTipo,
-          barrera: evalBarrera,
-          intervenciones,
-        }),
-      });
-      if (!res.ok) {
-        const data = await res.json().catch(() => ({}));
-        setError(data.error || 'Error guardando evaluación');
-        return;
-      }
-      const data = await res.json();
-      setEvalResult(data);
-    } catch (err) {
-      console.error(err);
-      setError('Error de conexión');
-    }
+      const r=await fetch(`/api/sessions/${sessionData.sessionId}/finish`,{method:'POST'});
+      if(!r.ok){const v=await r.json();throw Error(v.error);}
+      router.push(`/cuestionario/${sessionData.sessionId}`);
+    } catch(e) {setShowEval(false);setError(e instanceof Error?e.message:'No se confirmó el cierre. Recupera la sesión.');}
   }
-
   async function handleLogout() {
     await fetch('/api/auth/logout', { method: 'POST' });
     router.push('/login');
@@ -261,7 +235,7 @@ export default function ChatClient() {
   if (!sessionData) {
     return (
       <div>
-        <p style={{ marginBottom: 12 }}>No hay ningún caso activo.</p>
+        <p style={{ marginBottom: 12 }}>No hay ningún caso activo.</p><QuestionnaireLinks />
         <button
           onClick={() => {
             void handleStartCase();
@@ -418,8 +392,8 @@ export default function ChatClient() {
         </form>
 
         <button
-          onClick={() => setShowEval(true)}
-          disabled={showEval}
+          onClick={handleFinish}
+          disabled={showEval || sending}
           style={{
             marginTop: 8,
             fontSize: 13,
@@ -429,135 +403,11 @@ export default function ChatClient() {
             padding: '6px 10px',
           }}
         >
-          Finalizar caso y evaluar
+          Finalizar entrevista y abrir cuestionario
         </button>
       </div>
 
-      {showEval && (
-        <div
-          style={{
-            borderRadius: 8,
-            padding: 12,
-            backgroundColor: 'white',
-            border: '1px solid #e2e8f0',
-          }}
-        >
-          <h3 style={{ fontWeight: 600, marginBottom: 8 }}>
-            Evaluación del caso
-          </h3>
-          <p style={{ fontSize: 13, marginBottom: 10 }}>
-            Responde según tu juicio clínico tras la entrevista. Después verás
-            la corrección y un breve feedback.
-          </p>
-          <form
-            onSubmit={handleEvalSubmit}
-            style={{ display: 'grid', gap: 10 }}
-          >
-            <div>
-              <label
-                style={{
-                  display: 'block',
-                  fontSize: 13,
-                  marginBottom: 4,
-                }}
-              >
-                Tipo de no adherencia (por ejemplo: "no intencionada",
-                "intencionada", "combinada")
-              </label>
-              <input
-                style={{
-                  width: '100%',
-                  borderRadius: 4,
-                  border: '1px solid #cbd5f5',
-                  padding: '8px 10px',
-                  fontSize: 13,
-                }}
-                value={evalTipo}
-                onChange={(e) => setEvalTipo(e.target.value)}
-              />
-            </div>
-            <div>
-              <label
-                style={{
-                  display: 'block',
-                  fontSize: 13,
-                  marginBottom: 4,
-                }}
-              >
-                Barrera principal (por ejemplo: "barrera práctica", "barrera de percepción"
-                )
-              </label>
-              <input
-                style={{
-                  width: '100%',
-                  borderRadius: 4,
-                  border: '1px solid #cbd5f5',
-                  padding: '8px 10px',
-                  fontSize: 13,
-                }}
-                value={evalBarrera}
-                onChange={(e) => setEvalBarrera(e.target.value)}
-              />
-            </div>
-            <div>
-              <label
-                style={{
-                  display: 'block',
-                  fontSize: 13,
-                  marginBottom: 4,
-                }}
-              >
-                Intervenciones propuestas (separadas por coma)
-              </label>
-              <input
-                style={{
-                  width: '100%',
-                  borderRadius: 4,
-                  border: '1px solid #cbd5f5',
-                  padding: '8px 10px',
-                  fontSize: 13,
-                }}
-                placeholder="Ej: Uso de pastillero, Educación sobre la importancia..."
-                value={evalInterv}
-                onChange={(e) => setEvalInterv(e.target.value)}
-              />
-            </div>
-            <button
-              type="submit"
-              style={{
-                padding: '8px 12px',
-                borderRadius: 4,
-                border: 'none',
-                backgroundColor: '#16a34a',
-                color: 'white',
-                fontWeight: 500,
-                cursor: 'pointer',
-              }}
-            >
-              Enviar evaluación
-            </button>
-          </form>
-
-          {evalResult && (
-            <div
-              style={{
-                marginTop: 12,
-                borderTop: '1px solid #e2e8f0',
-                paddingTop: 8,
-                fontSize: 13,
-              }}
-            >
-              <p>
-                <strong>Puntuación:</strong> {evalResult.score} / 3
-              </p>
-              <p style={{ marginTop: 6 }}>
-                <strong>Feedback:</strong> {evalResult.feedback}
-              </p>
-            </div>
-          )}
-        </div>
-      )}
+      <QuestionnaireLinks />
     </div>
   );
 }
-

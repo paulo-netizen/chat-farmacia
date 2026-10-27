@@ -33,7 +33,7 @@ export const teacherDraftFieldsSchema = z.object({
     rationale: text, factRefs: refs, guidePages: text.max(100),
     native: typedRequirementSchema.optional(),
   }).strict()).min(1).max(30),
-  questionnaire: z.array(z.object({ question: text, answer: text, factRefs: refs, gradable:gradableQuestionSchema.optional() }).strict()).min(1).max(30),
+  questionnaire: z.array(z.object({ question: text, answer: text, factRefs: refs, gradable:gradableQuestionSchema.optional(), review:z.object({contractVersion:z.literal('question-review/1'),status:z.enum(['PENDING_CLINICAL_DECISION','READY_FOR_REVIEW']),reason:text}).strict().optional() }).strict()).min(1).max(30),
 }).strict().superRefine((d, ctx) => {
   const ids = new Set(d.facts.map(f => f.id));
   if (ids.size !== d.facts.length) ctx.addIssue({ code: 'custom', path: ['facts'], message: 'Cada hecho debe tener una referencia diferente.' });

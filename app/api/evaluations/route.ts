@@ -1,3 +1,4 @@
+import {questionnaireResultsHeld} from '@/lib/cases/v2/questionnaire-results-gate';
 import { NextResponse } from 'next/server';
 
 import { requireUser } from '@/lib/auth';
@@ -171,6 +172,7 @@ export async function POST(req: Request) {
       return NextResponse.json({ error: 'Datos inválidos' }, { status: 400 });
     }
 
+    if(await questionnaireResultsHeld(user.id,envelope.sessionId))return NextResponse.json({status:'RESULTS_PENDING_AUTHORIZATION'},{status:202,headers:{'Cache-Control':'private, no-store'}});
     const runtime = await resolveSessionEvaluatorClinicalRuntimeV2({
       authenticatedUserId: user.id,
       sessionId: envelope.sessionId,
@@ -224,6 +226,7 @@ export async function GET(req: Request) {
     if (sessionId === null || sessionId.trim().length === 0) {
       return NextResponse.json({ error: 'Datos inválidos' }, { status: 400 });
     }
+    if(await questionnaireResultsHeld(user.id,sessionId))return NextResponse.json({status:'RESULTS_PENDING_AUTHORIZATION'},{status:202,headers:{'Cache-Control':'private, no-store'}});
     const status = await getOwnedSpfaEvaluationStatusV2({
       authenticatedUserId: user.id,
       sessionId,

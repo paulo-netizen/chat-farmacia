@@ -153,6 +153,11 @@ class FakeEvaluationDatabase {
     const params = Array.isArray(paramsValue) ? paramsValue : [];
     this.queries.push({ surface: 'pool', sql, params });
 
+    // This fixture contains only immutable LEGACY_V1_SNAPSHOT versions.
+    if (sql === "SELECT 1 FROM sessions s JOIN case_versions v ON v.id=s.case_version_id WHERE s.id=$1 AND s.user_id=$2 AND v.content_format='TEACHER_CASE_BUNDLE_V1'") {
+      return {rows: [], rowCount: 0};
+    }
+
     if (
       !/FROM public\.sessions AS s INNER JOIN public\.case_versions AS cv/i.test(sql) ||
       !/s\.case_version_id/i.test(sql) ||
@@ -376,6 +381,7 @@ function expectOnlyApprovedSqlFamilies(): void {
   expect(sql).not.toMatch(/ground_truth|current\s+PUBLISHED|\blatest\b/i);
   expect(sql).not.toMatch(/ON\s+CONFLICT|DO\s+UPDATE/i);
   for (const entry of database.queries) {
+    if(entry.sql === "SELECT 1 FROM sessions s JOIN case_versions v ON v.id=s.case_version_id WHERE s.id=$1 AND s.user_id=$2 AND v.content_format='TEACHER_CASE_BUNDLE_V1'") continue;
     expect(entry.sql).toMatch(
       /^(?:BEGIN|COMMIT|ROLLBACK)$|FROM public\.sessions AS s|FROM public\.evaluations|INSERT INTO public\.evaluations|UPDATE public\.sessions/i,
     );
@@ -513,10 +519,8 @@ describe('integrated session-bound Legacy evaluation stack', () => {
     expect(result.body).toEqual({ error: 'Sesión no encontrada' });
     expect(mocks.connect).not.toHaveBeenCalled();
     expect(database.beginQueries).toBe(0);
-    expect(database.queries).toHaveLength(1);
-    expect(database.queries[0]?.sql).toMatch(
-      /WHERE s\.id = \$1 AND s\.user_id = \$2/i,
-    );
+    expect(database.queries).toHaveLength(2);
+    for(const query of database.queries)expect(query.sql).toMatch(/WHERE s\.id\s*=\s*\$1 AND s\.user_id\s*=\s*\$2/i);
   });
 });
 

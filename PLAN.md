@@ -405,3 +405,11 @@ Cierre en navegador del 26-10-2026: Lucía v5 recuperada y María v3 guardada/co
 ### Resultado — auditoría nativa, 26-10-2026
 
 Conexión directa al candidato y revisión, fuentes/configuración/solicitud fijadas y resultados inmutables. Reserva única sin locks durante IA, edición invalida reutilización y aprobación; gate nativo de publicación conectado. Migración 0010 solo en base desechable. Lucía v5 y María v3 verificadas en navegador con fuentes AVAILABLE, sin claims ni inferencias, auditoría/revisión PENDING. [Evidencia y límites](docs/v2/34_NATIVE_PACKAGE_AUDIT.md). Se conservan 51,53% acreditado y 57,23% propuesto. Las decisiones clínicas y las 16 preguntas de documento 33 siguen sin aprobación.
+
+### M8 — recorrido del cuestionario, en curso
+
+Implementar cierre explícito e idempotente sobre sesiones existentes y su protocolo real de bloqueo de mensajes; cuestionario fijo por versión, recuperación con control de revisión, entrega definitiva y corrección determinista privada. Migración aditiva, sin recalificar históricos. Configuración de prueba explícitamente sintética; no establecer ponderaciones académicas. M9 conserva la autorización pendiente para notas, claves y explicaciones. Probar permisos, fuga de soluciones, concurrencia, recarga y persistencia en PostgreSQL desechable y navegador. No IA ni auditorías nuevas; Lucía/María siguen borradores. Revisar las 16 preguntas mediante propuesta nueva, conservar históricos y bloquear las claves dependientes de decisiones clínicas. COV preservado aparte.
+
+### M8 — resultado técnico, 27-10-2026
+
+Cierre, cuestionario fijo, guardado y entrega implementados con migración aditiva 0011 solo en entorno desechable. Corrección determinista con configuración sintética explícita; claves y notas retenidas hasta M9. [Recorrido, evidencias y límites](docs/v2/35_SESSION_QUESTIONNAIRE.md). Open decisions: aprobar claves clínicas pendientes (Lucía 5/7; María 3/6/8), políticas académicas y liberación de resultados; no inferirlas de los fixtures. Sin nueva acreditación: 51,53% acreditado / 57,23% propuesto.

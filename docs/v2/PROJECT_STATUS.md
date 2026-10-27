@@ -139,7 +139,7 @@ Los pesos y porcentajes se expresan como fracciones para el cálculo; por ejempl
 | M5 | Motor de protocolos SPFA | CLOSED | 100% | 15% | 15.00% |
 | M6 | Evaluación farmacéutica/PRM–RNM/adherencia | PARTIAL | 64% | 12% | 7.68% |
 | M7 | Evaluación de comunicación | NOT STARTED | 0% | 7% | 0.00% |
-| M8 | Cuestionario post-caso | NOT STARTED | 0% | 7% | 0.00% |
+| M8 | Cuestionario post-caso | PARTIAL (funcional; pendiente acreditación) | 0% acreditado | 7% | 0.00% |
 | M9 | Resultados y feedback | NOT STARTED | 0% | 5% | 0.00% |
 | M10 | Analítica y revisión docente | NOT STARTED | 0% | 4% | 0.00% |
 | M11 | Hardening y observabilidad final | NOT STARTED | 0% | 3% | 0.00% |
@@ -462,9 +462,9 @@ Pendiente: rúbrica, extracción de evidencia, scoring e integración.
 ### M8 — Cuestionario post-caso
 
 **Objetivo:** recoger y evaluar la comprensión posterior al caso sin liberar soluciones prematuramente.
-**Estado:** **NOT STARTED — 0%**.
+**Estado funcional:** **PARTIAL — recorrido técnico implementado; sin nueva acreditación**.
 
-Pendiente: contrato versionado, flujo, persistencia y evaluación del cuestionario. Véase el [workflow estudiante](07_STUDENT_WORKFLOW.md).
+Cierre de entrevista, cuestionario por versión, guardado/recuperación y entrega con corrección determinista privada. Configuración sintética separada de aprobación académica. Pendientes: políticas académicas aprobadas y liberación/integración M9. [Evidencia y límites](35_SESSION_QUESTIONNAIRE.md). Se conservan 51,53% acreditado y 57,23% propuesto.
 
 ### M9 — Resultados y feedback
 

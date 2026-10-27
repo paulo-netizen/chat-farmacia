@@ -1,0 +1,9 @@
+import {buildTeacherNativePackage} from '@/lib/cases/v2/build-teacher-native-package';
+import {teacherNativeProposal} from '@/lib/cases/v2/teacher-native-proposals';
+import {questionnaireDefinition} from '@/lib/cases/v2/session-questionnaire';
+export function m8Fields(){const f=teacherNativeProposal('lucia');f.title='M8 · caso sintético de pruebas';f.identity={nombre:'Paciente M8',edad:40,sexo:'Mujer'};f.initialDemand='Quería consultar una molestia leve.';f.questionnaire=[
+ {question:'¿Qué evolución ha referido el paciente?',answer:'Desde ayer',factRefs:['F1'],gradable:{contractVersion:'teacher-question/1',kind:'SINGLE_CHOICE',options:[{id:'A',text:'Desde ayer'},{id:'B',text:'Desde hace una semana'},{id:'C',text:'Desde hace un mes'}],correctOptionIds:['A'],justification:'CLAVE_PRIVADA_M8: el hecho F1 refiere inicio ayer.'}},
+ {question:'¿Qué datos se describen en la entrevista de prueba?',answer:'Puede beber y respirar',factRefs:['F1'],gradable:{contractVersion:'teacher-question/1',kind:'MULTIPLE_CHOICE',options:[{id:'A',text:'Puede beber líquidos'},{id:'B',text:'Puede respirar con normalidad'},{id:'C',text:'No puede beber líquidos'}],correctOptionIds:['A','B'],justification:'EXPLICACION_PRIVADA_M8: F1 incluye ambas capacidades.'}},
+ ];return f;}
+export const m8Policy={version:'questionnaire-policy/1',id:'m8-synthetic-exact-set-1',scope:'SYNTHETIC_TEST',approvalReference:'fixture-only-not-academic-approval',matching:'EXACT_SET',requireAll:false,floor:0,items:[{questionId:'Q1',correct:1,incorrect:0,blank:0},{questionId:'Q2',correct:1,incorrect:0,blank:0}]};
+export function m8Definition(){const id='casever_90000000-0000-4000-8000-000000000002',r=buildTeacherNativePackage({caseId:'1',versionId:'casever_90000000-0000-4000-8000-000000000001',revision:1,templateId:'lucia',status:'TEACHER_DRAFT',fields:m8Fields()},id);if(r.status!=='READY')throw Error('fixture');return questionnaireDefinition(r.bundle,'TEACHER_CASE_BUNDLE_V1',id,m8Policy);}

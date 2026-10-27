@@ -7,6 +7,7 @@ vi.mock('@/lib/cases/v2/teacher-case-draft-store',async original=>({...await ori
 import { GET as list, POST } from '@/app/api/teacher-drafts/route';
 import { GET as read, PUT } from '@/app/api/teacher-drafts/[id]/route';
 import { GET as preview } from '@/app/api/teacher-drafts/[id]/preview/route';
+import {POST as reviseQuestions} from '@/app/api/teacher-drafts/[id]/questionnaire-proposal/route';
 import { teacherDraftTemplate } from '@/lib/cases/v2/teacher-case-draft-templates';
 import { TeacherDraftError } from '@/lib/cases/v2/teacher-case-draft-store';
 const params={params:{id:'1'}};
@@ -15,6 +16,14 @@ const readReq=()=>new Request('http://localhost/api/teacher-drafts/1');
 const versionId='casever_10000000-0000-4000-8000-000000000001';
 beforeEach(()=>{vi.clearAllMocks();mocks.user.mockResolvedValue({id:1,role:'teacher'});mocks.list.mockResolvedValue([]);mocks.read.mockResolvedValue({fields:teacherDraftTemplate('lucia')});mocks.save.mockResolvedValue({versionId});mocks.openTemplate.mockResolvedValue({versionId});});
 describe('teacher draft HTTP boundaries',()=>{
+  it('keeps revised questions teacher-only and version-bound without saving or approving',async()=>{
+    const request=()=>req({expectedDraftVersionId:versionId},'POST');
+    mocks.user.mockResolvedValue({id:1,role:'student'});expect((await reviseQuestions(request(),params)).status).toBe(403);expect(mocks.read).not.toHaveBeenCalled();
+    mocks.user.mockResolvedValue({id:1,role:'teacher'});mocks.read.mockResolvedValue({versionId,templateId:'lucia'});
+    const response=await reviseQuestions(request(),params);expect(response.status).toBe(200);expect((await response.json()).questionnaire).toHaveLength(8);expect(mocks.read).toHaveBeenCalledWith('1','1');expect(mocks.save).not.toHaveBeenCalled();
+    mocks.read.mockResolvedValue({versionId:'different',templateId:'lucia'});expect((await reviseQuestions(request(),params)).status).toBe(409);
+    expect((await reviseQuestions(req({expectedDraftVersionId:versionId},'POST','https://evil.test'),params)).status).toBe(403);
+  });
   for(const role of [null,'student']) it(`denies all routes to ${role}`,async()=>{
     mocks.user.mockResolvedValue(role?{id:1,role}:null);
     for(const run of [()=>list(),()=>POST(req({templateId:'lucia'},'POST')),()=>read(readReq(),params),()=>preview(readReq(),params),()=>PUT(req(),params)]) expect((await run()).status).toBe(role?403:401);

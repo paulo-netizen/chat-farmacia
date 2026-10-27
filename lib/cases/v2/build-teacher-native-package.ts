@@ -45,7 +45,7 @@ export function teacherNativeIssues(draft:TeacherDraftRecord):NativeIssue[] {
  if(!a?.referral||a.referral.status==='PENDING')problems.push(issue('Derivación','Completa decisión, criterios de nueva consulta y fuente; pendiente no significa no derivar.'));
  if(a?.referral?.status==='required'&&((a.referral.report==='not_required')!==(a.referral.reportContents.length===0)))problems.push(issue('Informe de derivación','Relaciona la exigencia de informe con sus contenidos.'));
  f.requirements.forEach((r,i)=>{if(!r.native||r.applicability==='UNDETERMINED')problems.push(issue(`Requisito ${i+1}`,'Completa tipo, dominio y aplicabilidad.'));});
- f.questionnaire.forEach((q,i)=>{if(!q.gradable||!q.factRefs.length)problems.push(issue(`Pregunta ${i+1}`,'Completa opciones, clave, justificación y hechos de soporte.'));});
+ f.questionnaire.forEach((q,i)=>{if(q.review?.status==='PENDING_CLINICAL_DECISION')problems.push(issue(`Pregunta ${i+1}`,q.review.reason));if(!q.gradable||!q.factRefs.length)problems.push(issue(`Pregunta ${i+1}`,'Completa opciones, clave, justificación y hechos de soporte.'));});
  return problems;
 }
 

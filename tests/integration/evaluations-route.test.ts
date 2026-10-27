@@ -1,3 +1,4 @@
+vi.mock('@/lib/cases/v2/questionnaire-results-gate',()=>({questionnaireResultsHeld:vi.fn(async()=>false)}));
 import { readFileSync } from 'node:fs';
 
 import { beforeEach, describe, expect, it, vi } from 'vitest';
@@ -89,6 +90,7 @@ vi.mock('@/lib/cases/v2/get-owned-spfa-evaluation-status', () => ({
 }));
 
 import { GET, POST } from '@/app/api/evaluations/route';
+import {questionnaireResultsHeld} from '@/lib/cases/v2/questionnaire-results-gate';
 import { LegacyEvaluationErrorV2 } from '@/lib/cases/v2/legacy-evaluation';
 
 const authenticatedUserId = 41;
@@ -182,6 +184,7 @@ function readError(code: string) {
 
 beforeEach(() => {
   vi.resetAllMocks();
+  vi.mocked(questionnaireResultsHeld).mockResolvedValue(false);
   mocks.requireUser.mockResolvedValue({ id: authenticatedUserId, role: 'student' });
   mocks.resolveRuntime.mockResolvedValue(runtime);
   mocks.finalizeLegacy.mockResolvedValue(publicResult);
@@ -191,6 +194,19 @@ beforeEach(() => {
     score: { status: 'SCORED', score: 87, needsReview: false },
   });
   mocks.readSpfa.mockResolvedValue({ status: 'NOT_STARTED', sessionId });
+});
+
+it('holds native results before and after M8 submission without calling evaluation',async()=>{
+ vi.mocked(questionnaireResultsHeld).mockResolvedValue(true);
+ for(const result of [await callEndpoint(),await callGet()]){
+  expect(result.response.status).toBe(202);
+  expect(result.body).toEqual({status:'RESULTS_PENDING_AUTHORIZATION'});
+  expect(result.response.headers.get('cache-control')).toContain('no-store');
+ }
+ expect(mocks.resolveRuntime).not.toHaveBeenCalled();
+ expect(mocks.finalizeLegacy).not.toHaveBeenCalled();
+ expect(mocks.finalizeSpfa).not.toHaveBeenCalled();
+ expect(mocks.readSpfa).not.toHaveBeenCalled();
 });
 
 describe('POST /api/evaluations authentication and body boundary', () => {
