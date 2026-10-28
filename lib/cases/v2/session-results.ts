@@ -9,6 +9,8 @@ export const resultPolicySchema=z.object({
 }).strict().superRefine((p,c)=>{if(p.performance&&Math.abs(Object.values(p.performance).reduce((s,n)=>s+n,0)-100)>1e-9)c.addIssue({code:'custom',message:'WEIGHTS_TOTAL'});});
 export type ResultPolicy=z.infer<typeof resultPolicySchema>;
 export type ResultDimension={
+ synthetic?:boolean;
+ feedback?:{criterion:string;state:string;level:number|null;justification:string;improvement:string;certainty:string;context:{messageId:string;role:'student'|'patient';excerpt:string}[]}[];
  status:'AVAILABLE'|'PROVISIONAL'|'PENDING_REVIEW'|'PENDING'|'TECHNICAL_FAILURE'|'NOT_SCORABLE';
  score:number|null;source:{id:string;version:string;fingerprint:string;versions?:string[]}|null;
  evidence:{criterion:string;outcome:string;messageId:string;role:'student'|'patient';excerpt:string}[];

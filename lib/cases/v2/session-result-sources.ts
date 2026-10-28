@@ -1,4 +1,5 @@
 import 'server-only';
+import {readCommunicationDimension} from './communication-store';
 import type {PoolClient} from 'pg';
 import {getOwnedSpfaEvaluationStatusV2,GetOwnedSpfaEvaluationStatusErrorV2} from './get-owned-spfa-evaluation-status';
 import {validatePharmaceuticalEvaluationRecordV2} from './pharmaceutical-evaluation-lifecycle';
@@ -63,5 +64,5 @@ export async function readResultSources(c:PoolClient,s:{id:string;user_id:string
    }
   }catch{pharmaceutical={...emptyDimension('TECHNICAL_FAILURE'),source:{id:row.evaluation_id,version:'pharmaceutical-evaluation-record/1',fingerprint:resultFingerprint({row,attempts,artifacts})}};}
  }
- return {protocol,pharmaceutical,communication:emptyDimension()};
+ return {protocol,pharmaceutical,communication:await readCommunicationDimension(c,s,transcript.fingerprint.value)};
 }

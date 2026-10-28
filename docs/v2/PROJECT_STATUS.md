@@ -1,5 +1,13 @@
 # ChatUSAL-FarmaBot v2 — Project Status
 
+## M7 funcional — 28-10-2026
+
+**PARTIAL, 0% acreditado**: contrato de comunicación, propuesta de rúbrica, evaluación
+simulada, persistencia protegida e integración M9. [Descriptores, ejemplos y límites](37_COMMUNICATION_EVALUATION.md).
+Pendiente de aprobación docente y aceptación semántica; sin adaptador live habilitado.
+No aumenta porcentajes: **51,53% acreditado / 66,58% propuesto** según desglose M1–M3/M8/M9
+inferior. M7 no forma parte del incremento propuesto; no se duplica M9 por integrar una dimensión.
+
 ## Actualización funcional M8/M9 — 27-10-2026
 
 Resultados vinculados a sesión, versión y evaluaciones persistidas, con liberación servidor
@@ -177,7 +185,7 @@ Los pesos y porcentajes se expresan como fracciones para el cálculo; por ejempl
 | M4 | Runtime seguro del paciente | CLOSED | 100% | 10% | 10.00% |
 | M5 | Motor de protocolos SPFA | CLOSED | 100% | 15% | 15.00% |
 | M6 | Evaluación farmacéutica/PRM–RNM/adherencia | PARTIAL | 64% | 12% | 7.68% |
-| M7 | Evaluación de comunicación | NOT STARTED | 0% | 7% | 0.00% |
+| M7 | Evaluación de comunicación | PARTIAL (offline; aceptación pendiente) | 0% | 7% | 0.00% |
 | M8 | Cuestionario post-caso | PARTIAL (funcional; pendiente acreditación) | 0% acreditado | 7% | 0.00% |
 | M9 | Resultados y feedback | PARTIAL (funcional; pendiente acreditación) | 0% acreditado | 5% | 0.00% |
 | M10 | Analítica y revisión docente | NOT STARTED | 0% | 4% | 0.00% |
@@ -494,9 +502,9 @@ La evidencia 56/56, 153/153 y 3469/67 de apartados anteriores sigue siendo hist�
 ### M7 — Evaluación de comunicación
 
 **Objetivo:** evaluar la comunicación farmacéutico-paciente mediante criterios trazables.
-**Estado:** **NOT STARTED — 0%**.
+**Estado funcional:** **PARTIAL — offline, 0% acreditado**.
 
-Pendiente: rúbrica, extracción de evidencia, scoring e integración.
+Implementados: rúbrica propuesta, contrato de evidencia, cálculo sintético, persistencia e integración M9. Pendientes: aprobación docente, adaptador real y aceptación semántica. No se acredita M7 mediante runtime simulado.
 
 ### M8 — Cuestionario post-caso
 

@@ -8,6 +8,17 @@ La fuente canónica del progreso, los porcentajes, los pesos M0–M11 y el check
 
 ## Estado actual
 
+### M7 — comunicación trazable, 28-10-2026
+
+Implementar el recorrido offline transcript M5 congelado → adjudicación semántica inyectada
+→ validación estricta → persistencia protegida → lectura M9. Reutilizar sesiones, permisos,
+huellas y liberación; migración aditiva para el resultado de comunicación, sin alterar M5/M6.
+Rúbrica propuesta versionada; puntuación exclusivamente sintética en base desechable.
+Open decisions: aprobación de descriptores, niveles, pesos y tratamiento de falta de oportunidad;
+aceptación semántica y política académica pendientes. Sin IA live ni nueva acreditación.
+Conservar COV aparte, Lucía/María y sus cinco claves pendientes. Probar permisos, citas,
+concurrencia, recuperación, fallo técnico e integración con resultados antes de publicar.
+
 ### M9 — composición y liberación de resultados, 27-10-2026
 
 Recuperar exclusivamente evaluaciones y recibos persistidos; ninguna lectura inicia IA ni

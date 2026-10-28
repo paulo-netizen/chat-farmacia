@@ -13,6 +13,7 @@ async function setup(debt=false){
  const artifacts=[{reference:f.intent.sources,payload:f.sources},{reference:f.resultRef!,payload:f.result!}];
  const query=vi.fn(async(sql:string)=>{
   if(sql.startsWith('SELECT id::text'))return {rows:f.sources.contextSource.transcript.messages.map(m=>({id:m.messageId,role:m.role,content:m.content,created_at:m.createdAt}))};
+  if(sql.includes('session_communication_evaluations'))return {rows:[]};
   if(sql.includes('session_evaluation_records_v2'))return {rows:[]};
   if(sql.includes('FROM pharmaceutical_evaluations_v2'))return {rows:[{evaluation_id:record.evaluationId,header}]};
   if(sql.includes('FROM pharmaceutical_evaluation_attempts_v2'))return {rows:attempts.map(payload=>({payload}))};
