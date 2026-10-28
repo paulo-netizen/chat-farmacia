@@ -1,5 +1,10 @@
 # M8 — Cuestionario vinculado a la versión de la sesión
 
+Actualización posterior M9: liberación y pantalla implementadas en [documento 36](36_SESSION_RESULTS.md).
+Los pendientes M9 y la cifra propuesta 57,23% descritos abajo corresponden al checkpoint M8
+original; la propuesta actual está desglosada en PROJECT_STATUS. Las claves siguen protegidas
+en las APIs de cuestionario y solo se liberan por la nueva vía autorizada de resultados.
+
 Entrega técnica, 27-10-2026. Base: da3532a81425b90b8a21e3ac91342d86f735286e.
 
 ## Recorrido y garantías

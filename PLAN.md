@@ -8,6 +8,22 @@ La fuente canónica del progreso, los porcentajes, los pesos M0–M11 y el check
 
 ## Estado actual
 
+### M9 — composición y liberación de resultados, 27-10-2026
+
+Recuperar exclusivamente evaluaciones y recibos persistidos; ninguna lectura inicia IA ni
+recalifica el cuestionario. Separar desempeño (SPFA, actuación, comunicación) de comprensión.
+Política de liberación explícita por versión, con aprobación docente vinculada al fingerprint
+de la composición; una dimensión ausente no es cero. Migración aditiva para políticas y
+liberaciones, sin cambiar registros históricos. Probar ambas políticas sintéticas solo en
+PostgreSQL desechable y navegador. COV preservado aparte; Lucía/María siguen borradores.
+Open decisions: políticas académicas, M7 y aceptación de M8/M9. 51,53% sigue acreditado;
+57,23% es referencia histórica propuesta anterior a M8, no medición actual del desarrollo.
+
+Implementación y propuesta desglosada en documentos 36 y PROJECT_STATUS: M8 80/100,
+M9 75/100 propuestos, sin acreditar. Aporte adicional propuesto 9,35 puntos; 60,88% si se
+acepta solo M8/M9, 66,58% si además se acepta la propuesta histórica M1–M3. No se recalculan
+al alza M1–M3 en esta entrega. Siguiente bloque funcional: M7, sin iniciarlo aquí.
+
 ### Auditoría del candidato nativo — alcance completado, 26-10-2026
 
 Vincular fuentes, configuración y juicio al paquete nativo y revisión exactos, sin

@@ -1,0 +1,32 @@
+'use client';
+import {useEffect,useState} from 'react';
+import type {ResultDimension} from '@/lib/cases/v2/session-results';
+
+const labels={protocol:'Protocolo SPFA',pharmaceutical:'Actuación farmacéutica',communication:'Comunicación',understanding:'Comprensión del caso'};
+const statuses={AVAILABLE:'Disponible',PROVISIONAL:'Provisional: requiere revisión',PENDING_REVIEW:'Pendiente de revisión',PENDING:'Pendiente de evaluación',TECHNICAL_FAILURE:'Fallo técnico',NOT_SCORABLE:'No puntuable'};
+const outcomes:Record<string,string>={COVERED:'Información cubierta',PARTIALLY_COVERED:'Información parcialmente cubierta',NOT_COVERED:'Información no cubierta',PERFORMED:'Actuación realizada',PARTIALLY_PERFORMED:'Actuación parcial',NOT_PERFORMED:'Actuación no realizada',CORRECTLY_DEMONSTRATED:'Demostrado',INCORRECT_OR_CONTRADICTED:'Incorrecto o contradicho',UNCERTAIN:'Evidencia incierta',NOT_DEMONSTRATED:'No demostrado'};
+type View={status:string;sessionId:string;caseVersionId:string;synthetic?:boolean;fingerprint?:string;policyId?:string;policyVersion?:string;dimensions?:Record<keyof typeof labels,ResultDimension>;performance?:{status:string;score:number|null};questionnaire?:{id:string;prompt:string;options:{id:string;text:string}[];selected:string[];correct:string[];explanation:string;outcome:string}[]};
+export default function ResultsClient({sessionId,teacher=false}:{sessionId:string;teacher?:boolean}){
+ const [data,setData]=useState<View|null>(null),[error,setError]=useState(''),[busy,setBusy]=useState(false);
+ const endpoint=teacher?`/api/teacher-results/${sessionId}`:`/api/sessions/${sessionId}/results`;
+ async function load(){setBusy(true);setError('');setData(null);try{const r=await fetch(endpoint,{cache:'no-store'}),v=await r.json();if(!r.ok)throw Error(v.error);setData(v);}catch(e){setError(e instanceof Error?e.message:'No se pudieron recuperar los resultados.');}finally{setBusy(false);}}
+ useEffect(()=>{void load();},[endpoint]);
+ async function release(){if(!data?.fingerprint)return;setBusy(true);setError('');try{const r=await fetch(endpoint,{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({expectedFingerprint:data.fingerprint})}),v=await r.json();if(!r.ok)throw Error(v.error);setData(v);}catch(e){setError(e instanceof Error?e.message:'Liberación no confirmada.');}finally{setBusy(false);}}
+ return <main style={{maxWidth:960,margin:'32px auto',padding:24}}><h1>{teacher?'Revisión y liberación de resultados':'Resultados del caso'}</h1>
+ <p>Desempeño de la entrevista y comprensión se presentan por separado. Recuperar esta pantalla no vuelve a evaluar ni genera respuestas de IA.</p>
+ {busy&&<p role="status">Recuperando…</p>}{error&&<p role="alert">{error}</p>}
+ {data?.synthetic&&<p style={{padding:12,background:'#fff2cf'}}><strong>Prueba sintética. Sin nota académica ni aprobación para uso real.</strong></p>}
+ {data&&<><p>Sesión {data.sessionId}</p><p>Versión del caso: {data.caseVersionId}</p>
+ {data.status==='SUBMISSION_PENDING'&&<p>Los resultados no están disponibles hasta la entrega definitiva del cuestionario.</p>}
+ {data.status==='POLICY_PENDING'&&<p>Resultados retenidos: falta una política de liberación autorizada para esta versión.</p>}
+ {data.status==='HELD'&&<p>Resultados retenidos hasta revisión docente. No se muestran notas, claves ni explicaciones.</p>}
+ {data.dimensions&&<><h2>Dimensiones</h2><div style={{display:'grid',gridTemplateColumns:'repeat(auto-fit,minmax(210px,1fr))',gap:16}}>{Object.entries(labels).map(([key,label])=>{const d=data.dimensions![key as keyof typeof labels];return <section key={key} style={{border:'1px solid #b8c5d4',borderRadius:8,padding:16}}><h3>{label}</h3><strong>{statuses[d.status]}</strong><p style={{fontSize:26}}>{d.score===null?'Sin nota':`${d.score} / 100`}</p>{d.status==='TECHNICAL_FAILURE'&&<p>La evaluación no está disponible por un error técnico. No equivale a desempeño incorrecto.</p>}{d.status==='PENDING'&&<p>No hay un resultado calculado. No se asigna cero.</p>}{d.source&&<details><summary>Procedencia</summary><p>{d.source.version}</p><ul>{d.source.versions?.map((v,i)=><li key={i}>{v}</li>)}</ul><p style={{overflowWrap:'anywhere'}}>{d.source.id}</p><p style={{overflowWrap:'anywhere'}}>Huella: {d.source.fingerprint}</p></details>}</section>;})}</div>
+ <h2>Desempeño global</h2><p>{data.performance?.score!==null&&data.performance?.score!==undefined?`${data.performance.score} / 100`:'No calculado: requiere las tres dimensiones definitivas y una política explícita.'}</p><p>La comprensión del cuestionario no se incluye en esta nota de desempeño.</p>
+ <h2>Evidencias de la entrevista</h2>{Object.entries(labels).filter(([k])=>k!=='understanding').map(([k,label])=>{const evidence=data.dimensions![k as keyof typeof labels].evidence;return <section key={k}><h3>{label}</h3>{evidence.length?evidence.map((e,i)=><div key={i}><p>Criterio {e.criterion}: {outcomes[e.outcome]??e.outcome}</p><blockquote>{e.excerpt}</blockquote><p>{e.role==='student'?'Estudiante':'Paciente'} · mensaje {e.messageId}</p></div>):<p>No hay evidencias liberables en el resultado existente. No se generan conclusiones nuevas.</p>}</section>;})}
+ <h2>Revisión del cuestionario</h2>{data.questionnaire?.map(q=><section key={q.id} style={{borderTop:'1px solid #ccd',padding:'16px 0'}}><h3>{q.id}. {q.prompt}</h3><ul>{q.options.map(o=><li key={o.id}>{o.id}. {o.text}{q.selected.includes(o.id)?' — Tu respuesta':''}{q.correct.includes(o.id)?' — Clave':''}</li>)}</ul><p>Resultado: {q.outcome==='CORRECT'?'Correcta':q.outcome==='BLANK'?'Sin respuesta':'Incorrecta'}</p><p>{q.explanation}</p></section>)}
+ <details><summary>Versión de resultados</summary><p>{data.policyVersion} · {data.policyId}</p><p style={{overflowWrap:'anywhere'}}>{data.fingerprint}</p></details>
+ {teacher&&data.status==='TEACHER_REVIEW'&&<section><h2>Decisión de liberación</h2><p>Mostrar este resultado al titular no corrige ni aprueba las dimensiones pendientes o provisionales.</p><button disabled={busy} onClick={release}>Liberar esta versión de resultados</button></section>}
+ </>}
+ </>}
+ <p><button disabled={busy} onClick={load}>Recuperar resultados</button> · <a href={teacher?'/profesor/casos':`/cuestionario/${sessionId}`}>{teacher?'Volver a casos':'Volver a mi entrega'}</a></p></main>;
+}

@@ -1,0 +1,14 @@
+import {beforeEach,it,expect,vi} from 'vitest';
+vi.mock('server-only',()=>({}));
+vi.mock('@/lib/db',()=>({pool:{connect:vi.fn()}}));
+vi.mock('@/lib/auth',()=>({getCurrentUser:vi.fn()}));
+const store=vi.hoisted(()=>({read:vi.fn(),review:vi.fn(),release:vi.fn()}));
+vi.mock('@/lib/cases/v2/session-results-store',()=>({createSessionResultsStore:()=>store}));
+import {getCurrentUser} from '@/lib/auth';
+import {GET} from '@/app/api/sessions/[id]/results/route';
+import {GET as REVIEW,POST} from '@/app/api/teacher-results/[id]/route';
+const params={params:{id:'10000000-0000-4000-8000-000000000001'}},req=new Request('http://localhost/api/results');
+beforeEach(()=>vi.resetAllMocks());
+it('denies anonymous and non-student reads before persistence',async()=>{expect((await GET(req,params)).status).toBe(401);vi.mocked(getCurrentUser).mockResolvedValue({id:1,role:'teacher',name:'T',email:'t@example.test'});expect((await GET(req,params)).status).toBe(403);expect(store.read).not.toHaveBeenCalled();});
+it('denies student release and cross-origin teacher writes',async()=>{vi.mocked(getCurrentUser).mockResolvedValue({id:1,role:'student',name:'S',email:'s@example.test'});expect((await REVIEW(req,params)).status).toBe(403);expect((await POST(new Request(req,{method:'POST',body:'{}'}),params)).status).toBe(403);vi.mocked(getCurrentUser).mockResolvedValue({id:1,role:'teacher',name:'T',email:'t@example.test'});expect((await POST(new Request(req,{method:'POST',headers:{origin:'https://foreign.invalid'},body:'{}'}),params)).status).toBe(403);expect(store.release).not.toHaveBeenCalled();});
+it('returns only the store projection without cache and does not reflect errors',async()=>{vi.mocked(getCurrentUser).mockResolvedValue({id:1,role:'student',name:'S',email:'s@example.test'});store.read.mockResolvedValue({status:'HELD'});const r=await GET(req,params);expect(await r.json()).toEqual({status:'HELD'});expect(r.headers.get('cache-control')).toContain('no-store');store.read.mockRejectedValue(Error('CLINICAL_SECRET'));const failure=await GET(req,params);expect(failure.status).toBe(500);expect(JSON.stringify(await failure.json())).not.toContain('CLINICAL_SECRET');});

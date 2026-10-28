@@ -1,5 +1,44 @@
 # ChatUSAL-FarmaBot v2 — Project Status
 
+## Actualización funcional M8/M9 — 27-10-2026
+
+Resultados vinculados a sesión, versión y evaluaciones persistidas, con liberación servidor
+y comprensión separada del desempeño. M8 y M9 PARTIAL. [Recorrido y límites](36_SESSION_RESULTS.md).
+**51,53% acreditado** se conserva. **57,23%** es una propuesta histórica anterior a M8,
+pendiente de regularización; no representa ya todo el desarrollo entregado. Las menciones
+fechadas que siguen son históricas. La nueva propuesta incremental se desglosa aquí, sin
+aplicarla automáticamente ni revisar al alza M1–M3 por esta entrega.
+
+| Milestone | Entregable propuesto | Puntos internos | Completados propuestos | Evidencia / pendiente |
+|---|---|---:|---:|---|
+| M8 | Contrato y preguntas fijadas por versión | 15 | 15 | Snapshot inmutable y revisión histórica |
+| M8 | Cierre y recorrido de cuestionario | 20 | 20 | Navegador, bloqueo real de mensajes, cierre idempotente |
+| M8 | Guardado, recuperación y entrega definitiva | 20 | 20 | PostgreSQL, concurrencia y recibo inmutable |
+| M8 | Corrección determinista con configuración explícita | 15 | 15 | Unitarias y recibo sintético; no política académica |
+| M8 | Autorización y aislamiento de claves antes de liberar | 10 | 10 | APIs y regresiones; M9 no vuelve a puntuar este entregable |
+| M8 | Calidad y aceptación de cuestionarios reales | 10 | 0 | Cinco claves abiertas; propuestas no equivalen a aceptación |
+| M8 | Gestión/aprobación de políticas académicas | 5 | 0 | Configuración sintética no la sustituye |
+| M8 | Refuerzo adaptativo formativo opcional | 5 | 0 | §42 no implementado; sin inferencias en esta entrega |
+| M9 | Composición, fuentes y versiones sin reevaluar | 25 | 25 | Lecturas verificadas M5/P1–P3/M8 |
+| M9 | Estados y separación comprensión/desempeño | 15 | 15 | Pendientes/fallos no son cero; global condicionada |
+| M9 | Liberación por política y revisión exacta | 20 | 20 | Retención, docente autorizado, invalidación e históricos |
+| M9 | Pantalla de resultados, claves y evidencias existentes | 15 | 15 | Navegador y proyección servidor |
+| M9 | Integración de todas las dimensiones definitivas | 10 | 0 | M7 e integración académica pendientes |
+| M9 | Política académica de global y liberación aprobada | 10 | 0 | Ninguna aprobación productiva atribuida a tests |
+| M9 | Aceptación del feedback y usabilidad con alumnado | 5 | 0 | Pendiente; no se acredita con fixtures |
+
+Totales internos: **M8 100, 80 propuestos**; **M9 100, 75 propuestos**. Son puntos de
+progreso, no pesos de la nota. M8 conserva el cómputo y la entrega; M9 acredita la lectura,
+composición y liberación. Compartir evidencia no duplica puntos. M8 no está completo:
+contraste con §§38–42 y límites en documento 36.
+
+Pesos globales intactos: M8 **7%**, M9 **5%**. Si se acepta solo este desglose:
+`51,53 + (80/100 × 7) + (75/100 × 5) = 60,88%`.
+Si además se acepta la propuesta histórica M1–M3 de +5,70 puntos, sin añadir nuevos puntos
+por su trabajo posterior: **`57,23 + 5,60 + 3,75 = 66,58% propuesto`**.
+Esta es una propuesta acumulada conservadora, no una medición acreditada ni una reevaluación
+completa de M1–M3. Acreditado permanece **51,53%** hasta aceptación de Paulo.
+
 ## Baseline oficial
 
 Actualización actual del 26 de octubre: auditoría conectada directamente al candidato nativo exacto, con fuentes/configuración fijadas, reserva única, conservación histórica e invalidación tras edición. Lucía v5 y María v3 preparadas desde el editor sin nuevas inferencias: auditoría y revisión humana PENDING. [Evidencia y límites](34_NATIVE_PACKAGE_AUDIT.md). Se mantienen **51.53% acreditado / 57.23% propuesto**, sin nuevo cálculo ni aprobación docente.
@@ -140,7 +179,7 @@ Los pesos y porcentajes se expresan como fracciones para el cálculo; por ejempl
 | M6 | Evaluación farmacéutica/PRM–RNM/adherencia | PARTIAL | 64% | 12% | 7.68% |
 | M7 | Evaluación de comunicación | NOT STARTED | 0% | 7% | 0.00% |
 | M8 | Cuestionario post-caso | PARTIAL (funcional; pendiente acreditación) | 0% acreditado | 7% | 0.00% |
-| M9 | Resultados y feedback | NOT STARTED | 0% | 5% | 0.00% |
+| M9 | Resultados y feedback | PARTIAL (funcional; pendiente acreditación) | 0% acreditado | 5% | 0.00% |
 | M10 | Analítica y revisión docente | NOT STARTED | 0% | 4% | 0.00% |
 | M11 | Hardening y observabilidad final | NOT STARTED | 0% | 3% | 0.00% |
 | **Total** |  |  |  | **100%** | **51.53%** |
@@ -464,14 +503,17 @@ Pendiente: rúbrica, extracción de evidencia, scoring e integración.
 **Objetivo:** recoger y evaluar la comprensión posterior al caso sin liberar soluciones prematuramente.
 **Estado funcional:** **PARTIAL — recorrido técnico implementado; sin nueva acreditación**.
 
-Cierre de entrevista, cuestionario por versión, guardado/recuperación y entrega con corrección determinista privada. Configuración sintética separada de aprobación académica. Pendientes: políticas académicas aprobadas y liberación/integración M9. [Evidencia y límites](35_SESSION_QUESTIONNAIRE.md). Se conservan 51,53% acreditado y 57,23% propuesto.
+Cierre de entrevista, cuestionario por versión, guardado/recuperación y entrega con corrección determinista. Liberación M9 implementada bajo política explícita. Pendientes: cuestionarios/políticas académicas aprobados y refuerzo opcional. [Evidencia M8](35_SESSION_QUESTIONNAIRE.md), [contraste completo y M9](36_SESSION_RESULTS.md). 51,53% acreditado; propuesta actual M8/M9 desglosada al inicio.
 
 ### M9 — Resultados y feedback
 
 **Objetivo:** componer resultados globales y feedback autorizado, explicable y basado en evidencia.
-**Estado:** **NOT STARTED — 0%**.
+**Estado funcional:** **PARTIAL; 0% acreditado hasta aceptar el desglose propuesto**.
 
-Pendiente: agregación M6–M8, reglas de liberación, DTOs y experiencia de resultados.
+Implementados composición de fuentes existentes, estados, global condicionada, DTOs,
+liberación servidor y pantalla de resultados. Pendientes: M7, selección de múltiples
+intenciones, políticas académicas y aceptación del feedback; no se generan conclusiones
+nuevas ni se declara la integración académica completa. [Evidencia](36_SESSION_RESULTS.md).
 
 ### M10 — Analítica y revisión docente
 
