@@ -1,0 +1,8 @@
+import {it,expect} from 'vitest';
+import {reviewRequestSchema,validateHumanReview,applyHumanReviews} from '@/lib/cases/v2/teacher-result-review';
+import {emptyDimension} from '@/lib/cases/v2/session-results';
+import {vi} from 'vitest';vi.mock('server-only',()=>({}));
+const request=()=>reviewRequestSchema.parse({expectedFingerprint:'a'.repeat(64),expectedRevision:0,action:'CORRECT',dimension:'understanding',criterion:'Q1',score:null,correction:'Interpretación revisada con motivo explícito.',reason:'Revisión sintética.'});
+it('requires reason, a real correction and bounded scores',()=>{expect(()=>reviewRequestSchema.parse({...request(),reason:''})).toThrow();expect(()=>reviewRequestSchema.parse({...request(),score:101})).toThrow();expect(()=>reviewRequestSchema.parse({...request(),action:'ACCEPT'})).toThrow();});
+it('does not invent criteria or turn technical failures and provisional scores into academic grades',()=>{expect(()=>validateHumanReview(request(),emptyDimension('AVAILABLE'),[])).toThrow();expect(()=>validateHumanReview({...request(),score:0},emptyDimension('TECHNICAL_FAILURE'),['Q1'])).toThrow();expect(()=>validateHumanReview({...request(),score:90},emptyDimension('PROVISIONAL'),['Q1'])).toThrow();});
+it('preserves automatic input and leaves score pending for a criterion-only correction',()=>{const d={protocol:emptyDimension(),pharmaceutical:emptyDimension(),communication:emptyDimension('PROVISIONAL'),understanding:{...emptyDimension('AVAILABLE'),score:50}};const result=applyHumanReviews(d,[{revision:1,author:'Teacher',createdAt:'2026-10-28',baseFingerprint:'a'.repeat(64),request:request()}]);expect(result.understanding).toMatchObject({score:null,status:'PENDING_REVIEW'});expect(d.understanding.score).toBe(50);});

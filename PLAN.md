@@ -8,6 +8,16 @@ La fuente canónica del progreso, los porcentajes, los pesos M0–M11 y el check
 
 ## Estado actual
 
+### Revisión docente de sesiones — 29-10-2026
+
+Implementados listado autorizado, transcript/cuestionario y revisiones humanas append-only sobre M9.
+Conservar siempre el automático; correcciones con motivo y control optimista de revisión.
+Liberar la composición revisada exacta, sin mantener autorización tras nueva corrección.
+Migración aditiva; probar con sesiones sintéticas en base desechable. No aprobar rúbricas,
+casos o políticas académicas. COV preservado aparte, sin IA ni cambios productivos.
+Verificación y límites: [documento 38](docs/v2/38_TEACHER_SESSION_REVIEW.md). Propuesta acumulada 68,58%; acreditado 51,53%, sin nuevos puntos aprobados.
+Open decisions: aceptación académica de M7 y políticas globales siguen pendientes.
+
 ### M7 — comunicación trazable, 28-10-2026
 
 Implementar el recorrido offline transcript M5 congelado → adjudicación semántica inyectada

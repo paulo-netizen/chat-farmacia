@@ -1,5 +1,29 @@
 # ChatUSAL-FarmaBot v2 — Project Status
 
+## Revisión docente funcional — 29-10-2026
+
+**51,53% acreditado / 68,58% propuesto**, pendiente de aceptación del desglose.
+M10 pasa funcionalmente a PARTIAL: listado autorizado, detalle y revisiones humanas
+inmutables con liberación de la composición exacta. [Evidencia y desglose M10](38_TEACHER_SESSION_REVIEW.md).
+No se acredita automáticamente ningún punto. Las secciones fechadas siguientes conservan
+los históricos 57,23% y 66,58%; no son el total propuesto actualizado.
+
+| Bloque | Peso global | Acreditado interno | Propuesto interno acumulado | Aporte global propuesto | Pendiente para cierre |
+|---|---:|---:|---:|---:|---|
+| M1 | 10% | 80% | 90% | 9,00 | Aceptación integral de autoría/editor y contratos |
+| M2 | 8% | 0% | 45% | 3,60 | Generación completa y calidad docente aceptada |
+| M3 | 11% | 55% | 65% | 7,15 | Auditorías definitivas y aprobación clínica real |
+| M7 | 7% | 0% | 0% | 0,00 | Rúbrica, adaptador real y aceptación semántica; funcional PARTIAL |
+| M8 | 7% | 0% | 80% | 5,60 | Cinco claves abiertas, políticas y refuerzo opcional |
+| M9 | 5% | 0% | 75% | 3,75 | Dimensiones definitivas, políticas, múltiples intenciones y aceptación |
+| M10 | 4% | 0% | 50% | 2,00 | Analítica, búsqueda avanzada y aceptación operativa |
+
+M1–M3/M8/M9 conservan sus propuestas previas. M7 no recibe puntos nuevos por inspección
+visual de evidencia simulada. El único incremento de esta entrega es M10: 15 listado +
+10 detalle + 25 revisión/historial = 50/100 propuestos; no se duplica la liberación M9.
+Cálculo: 51,53 + 5,70 (M1–M3) + 5,60 (M8) + 3,75 (M9) + 2,00 (M10) = **68,58%**.
+Lucía/María siguen borradores, M6 64%, PED2 abierto y D3B OPEN / VALIDATION DEBT.
+
 ## M7 funcional — 28-10-2026
 
 **PARTIAL, 0% acreditado**: contrato de comunicación, propuesta de rúbrica, evaluación
@@ -188,7 +212,7 @@ Los pesos y porcentajes se expresan como fracciones para el cálculo; por ejempl
 | M7 | Evaluación de comunicación | PARTIAL (offline; aceptación pendiente) | 0% | 7% | 0.00% |
 | M8 | Cuestionario post-caso | PARTIAL (funcional; pendiente acreditación) | 0% acreditado | 7% | 0.00% |
 | M9 | Resultados y feedback | PARTIAL (funcional; pendiente acreditación) | 0% acreditado | 5% | 0.00% |
-| M10 | Analítica y revisión docente | NOT STARTED | 0% | 4% | 0.00% |
+| M10 | Analítica y revisión docente | PARTIAL (revisión funcional) | 0% | 4% | 0.00% |
 | M11 | Hardening y observabilidad final | NOT STARTED | 0% | 3% | 0.00% |
 | **Total** |  |  |  | **100%** | **51.53%** |
 
@@ -526,9 +550,9 @@ nuevas ni se declara la integración académica completa. [Evidencia](36_SESSION
 ### M10 — Analítica y revisión docente
 
 **Objetivo:** ofrecer analítica, trazabilidad y revisión/override docente auditado.
-**Estado:** **NOT STARTED — 0%**.
+**Estado:** **PARTIAL — 0% acreditado; 50% propuesto**.
 
-Pendiente: vistas docentes, métricas, revisión y auditoría.
+Listado, detalle, corrección e históricos implementados; pendientes analítica y aceptación operativa. [Desglose y evidencia](38_TEACHER_SESSION_REVIEW.md).
 
 ### M11 — Hardening y observabilidad final
 
