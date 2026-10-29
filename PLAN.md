@@ -8,6 +8,21 @@ La fuente canónica del progreso, los porcentajes, los pesos M0–M11 y el check
 
 ## Estado actual
 
+### Propuesta académica consolidada — 29-10-2026
+
+Entrega exclusivamente documental desde `544f6bb87d03d6b874bd3a1178361dff27bc1444`.
+[Documento 39](docs/v2/39_ACADEMIC_DECISION_PROPOSAL.md) reúne recomendaciones decidibles,
+alternativas, fundamento, efecto y decisión requerida: Lucía/María y cinco claves, rúbrica
+M7, scoring y liberación, validación por componente y progreso. No reabre M5 ni decisiones
+docentes ya aprobadas; no instala perfiles ni altera expectativas COV. Guías clínicas
+contrastadas; diabetes no equivale a mal control. Conversión nativa y conexión a auditoría
+ya completadas; pendientes sus revisiones clínicas definitivas, no otro expediente.
+Open decisions: L-01/L-02, M-01–M-03, C-01, COM-01/02, PUN-01/02, CUE-01, RES-01,
+VAL-01–03 y PRO-01 contienen propuestas concretas, no solicitudes genéricas de política.
+Conservar 51,53% acreditado / 68,58% propuesto; corregir solo asignación de generación a M3,
+sin puntos nuevos. Sin inferencias, migraciones, despliegue ni cambios productivos.
+Revisión de enlaces, aritmética y diff; no repetir suites para documentación.
+
 ### Revisión docente de sesiones — 29-10-2026
 
 Implementados listado autorizado, transcript/cuestionario y revisiones humanas append-only sobre M9.

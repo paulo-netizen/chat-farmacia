@@ -1,5 +1,16 @@
 # ChatUSAL-FarmaBot v2 — Project Status
 
+## Propuesta académica consolidada — 29-10-2026
+
+[Documento único para decisión de Paulo](39_ACADEMIC_DECISION_PROPOSAL.md): casos y cinco
+claves clínicas, rúbrica M7, políticas de puntuación/liberación, plan de aceptación y
+desglose completo. **51,53% acreditado / 68,58% propuesto**, sin incremento por esta entrega
+documental ni aprobación académica. La conversión nativa y su conexión a auditoría ya están
+implementadas (33/34); las menciones anteriores a su ausencia se conservan como históricos.
+Generación corresponde a M3; editor general y su aceptación, a M2. Los puntos conservadores
+del desglose no se aumentan por corregir esa asignación. M7 sigue funcional PARTIAL sin
+nueva acreditación; M6 64%, PED2 abierto y D3B OPEN / VALIDATION DEBT.
+
 ## Revisión docente funcional — 29-10-2026
 
 **51,53% acreditado / 68,58% propuesto**, pendiente de aceptación del desglose.
@@ -10,9 +21,9 @@ los históricos 57,23% y 66,58%; no son el total propuesto actualizado.
 
 | Bloque | Peso global | Acreditado interno | Propuesto interno acumulado | Aporte global propuesto | Pendiente para cierre |
 |---|---:|---:|---:|---:|---|
-| M1 | 10% | 80% | 90% | 9,00 | Aceptación integral de autoría/editor y contratos |
-| M2 | 8% | 0% | 45% | 3,60 | Generación completa y calidad docente aceptada |
-| M3 | 11% | 55% | 65% | 7,15 | Auditorías definitivas y aprobación clínica real |
+| M1 | 10% | 80% | 90% | 9,00 | Compatibilidad y cobertura general de versiones/contratos |
+| M2 | 8% | 0% | 45% | 3,60 | Cobertura general de autoría y aceptación/usabilidad del editor |
+| M3 | 11% | 55% | 65% | 7,15 | Generador integrado, auditorías definitivas y aprobación clínica real |
 | M7 | 7% | 0% | 0% | 0,00 | Rúbrica, adaptador real y aceptación semántica; funcional PARTIAL |
 | M8 | 7% | 0% | 80% | 5,60 | Cinco claves abiertas, políticas y refuerzo opcional |
 | M9 | 5% | 0% | 75% | 3,75 | Dimensiones definitivas, políticas, múltiples intenciones y aceptación |
