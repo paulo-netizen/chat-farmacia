@@ -1,3 +1,4 @@
+import {validateFrameworkR3Grant,type FrameworkR3Grant} from './cov-framework-r3-policy';
 import { validateCov3RoundGrant, cov3ReceivedFailureIsIndependent, type Cov3RoundGrant } from './cov3-round-policy';
 import type { CovDiagnostic } from './cov-diagnostics';
 import { validateCovR3CheckGrant, type CovR3CheckGrant } from './cov-r3-check-policy';
@@ -33,7 +34,7 @@ const sessions = new WeakSet<CovExecutionSession>();
 
 /** Single-host, append-only, fsync-before-send. A stale lock is NEVER stolen automatically. */
 export class CovExecutionSession {
-  private grant: CovGrant | CovR2Grant | CovContinuationGrant | CovSourceRunGrant | CovCompletionGrant | Cov3RoundGrant | CovR3CheckGrant;
+  private grant: CovGrant | CovR2Grant | CovContinuationGrant | CovSourceRunGrant | CovCompletionGrant | Cov3RoundGrant | CovR3CheckGrant | FrameworkR3Grant;
   private fd = -1;
   private lockFd = -1;
   private lockPath = '';
@@ -47,7 +48,7 @@ export class CovExecutionSession {
   private closed = false;
   private failed = false;
   private busy = false;
-  private constructor(grant: CovGrant | CovR2Grant | CovContinuationGrant | CovSourceRunGrant | CovCompletionGrant | Cov3RoundGrant | CovR3CheckGrant) { this.grant = grant; }
+  private constructor(grant: CovGrant | CovR2Grant | CovContinuationGrant | CovSourceRunGrant | CovCompletionGrant | Cov3RoundGrant | CovR3CheckGrant | FrameworkR3Grant) { this.grant = grant; }
 
   static open(authorization: unknown, manifest: CovManifest): CovExecutionSession {
     return this.openValidated(validateCovGrant(authorization, manifest));
@@ -61,6 +62,9 @@ export class CovExecutionSession {
   static openSourceRun(authorization: unknown, manifest: CovManifest): CovExecutionSession {
     return this.openValidated(validateCovSourceRunGrant(authorization, manifest));
   }
+  static openFrameworkR3(authorization: unknown, manifest: CovManifest): CovExecutionSession {
+    return this.openValidated(validateFrameworkR3Grant(authorization, manifest));
+  }
   static openR3Check(authorization: unknown, manifest: CovManifest): CovExecutionSession {
     return this.openValidated(validateCovR3CheckGrant(authorization, manifest));
   }
@@ -70,7 +74,7 @@ export class CovExecutionSession {
   static openCompletion(authorization: unknown, manifest: CovManifest): CovExecutionSession {
     return this.openValidated(validateCovCompletionGrant(authorization, manifest));
   }
-  private static openValidated(grant: CovGrant | CovR2Grant | CovContinuationGrant | CovSourceRunGrant | CovCompletionGrant | Cov3RoundGrant | CovR3CheckGrant): CovExecutionSession {
+  private static openValidated(grant: CovGrant | CovR2Grant | CovContinuationGrant | CovSourceRunGrant | CovCompletionGrant | Cov3RoundGrant | CovR3CheckGrant | FrameworkR3Grant): CovExecutionSession {
     if (!isAbsolute(grant.ledgerDirectory)) throw new Error('COV_LEDGER_PATH_INVALID');
     const directory = resolve(grant.ledgerDirectory);
     mkdirSync(directory, { recursive: true, mode: 0o700 });

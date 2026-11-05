@@ -1,5 +1,31 @@
 # ChatUSAL-FarmaBot v2 — Project Status
 
+## Aplicación del marco y validación — cierre 05-11-2026
+
+[Evidencia y decisiones vigentes](40_APPROVED_FRAMEWORK_VALIDATION.md). **68,58% acreditado**;
+sin incremento adicional. Políticas M8/M9 aprobadas y versionadas, M7 con rúbrica aprobada
+para validación y cobertura mínima 80%. Nuevas revisiones nativas de Lucía/María guardadas
+en entorno desechable; las cinco claves clínicas se han actualizado conforme a las decisiones
+aprobadas. Ambos casos siguen pendientes de auditoría válida y aprobación/publicación.
+
+Evidencia live del 30-10: R3 válido, 2/2 criterios y 2/2 afirmaciones coincidentes; desarrollo
+M7 1/6 válido, 5/9 criterios válidos coincidentes, cinco STATE_INVALID; auditorías nuevas
+de ambos casos con AUDITOR_REFERENCE_INVALID. Correcciones posteriores de representaciones
+M7/auditor verificadas offline, sin repetir esas llamadas. Conjunto reservado M7 no ejecutado;
+validación independiente COV pendiente de referencias nuevas revisadas/selladas. M6 conserva
+valoración cualitativa: planes por caso propuestos en documento 40, sin aplicar 70/30.
+M6/M6-E PARTIAL, PED2 abierto y D3B OPEN / VALIDATION DEBT. No hay aceptación semántica final.
+
+## Regularización aprobada por Paulo — 29-10-2026
+
+**68,58% acreditado.** Paulo acepta expresamente el desglose del documento 39: M1 90,
+M2 45, M3 65, M8 80, M9 75 y M10 50. Pesos intactos, sin doble cómputo y sin cierre
+automático de milestones. M7 conserva 0 puntos: rúbrica aprobada para validación, no
+aceptación semántica. M6 conserva 64%, PED2 abierto y D3B OPEN / VALIDATION DEBT.
+51,53% acreditado y 68,58% propuesto eran correctos antes de esta aprobación; las
+secciones fechadas inferiores se conservan como evidencia histórica. La tabla oficial
+M0–M11 incorpora exclusivamente esta regularización, no nuevos puntos de implementación.
+
 ## Propuesta académica consolidada — 29-10-2026
 
 [Documento único para decisión de Paulo](39_ACADEMIC_DECISION_PROPOSAL.md): casos y cinco
@@ -214,18 +240,18 @@ Los pesos y porcentajes se expresan como fracciones para el cálculo; por ejempl
 | Milestone | Nombre | Estado | % interno | Peso | Aporte global |
 |---|---|---|---:|---:|---:|
 | M0 | Saneamiento y barreras de seguridad | PARTIAL | 60% | 8% | 4.80% |
-| M1 | Versionado y base de datos v2 | PARTIAL | 80% | 10% | 8.00% |
-| M2 | Editor docente estructurado | PARTIAL | 0% acreditado¹ | 8% | 0.00% |
-| M3 | Generador, auditor y publicación | PARTIAL | 55% | 11% | 6.05% |
+| M1 | Versionado y base de datos v2 | PARTIAL | 90% | 10% | 9.00% |
+| M2 | Editor docente estructurado | PARTIAL | 45% | 8% | 3.60% |
+| M3 | Generador, auditor y publicación | PARTIAL | 65% | 11% | 7.15% |
 | M4 | Runtime seguro del paciente | CLOSED | 100% | 10% | 10.00% |
 | M5 | Motor de protocolos SPFA | CLOSED | 100% | 15% | 15.00% |
 | M6 | Evaluación farmacéutica/PRM–RNM/adherencia | PARTIAL | 64% | 12% | 7.68% |
 | M7 | Evaluación de comunicación | PARTIAL (offline; aceptación pendiente) | 0% | 7% | 0.00% |
-| M8 | Cuestionario post-caso | PARTIAL (funcional; pendiente acreditación) | 0% acreditado | 7% | 0.00% |
-| M9 | Resultados y feedback | PARTIAL (funcional; pendiente acreditación) | 0% acreditado | 5% | 0.00% |
-| M10 | Analítica y revisión docente | PARTIAL (revisión funcional) | 0% | 4% | 0.00% |
+| M8 | Cuestionario post-caso | PARTIAL | 80% | 7% | 5.60% |
+| M9 | Resultados y feedback | PARTIAL | 75% | 5% | 3.75% |
+| M10 | Analítica y revisión docente | PARTIAL | 50% | 4% | 2.00% |
 | M11 | Hardening y observabilidad final | NOT STARTED | 0% | 3% | 0.00% |
-| **Total** |  |  |  | **100%** | **51.53%** |
+| **Total** |  |  |  | **100%** | **68.58%** |
 
 ## Regla estable de progreso
 

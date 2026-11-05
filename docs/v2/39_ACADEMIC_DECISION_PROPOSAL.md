@@ -1,5 +1,11 @@
 # Propuesta académica consolidada para Paulo
 
+**Registro posterior, 29-10-2026:** Paulo aprueba el marco clínico indicado, los perfiles,
+la rúbrica M7 para validación y su mínimo observable 80%, global 35/35/30, cuestionario
+1/0/0 y liberación docente exacta; acredita 68,58%. NO aprueba el reparto M6 70/30 de Lucía.
+El texto siguiente conserva la propuesta original e históricos; esas decisiones aprobadas
+ya no están abiertas. Aceptación semántica, auditorías y planes M6 permanecen separados.
+
 29-10-2026 · revisión documental 1 · base publicada `544f6bb87d03d6b874bd3a1178361dff27bc1444`.
 
 **Para decidir, no para activar automáticamente.** Documento único de decisión; no instala perfiles, cambia claves, recalifica sesiones ni aprueba casos. Progreso: **51,53 % acreditado / 68,58 % propuesto**. PROJECT_STATUS sigue siendo la fuente canónica. Las recomendaciones nuevas se identifican mediante códigos; aprobar una implica registrar una versión y su alcance, no modificar históricos.

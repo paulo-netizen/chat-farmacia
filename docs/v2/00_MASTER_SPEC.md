@@ -1102,13 +1102,13 @@ Los nombres de las dimensiones deben mantenerse conceptualmente aunque el texto 
 
 ## 28.2. Ponderación global inicial
 
-Propuesta provisional:
+Marco aprobado por Paulo el 29-10-2026 (configurable y versionado):
 
 - protocolo SPFA: 35 %;
 - PRM/adherencia/intervención: 35 %;
 - comunicación: 30 %.
 
-**PROVISIONAL / CONFIGURABLE.**
+**APROBADO / CONFIGURABLE.** Requiere las tres dimensiones definitivas y revisadas; una dimensión ausente mantiene la global pendiente. Comprensión separada. Liberación inicial tras revisión de la composición exacta, invalidada por una corrección posterior. No supone aceptación semántica de los evaluadores.
 
 No hardcodear de forma que sea difícil modificarlo.
 

@@ -8,6 +8,35 @@ La fuente canónica del progreso, los porcentajes, los pesos M0–M11 y el check
 
 ## Estado actual
 
+### Resultado del marco aprobado — cierre 05-11-2026
+
+[Documento 40](docs/v2/40_APPROVED_FRAMEWORK_VALIDATION.md): marco y políticas versionados,
+revisiones nuevas de ambos casos recuperables como borradores, y progreso regularizado
+a **68,58% acreditado**. R3 válido con 2/2 criterios coincidentes; desarrollo M7 1/6 válido
+y cinco STATE_INVALID; ambas auditorías nuevas con AUDITOR_REFERENCE_INVALID. Se conservan
+todos los intentos. Correcciones posteriores solo offline: ramas de estados M7 wire/3,
+diagnóstico localizado y referencias elegibles audit-references/2, manteniendo históricos.
+Sin nuevas llamadas para obtener un resultado favorable; sin aceptación semántica final.
+
+Pendientes concretos: validar esas representaciones nuevas; completar fuentes de auditoría
+(enalapril truncada, guías no sustituidas por CIMA); referencia nueva revisada/sellada de los
+tres lotes COV independientes según VAL-01; aprobar los planes M6 por caso del documento 40.
+Las decisiones clínicas, perfiles, rúbrica para validación y políticas ya aprobados no están
+de nuevo pendientes. No hay migraciones nuevas ni publicación de Lucía/María.
+
+### Aplicación del marco aprobado — 29-10-2026
+
+Paulo acredita 68,58% conservando el desglose del documento 39 y los históricos; no cierra
+milestones. Autoriza perfiles de los dos casos, decisiones clínicas expresas, rúbrica M7
+para validación (cobertura mínima 80%), global 35/35/30, comprensión separada y cuestionario
+1/0/0 con liberación tras revisión exacta. M6 70/30 de Lucía NO aprobado: cálculo bloqueado.
+Implementar nuevas revisiones/políticas sin recalificar históricos. Preservar nueve archivos
+COV y logs ajenos. Antes de live: contratos, evidencias, integración y presupuesto acumulado
+15 EUR reconciliado con reservas y partidas desconocidas. No despliegue ni base productiva.
+Compatibilidad: mantener evaluador/resultados M7 /1; nueva política /2 explícita. Reutilizar
+tablas y snapshots existentes si bastan, sin migraciones destructivas. Aceptación semántica
+y auditorías definitivas no se deducen de la aprobación del marco.
+
 ### Propuesta académica consolidada — 29-10-2026
 
 Entrega exclusivamente documental desde `544f6bb87d03d6b874bd3a1178361dff27bc1444`.

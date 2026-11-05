@@ -10,13 +10,13 @@ export function ordered<T>(value:T):T {
  if(value!==null&&typeof value==='object')return Object.fromEntries(Object.entries(value).sort(([a],[b])=>a.localeCompare(b)).map(([k,v])=>[k,ordered(v)])) as T;
  return value;
 }
-export function nativeAuditInput(content:unknown,candidateVersionId:string,contentHash:string):ClinicalAuditInput {
+export function nativeAuditInput(content:unknown,candidateVersionId:string,contentHash:string,version:1|2=1):ClinicalAuditInput {
  const bundle=validateTeacherNativePackage(content,candidateVersionId);
- return ordered({contractVersion:'teacher-native-audit-input/1' as const,candidateVersionId,draftVersionId:bundle.sourceDraft.versionId,contentHash,bundle});
+ return ordered({contractVersion:version===2?'teacher-native-audit-input/2' as const:'teacher-native-audit-input/1' as const,candidateVersionId,draftVersionId:bundle.sourceDraft.versionId,contentHash,bundle});
 }
 export function nativeAuditConfiguration(input:ClinicalAuditInput,sources:SourceEvidence[]) {
  const r=auditorRequest(input,sources);
- return ordered({version:AUDITOR_VERSION,wire:AUDITOR_WIRE,instructions:r.instructions,text:r.text});
+ return ordered({version:AUDITOR_VERSION,wire:AUDITOR_WIRE,instructions:r.instructions,text:r.text,...(input.contractVersion==='teacher-native-audit-input/2'?{inputVersion:2 as const}:{})});
 }
 const hash=z.string().regex(/^[a-f0-9]{64}$/);
 const sourceSchema=z.object({key:z.enum(['metformin850','enalapril20']),url:z.string(),retrievedAt:z.string().datetime(),status:z.enum(['AVAILABLE','UNAVAILABLE','CONTENT_UNVERIFIED']),sha256:hash.optional(),excerpt:z.string().max(24000).optional(),clinicalText:z.string().max(24000).optional(),truncated:z.boolean().optional(),code:z.enum(['SOURCE_UNAVAILABLE','SOURCE_CONTENT_UNVERIFIED']).optional()}).strict();
@@ -32,7 +32,7 @@ export function nativeAuditBinding(input:ClinicalAuditInput,sources:SourceEviden
 export function nativeAuditStatus(result:Pick<Awaited<ReturnType<typeof runClinicalAuditor>>,'judgment'>|null,sources:SourceEvidence[]):'PENDING'|'PASS'|'WARNING'|'FAIL'{
  if(!result)return 'PENDING';
  if(result.judgment.dimensions.some(d=>d.status==='FAIL'))return 'FAIL';
- if(!sources.length||sources.some(s=>s.status!=='AVAILABLE')||result.judgment.dimensions.some(d=>d.status==='INSUFFICIENT'))return 'PENDING';
+ if(!sources.length||sources.some(s=>s.status!=='AVAILABLE'||s.truncated===true)||result.judgment.dimensions.some(d=>d.status==='INSUFFICIENT'))return 'PENDING';
  return result.judgment.dimensions.some(d=>d.status==='WARNING')?'WARNING':'PASS';
 }
 /** Only known metadata and validated structured judgment are retained. Never raw output. */

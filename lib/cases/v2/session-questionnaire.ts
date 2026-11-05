@@ -3,11 +3,11 @@ import {validateTeacherNativePackage} from './build-teacher-native-package';
 const id=z.string().regex(/^Q[1-9][0-9]{0,2}$/);
 const option=z.string().regex(/^[A-F]$/);
 export const questionnairePolicySchema=z.object({
- version:z.literal('questionnaire-policy/1'),id:z.string().regex(/^[a-zA-Z0-9_-]{1,80}$/),
+ version:z.enum(['questionnaire-policy/1','questionnaire-policy/2']),decimals:z.literal(1).optional(),id:z.string().regex(/^[a-zA-Z0-9_-]{1,80}$/),
  scope:z.enum(['SYNTHETIC_TEST','ACADEMIC_APPROVED']),approvalReference:z.string().min(1).max(200),
  matching:z.literal('EXACT_SET'),requireAll:z.boolean(),floor:z.literal(0),
  items:z.array(z.object({questionId:id,correct:z.number().int().positive().max(10000),incorrect:z.number().int().max(0).min(-10000),blank:z.number().int().max(0).min(-10000)}).strict()).min(1).max(30),
-}).strict().superRefine((p,c)=>{if(new Set(p.items.map(i=>i.questionId)).size!==p.items.length)c.addIssue({code:'custom',message:'POLICY_DUPLICATE'});});
+}).strict().superRefine((p,c)=>{if((p.version==='questionnaire-policy/2')!==(p.decimals===1))c.addIssue({code:'custom',message:'POLICY_VERSION_MISMATCH'});if(new Set(p.items.map(i=>i.questionId)).size!==p.items.length)c.addIssue({code:'custom',message:'POLICY_DUPLICATE'});});
 export const questionnaireAnswersSchema=z.array(z.object({questionId:id,optionIds:z.array(option).max(6)}).strict()).max(30);
 export const questionnaireWriteSchema=z.object({action:z.enum(['save','submit']),expectedRevision:z.number().int().nonnegative(),answers:questionnaireAnswersSchema}).strict();
 export function questionnaireDefinition(content:unknown,format:string,versionId:string,policyValue:unknown){
@@ -29,7 +29,7 @@ export function gradeQuestionnaire(def:QuestionnaireDefinition,value:unknown){
  if(def.policy.requireAll&&answers.some(a=>!a.optionIds.length))throw Error('ANSWERS_INCOMPLETE');
  const items=answers.map(a=>{const q=def.questions.find(q=>q.id===a.questionId)!,p=def.policy.items.find(p=>p.questionId===a.questionId)!;const outcome=!a.optionIds.length?'BLANK':JSON.stringify([...q.correctOptionIds].sort())===JSON.stringify(a.optionIds)?'CORRECT':'INCORRECT';return {questionId:q.id,outcome,points:outcome==='BLANK'?p.blank:outcome==='CORRECT'?p.correct:p.incorrect};});
  const maximum=def.policy.items.reduce((s,i)=>s+i.correct,0),raw=items.reduce((s,i)=>s+i.points,0);
- return {version:'questionnaire-grade/1',policyId:def.policy.id,scope:def.policy.scope,items,raw,maximum,score:Math.round(Math.max(def.policy.floor,raw)*10000/maximum)/100};
+ return {version:def.policy.version==='questionnaire-policy/2'?'questionnaire-grade/2':'questionnaire-grade/1',policyId:def.policy.id,scope:def.policy.scope,items,raw,maximum,score:def.policy.version==='questionnaire-policy/2'?Math.round(Math.max(def.policy.floor,raw)*1000/maximum)/10:Math.round(Math.max(def.policy.floor,raw)*10000/maximum)/100};
 }
 /** Positive allowlist. Keys, justifications and scores remain server-side, including after submission. */
 export function questionnairePublic(def:QuestionnaireDefinition,answers:unknown,revision:number,submittedAt:string|null){

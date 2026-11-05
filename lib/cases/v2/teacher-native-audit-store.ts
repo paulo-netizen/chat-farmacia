@@ -12,7 +12,7 @@ export async function readNativeAudit(c:PoolClient,row:any){
  if(row?.content_format!=='TEACHER_CASE_BUNDLE_V1')return null;
  const audit=(await c.query(`SELECT b.*,cl.created_at claimed_at,r.result,r.error_code FROM teacher_native_audit_bindings b LEFT JOIN teacher_native_audit_claims cl USING(candidate_version_id) LEFT JOIN teacher_native_audit_results r USING(candidate_version_id) WHERE b.candidate_version_id=$1`,[row.id])).rows[0];
  if(!audit)return null;
- const input=nativeAuditInput(row.content,row.id,audit.content_hash),sources=nativeAuditSources(audit.sources),binding=nativeAuditBinding(input,sources);
+ const input=nativeAuditInput(row.content,row.id,audit.content_hash,audit.configuration?.inputVersion===2?2:1),sources=nativeAuditSources(audit.sources),binding=nativeAuditBinding(input,sources);
  const storedHash=(await c.query(`SELECT ${contentHashSql} h FROM case_versions v WHERE v.id=$1`,[row.id])).rows[0].h;
  const current=storedHash===audit.content_hash&&digest(ordered(audit.configuration))===binding.configurationHash&&audit.configuration_hash===binding.configurationHash&&audit.sources_hash===binding.sourcesHash&&audit.request_hash===binding.requestHash;
  const result=audit.result&&current?validateNativeAuditResult(audit.result,input,sources):null;
@@ -41,7 +41,7 @@ export function createTeacherNativeAuditStore(db:Pick<Pool,'connect'>,run:typeof
    if(!request.sourceKeys)throw new TeacherDraftError('INVALID',400);
    // No DB locks while reading sources. Binding stores evidence, never a second case package.
    const sources:SourceEvidence[]=[];for(const key of request.sourceKeys)sources.push(await sourceReader(key));
-   const binding=nativeAuditBinding(nativeAuditInput(row.content,row.id,row.content_hash),sources);
+   const binding=nativeAuditBinding(nativeAuditInput(row.content,row.id,row.content_hash,2),sources);
    return tx(actor,caseId,async c=>{
     const current=await candidate(c,caseId,request);if(current.content_hash!==row.content_hash)throw new TeacherDraftError('CONFLICT',409);
     const prior=await readNativeAudit(c,current);if(prior)throw new TeacherDraftError('CONFLICT',409);
@@ -54,7 +54,7 @@ export function createTeacherNativeAuditStore(db:Pick<Pool,'connect'>,run:typeof
    const current=await candidate(c,caseId,request),audit=await readNativeAudit(c,current);
    if(!audit||!audit.current||audit.claimed_at)throw new TeacherDraftError('CONFLICT',409);
    await c.query('INSERT INTO teacher_native_audit_claims(candidate_version_id,created_by) VALUES ($1,$2)',[row.id,actor]);
-   return {input:nativeAuditInput(current.content,row.id,audit.content_hash),sources:nativeAuditSources(audit.sources)};
+   return {input:nativeAuditInput(current.content,row.id,audit.content_hash,audit.configuration?.inputVersion===2?2:1),sources:nativeAuditSources(audit.sources)};
   });
   // Confirmed durable claim, no locks/transaction retained during provider work.
   let result:ReturnType<typeof validateNativeAuditResult>|null=null,errorCode:string|null=null;

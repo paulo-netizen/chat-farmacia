@@ -1,0 +1,15 @@
+import {beforeEach,it,expect,vi} from 'vitest';
+vi.mock('server-only',()=>({}));
+const mocks=vi.hoisted(()=>({user:vi.fn(),read:vi.fn()}));
+vi.mock('@/lib/auth',()=>({getCurrentUser:mocks.user}));
+vi.mock('@/lib/db',()=>({pool:{}}));
+vi.mock('@/lib/cases/v2/teacher-case-draft-store',async original=>({...await original<any>(),createTeacherDraftStore:()=>mocks}));
+import {POST} from '@/app/api/teacher-drafts/[id]/approved-framework/route';
+import {teacherNativeProposal} from '@/lib/cases/v2/teacher-native-proposals';
+const versionId='casever_10000000-0000-4000-8000-000000000001';
+const request=(origin='http://localhost')=>new Request('http://localhost/api/teacher-drafts/1/approved-framework',{method:'POST',headers:{origin,'content-type':'application/json'},body:JSON.stringify({expectedDraftVersionId:versionId})});
+const params={params:{id:'1'}};
+beforeEach(()=>{vi.clearAllMocks();mocks.user.mockResolvedValue({id:1,role:'teacher'});mocks.read.mockResolvedValue({versionId,templateId:'lucia',fields:teacherNativeProposal('lucia')});});
+it.each([null,'student'])('denies %s without exposing solution',async role=>{mocks.user.mockResolvedValue(role?{id:1,role}:null);const r=await POST(request(),params);expect(r.status).toBe(role?403:401);expect(mocks.read).not.toHaveBeenCalled();});
+it('returns only a proposed new revision to its authenticated owner, without saving or publishing',async()=>{const r=await POST(request(),params);expect(r.status).toBe(200);expect(r.headers.get('Cache-Control')).toBe('private, no-store');expect(mocks.read).toHaveBeenCalledWith('1','1');expect((await r.json()).nativeAuthoring.referral.urgency).toBe('non_urgent');});
+it('rejects stale revisions, changed facts and cross-origin requests',async()=>{expect((await POST(request('https://evil.test'),params)).status).toBe(403);mocks.read.mockResolvedValueOnce({versionId:'casever_20000000-0000-4000-8000-000000000001'});expect((await POST(request(),params)).status).toBe(409);const fields=teacherNativeProposal('lucia');fields.facts[0].value='Different fact';mocks.read.mockResolvedValue({versionId,templateId:'lucia',fields});expect((await POST(request(),params)).status).toBe(409);});
