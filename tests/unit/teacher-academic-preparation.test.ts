@@ -40,4 +40,14 @@ describe('academic review preparation, not academic approval',()=>{
   const e=await readCimaSource('metformin850',vi.fn().mockResolvedValue(new Response('<html>Metformina 850 Indicaciones terap&#233;uticas Control gluc&#233;mico &#xE1; &amp; dosis. Propiedades farmacol&#243;gicas NO_IN_EXTRACT</html>',{headers:{'content-type':'text/html'}})));
   expect(e.clinicalText).toContain('Control glucémico á & dosis.');expect(e.clinicalText).not.toContain('NO_IN_EXTRACT');expect(e.truncated).toBe(false);
  });
+ it('preserves clinical text beyond the historical 24000 limit with explicit scope and integrity',async()=>{
+  const {nativeAuditSources}=await import('@/lib/cases/v2/teacher-native-audit');
+  const clinical='Indicaciones terapéuticas '+ 'dato '.repeat(6000)+'FIN_CLINICO ';
+  const e=await readCimaSource('enalapril20',vi.fn().mockResolvedValue(new Response('<html>Enalapril 20 '+clinical+'Propiedades farmacológicas FUERA</html>',{headers:{'content-type':'text/html'}})));
+  expect(e).toMatchObject({status:'AVAILABLE',representation:'cima-clinical-text/2',scope:'CLINICAL_SECTION',truncated:false});
+  expect(e.clinicalText).toBe(clinical);expect(e.clinicalText).not.toContain('FUERA');expect(()=>nativeAuditSources([e])).not.toThrow();
+  expect(()=>nativeAuditSources([{...e,clinicalText:e.clinicalText+'changed'}])).toThrow('NATIVE_AUDIT_SOURCE_INVALID');
+  const {representation,scope,clinicalTextSha256,...unversioned}=e;
+  expect(()=>nativeAuditSources([unversioned])).toThrow('NATIVE_AUDIT_SOURCE_INVALID');
+ });
 });

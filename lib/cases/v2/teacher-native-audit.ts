@@ -1,5 +1,6 @@
 import 'server-only';
 import {z} from 'zod';
+import {createHash} from 'node:crypto';
 import {validateTeacherNativePackage} from './build-teacher-native-package';
 import {digest,sourceCatalog,type SourceEvidence} from './teacher-academic-preparation';
 import {AUDITOR_VERSION,AUDITOR_WIRE,auditorRequest,parseClinicalJudgment,type ClinicalAuditInput, type runClinicalAuditor} from './teacher-clinical-auditor';
@@ -19,10 +20,12 @@ export function nativeAuditConfiguration(input:ClinicalAuditInput,sources:Source
  return ordered({version:AUDITOR_VERSION,wire:AUDITOR_WIRE,instructions:r.instructions,text:r.text,...(input.contractVersion==='teacher-native-audit-input/2'?{inputVersion:2 as const}:{})});
 }
 const hash=z.string().regex(/^[a-f0-9]{64}$/);
-const sourceSchema=z.object({key:z.enum(['metformin850','enalapril20']),url:z.string(),retrievedAt:z.string().datetime(),status:z.enum(['AVAILABLE','UNAVAILABLE','CONTENT_UNVERIFIED']),sha256:hash.optional(),excerpt:z.string().max(24000).optional(),clinicalText:z.string().max(24000).optional(),truncated:z.boolean().optional(),code:z.enum(['SOURCE_UNAVAILABLE','SOURCE_CONTENT_UNVERIFIED']).optional()}).strict();
+const sourceSchema=z.object({key:z.enum(['metformin850','enalapril20']),url:z.string(),retrievedAt:z.string().datetime(),status:z.enum(['AVAILABLE','UNAVAILABLE','CONTENT_UNVERIFIED']),sha256:hash.optional(),excerpt:z.string().max(24000).optional(),clinicalText:z.string().max(200000).optional(),truncated:z.boolean().optional(),representation:z.literal('cima-clinical-text/2').optional(),scope:z.enum(['CLINICAL_SECTION','FROM_INDICATIONS_TO_DOCUMENT_END']).optional(),clinicalTextSha256:hash.optional(),code:z.enum(['SOURCE_UNAVAILABLE','SOURCE_CONTENT_UNVERIFIED']).optional()}).strict();
 export function nativeAuditSources(value:unknown):SourceEvidence[]{
  const sources=z.array(sourceSchema).min(1).max(2).parse(value);
  if(new Set(sources.map(s=>s.key)).size!==sources.length||sources.some(s=>s.url!==sourceCatalog[s.key].url||(s.status==='AVAILABLE'&&(!s.sha256||!s.clinicalText))))throw Error('NATIVE_AUDIT_SOURCE_INVALID');
+ if(sources.some(s=>!s.representation&&((s.clinicalText?.length??0)>24000||s.scope||s.clinicalTextSha256)))throw Error('NATIVE_AUDIT_SOURCE_INVALID');
+ if(sources.some(s=>s.representation==='cima-clinical-text/2'&&(!s.scope||s.truncated!==false||!s.clinicalText||s.clinicalTextSha256!==createHash('sha256').update(s.clinicalText).digest('hex'))))throw Error('NATIVE_AUDIT_SOURCE_INVALID');
  return ordered(sources);
 }
 export function nativeAuditBinding(input:ClinicalAuditInput,sources:SourceEvidence[]){

@@ -18,7 +18,7 @@ export const sourceCatalog = {
 } as const;
 export type SourceKey = keyof typeof sourceCatalog;
 export const digest = (v:unknown) => createHash('sha256').update(JSON.stringify(v)).digest('hex');
-export type SourceEvidence = { key:SourceKey; url:string; retrievedAt:string; status:'AVAILABLE'|'UNAVAILABLE'|'CONTENT_UNVERIFIED'; sha256?:string; excerpt?:string; clinicalText?:string; truncated?:boolean; code?:'SOURCE_UNAVAILABLE'|'SOURCE_CONTENT_UNVERIFIED' };
+export type SourceEvidence = { key:SourceKey; url:string; retrievedAt:string; status:'AVAILABLE'|'UNAVAILABLE'|'CONTENT_UNVERIFIED'; sha256?:string; excerpt?:string; clinicalText?:string; truncated?:boolean; representation?:'cima-clinical-text/2'; scope?:'CLINICAL_SECTION'|'FROM_INDICATIONS_TO_DOCUMENT_END'; clinicalTextSha256?:string; code?:'SOURCE_UNAVAILABLE'|'SOURCE_CONTENT_UNVERIFIED' };
 
 /** Fixed official sources, no user URL, redirects, credentials, retries or patient data in requests. */
 export async function readCimaSource(key:SourceKey, fetcher:typeof fetch=teacherOfficialFetch):Promise<SourceEvidence> {
@@ -41,7 +41,11 @@ export async function readCimaSource(key:SourceKey, fetcher:typeof fetch=teacher
     const start=normalized.indexOf('indicaciones terapéuticas');
     const end=normalized.indexOf('propiedades farmacológicas',start);
     const clinical=text.slice(start,end>start?end:text.length);
-    return {...base,status:'AVAILABLE',sha256:createHash('sha256').update(html).digest('hex'),excerpt:text.slice(start,start+650),clinicalText:clinical.slice(0,24000),truncated:clinical.length>24000};
+    // Preserve the entire selected clinical section. This is not the whole technical sheet.
+    // Refuse oversized content instead of presenting a silently cut section as complete.
+    if(clinical.length>200000)throw Error();
+    return {...base,status:'AVAILABLE',sha256:createHash('sha256').update(html).digest('hex'),excerpt:text.slice(start,start+650),clinicalText:clinical,truncated:false,
+      representation:'cima-clinical-text/2',scope:end>start?'CLINICAL_SECTION':'FROM_INDICATIONS_TO_DOCUMENT_END',clinicalTextSha256:createHash('sha256').update(clinical).digest('hex')};
   } catch {return {...base,status:'UNAVAILABLE',code:'SOURCE_UNAVAILABLE'};}
 }
 

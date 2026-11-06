@@ -1,4 +1,6 @@
 import {describe,it,expect,vi} from 'vitest';
+import {createRequire} from 'node:module';
+import {teacherApprovedFramework} from '@/lib/cases/v2/teacher-approved-framework';
 vi.mock('server-only',()=>({}));
 import {buildTeacherNativePackage} from '@/lib/cases/v2/build-teacher-native-package';
 import {teacherNativeProposal} from '@/lib/cases/v2/teacher-native-proposals';
@@ -9,6 +11,15 @@ import {syntheticSources,syntheticResult} from './support/teacher-native-audit-f
 const id='casever_90000000-0000-4000-8000-000000000002';
 function fixture(){const r=buildTeacherNativePackage({caseId:'1',versionId:'casever_90000000-0000-4000-8000-000000000001',revision:1,templateId:'lucia',status:'TEACHER_DRAFT',fields:teacherNativeProposal('lucia')},id);if(r.status!=='READY')throw Error('fixture');return nativeAuditInput(r.bundle,id,'b'.repeat(64));}
 describe('direct native audit bindings, no provider calls',()=>{
+ it.each(['lucia','maria'] as const)('resolves every provider reference against the exact supplied %s package',template=>{
+  const built=buildTeacherNativePackage({caseId:'1',versionId:'casever_90000000-0000-4000-8000-000000000001',revision:1,templateId:template,status:'TEACHER_DRAFT',fields:teacherApprovedFramework(template)},id);
+  if(built.status!=='READY')throw Error('fixture');
+  const p=nativeAuditInput(built.bundle,id,'b'.repeat(64),2),source=syntheticSources[0],body=auditorRequest(p,[source]),data=JSON.parse(body.input);
+  const raw={dimensions:auditDimensions.map(id=>({id,status:'INSUFFICIENT',reason:'Synthetic compatibility only; no clinical acceptance.',factRefs:[data.eligibleFactIds[0]],sourceKeys:[source.key],proposal:'Revisar soporte.'}))};
+  const Ajv=createRequire(import.meta.url)('ajv'),validate=new Ajv({strict:false}).compile(body.text.format.schema);
+  expect(validate(raw)).toBe(true);expect(parseClinicalJudgment(raw,p,[source])).toEqual(raw);
+  raw.dimensions[0].factRefs=['UNKNOWN'];expect(validate(raw)).toBe(false);expect(()=>parseClinicalJudgment(raw,p,[source])).toThrow('AUDITOR_REFERENCE_INVALID');
+ });
  it('versions eligible provider references without changing historical projection',()=>{
   const old=fixture();if(!('bundle'in old))throw Error('fixture');
   const previous=auditorRequest(old,syntheticSources),next=nativeAuditInput(old.bundle,id,old.contentHash,2),request=auditorRequest(next,syntheticSources);

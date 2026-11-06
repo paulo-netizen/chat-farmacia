@@ -12,7 +12,7 @@ export const AUDITOR_WIRE={model:'gpt-5.6-terra',reasoning:{effort:'medium'},ser
 const dimension=z.object({id:z.enum(auditDimensions),status:z.enum(['PASS','WARNING','FAIL','INSUFFICIENT']),reason:z.string().min(1).max(2000),factRefs:z.array(z.string()).max(40),sourceKeys:z.array(z.enum(['metformin850','enalapril20'])).max(2),proposal:z.string().max(2000)}).strict();
 export const clinicalJudgmentSchema=z.object({dimensions:z.array(dimension).length(auditDimensions.length)}).strict().superRefine((r,c)=>{if(new Set(r.dimensions.map(d=>d.id)).size!==auditDimensions.length)c.addIssue({code:'custom',message:'EXACT_DIMENSIONS_REQUIRED'});});
 export type ClinicalAuditInput=AcademicReviewPackage | {contractVersion:'teacher-native-audit-input/1'|'teacher-native-audit-input/2';candidateVersionId:string;draftVersionId:string;contentHash:string;bundle:ReturnType<typeof import('./build-teacher-native-package').validateTeacherNativePackage>};
-export function auditRequestByteLimit(pkg:ClinicalAuditInput){return 'bundle' in pkg?120000:80000;} // Native bundle includes executable projections; budget still uses exact official count.
+export function auditRequestByteLimit(pkg:ClinicalAuditInput){return 'bundle' in pkg?300000:80000;} // Full bounded CIMA clinical section; exact official count still controls reservation.
 export function auditorRequest(pkg:ClinicalAuditInput,sources:SourceEvidence[]) {
  if(pkg.contractVersion==='teacher-native-audit-input/2'&&'bundle' in pkg){
   const legacy=auditorRequestLegacy({...pkg,contractVersion:'teacher-native-audit-input/1'},sources);
@@ -44,7 +44,7 @@ export class AuditorReferenceError extends Error{
 const tokens=z.number().int().nonnegative();
 const grantSchema=z.object({version:z.literal(AUDITOR_VERSION),approved:z.literal(true),expiresAt:z.string().datetime(),budgetEur:z.literal(15),unknownCountingCostAccepted:z.literal(true),
  packageHashes:z.array(z.string().regex(/^[a-f0-9]{64}$/)).length(2),historicalReservedMicroUsd:tokens,historicalCalculatedMicroUsd:z.number().nonnegative(),historicalUnknownCounts:tokens,
- ceilingMicroUsd:tokens.max(4000000),parents:z.array(z.object({file:z.string(),sha256:z.string().regex(/^[a-f0-9]{64}$/)}).strict()).min(1),wireHash:z.literal(digest(AUDITOR_WIRE))}).strict();
+ ceilingMicroUsd:tokens.max(6000000),parents:z.array(z.object({file:z.string(),sha256:z.string().regex(/^[a-f0-9]{64}$/)}).strict()).min(1),wireHash:z.literal(digest(AUDITOR_WIRE))}).strict();
 type Entry={packageHash:string;requestHash:string;state:'COUNT_INTENT'|'RESERVED'|'RECEIVED'|'FAILED';countCost:null;countRequestId?:string;inputTokens?:number;reservation?:number;usage?:{input:number;output:number;cachedRead:number;cachedWrite:number};costMicroUsd?:number;requestId?:string;code?:string;judgment?:z.infer<typeof clinicalJudgmentSchema>;diagnostic?:{version: 1; issues: AuditorReferenceError['issues']}};
 type Ledger={version:typeof AUDITOR_VERSION;grantHash:string;stopped:boolean;entries:Entry[]};
 

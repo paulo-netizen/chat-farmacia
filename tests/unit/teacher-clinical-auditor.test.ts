@@ -26,6 +26,12 @@ describe('closed clinical auditor, simulated transport only',()=>{
   await expect(runClinicalAuditor(pkg(),[],{directory,authorizationFile,apiKey:'synthetic',fetcher})).rejects.toThrow('AUDITOR_LEDGER_BLOCKED');expect(fetcher).toHaveBeenCalledTimes(2);
  }));
  it('blocks insufficient budget before even counting',async()=>setup(async(directory,authorizationFile)=>{const fetcher=vi.fn();await expect(runClinicalAuditor(pkg(),[],{directory,authorizationFile,apiKey:'synthetic',fetcher})).rejects.toThrow('AUDITOR_BUDGET');expect(fetcher).not.toHaveBeenCalled();},2820525));
+ it('retains accumulated reservations above the old ceiling under the authorized six-dollar internal cap',async()=>setup(async(directory,authorizationFile)=>{
+  const grant=JSON.parse(await readFile(authorizationFile,'utf8'));grant.historicalReservedMicroUsd=4800000;await writeFile(authorizationFile,JSON.stringify(grant));
+  const fetcher=vi.fn().mockResolvedValueOnce(new Response('{"input_tokens":100}')).mockResolvedValueOnce(response());
+  expect((await runClinicalAuditor(pkg(),[],{directory,authorizationFile,apiKey:'synthetic',fetcher})).reservation).toBe(96250);
+  expect(JSON.parse(await readFile(authorizationFile,'utf8')).historicalReservedMicroUsd).toBe(4800000);
+ },6000000));
  it('keeps timeout reservation and safe diagnostic, no raw error or retry',async()=>setup(async(directory,authorizationFile)=>{
   const fetcher=vi.fn().mockResolvedValueOnce(new Response('{"input_tokens":100}')).mockRejectedValueOnce(Error('SECRET CLINICAL RAW'));
   await expect(runClinicalAuditor(pkg(),[],{directory,authorizationFile,apiKey:'synthetic',fetcher})).rejects.toThrow('AUDITOR_TECHNICAL_FAILURE');

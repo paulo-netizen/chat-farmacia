@@ -1,5 +1,15 @@
 # ChatUSAL-FarmaBot v2 — Project Status
 
+## Comprobación M7 y auditorías — 06-11-2026
+
+[Informe y propuesta M6 concreta](41_M7_AUDIT_CHECK_AND_M6_DECISION.md). **68,58% acreditado**, sin incremento.
+M7 wire/3: 6/6 válidos técnicamente, 38/54 etiquetas coincidentes; 28/42 niveles de referencia exactos.
+Gate semántico no superado; reservado no ejecutado. Auditorías nativas /2 completadas: Lucía PENDING,
+María WARNING; ninguna aprobación/publicación académica. Enalapril incorpora sección clínica sin truncar,
+con alcance y hash explícitos. Pendiente incorporar extractos SEFAC/SPFA al auditor, revisión editorial
+y clínica de hallazgos, planes M6 por caso y referencias independientes selladas. COV no ejecutado por
+falta de conjuntos elegibles, no por bloqueo M7. Histórico siguiente se conserva sin reinterpretación.
+
 ## Aplicación del marco y validación — cierre 05-11-2026
 
 [Evidencia y decisiones vigentes](40_APPROVED_FRAMEWORK_VALIDATION.md). **68,58% acreditado**;
