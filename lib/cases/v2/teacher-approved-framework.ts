@@ -38,3 +38,19 @@ export function teacherApprovedFramework(template:TeacherDraftTemplateId){
   review:{contractVersion:'question-review/1',status:'READY_FOR_REVIEW',reason:`Marco ${academicFramework.version} aplicado; revisar redacción y auditoría del paquete exacto. No publicación automática.`}}));
  return teacherDraftFieldsSchema.parse(f);
 }
+
+/** Editorial revision /2. Does not mutate persisted revisions or approve a case. */
+export function teacherFinalReviewFields(template:TeacherDraftTemplateId){
+ const f=teacherApprovedFramework(template);
+ if(template==='lucia'){
+  f.questionnaire[5].gradable!.justification='F2 indica que Lucía no ha medido su temperatura. No permite afirmar temperatura normal ni fiebre medida.';
+ }else{
+  f.teacherSolution+=' La pauta se conserva como prescripción vigente, no como certificación de adecuación individual. La actuación descrita es esperada del estudiante, no una intervención ya realizada.';
+  const referral=f.nativeAuthoring!.referral!;
+  if(referral.status==='PENDING')throw Error('FINAL_REVIEW_REFERRAL_PENDING');
+  referral.reason='Con los datos disponibles no se identifica un motivo de derivación inmediata. La prescripción vigente no acredita adecuación individual ni control tensional; obtener datos pertinentes y reevaluar si aparecen dudas de seguridad, efectividad o dificultades persistentes.';
+  referral.returnCriteria='Reevaluar los olvidos y la viabilidad de la ayuda acordada. Consultar con el prescriptor ante dificultades persistentes, dudas sobre la pauta o posibles problemas de efectividad/seguridad; determinar urgencia según los hallazgos. No se inventan cifras tensionales ni síntomas.';
+ }
+ f.teacherSolution+=' Revisión editorial /2: marco docente aprobado; aprobación final del caso y auditoría de esta revisión pendientes.';
+ return teacherDraftFieldsSchema.parse(f);
+}

@@ -1,4 +1,5 @@
 import 'server-only';
+import {guideCatalog,readGuideSource} from './teacher-guide-sources';
 import { createHash } from 'node:crypto';
 import { z } from 'zod';
 import { SPFA_2026_REFERENCE, teacherDraftFieldsSchema, type TeacherDraftRecord } from './teacher-case-draft';
@@ -9,6 +10,7 @@ import {teacherNativeIssues} from './build-teacher-native-package';
 
 export const PREPARATION_VERSION = 'teacher-academic-preparation/1';
 export const sourceCatalog = {
+  ...guideCatalog,
   metformin850: { registration:'68167', ingredient:'metformina', strength:'850',
     url:'https://cima.aemps.es/cima/dochtml/ft/68167/FichaTecnica_68167.html',
     name:'Metformina cinfa 850 mg — referencia comparativa, no marca atribuida al caso' },
@@ -18,10 +20,11 @@ export const sourceCatalog = {
 } as const;
 export type SourceKey = keyof typeof sourceCatalog;
 export const digest = (v:unknown) => createHash('sha256').update(JSON.stringify(v)).digest('hex');
-export type SourceEvidence = { key:SourceKey; url:string; retrievedAt:string; status:'AVAILABLE'|'UNAVAILABLE'|'CONTENT_UNVERIFIED'; sha256?:string; excerpt?:string; clinicalText?:string; truncated?:boolean; representation?:'cima-clinical-text/2'; scope?:'CLINICAL_SECTION'|'FROM_INDICATIONS_TO_DOCUMENT_END'; clinicalTextSha256?:string; code?:'SOURCE_UNAVAILABLE'|'SOURCE_CONTENT_UNVERIFIED' };
+export type SourceEvidence = { key:SourceKey; url:string; retrievedAt:string; status:'AVAILABLE'|'UNAVAILABLE'|'CONTENT_UNVERIFIED'; sha256?:string; excerpt?:string; clinicalText?:string; truncated?:boolean; representation?:'cima-clinical-text/2'|'guide-selection/1'; scope?:'CLINICAL_SECTION'|'FROM_INDICATIONS_TO_DOCUMENT_END'|'SELECTED_PARAPHRASE'; edition?:string; pages?:string; pdfPages?:number[]; provenance?:string; clinicalTextSha256?:string; code?:'SOURCE_UNAVAILABLE'|'SOURCE_CONTENT_UNVERIFIED' };
 
 /** Fixed official sources, no user URL, redirects, credentials, retries or patient data in requests. */
 export async function readCimaSource(key:SourceKey, fetcher:typeof fetch=teacherOfficialFetch):Promise<SourceEvidence> {
+  if(key==='sefac2024'||key==='spfa2026')return readGuideSource(key);
   const source=sourceCatalog[key];
   const base={key,url:source.url,retrievedAt:new Date().toISOString()};
   try {

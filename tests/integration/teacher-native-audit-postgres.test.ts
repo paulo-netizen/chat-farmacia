@@ -8,6 +8,7 @@ import {createTeacherNativeStore} from '@/lib/cases/v2/teacher-native-store';
 import {createTeacherNativeAuditStore} from '@/lib/cases/v2/teacher-native-audit-store';
 import {createTeacherPublicationStore} from '@/lib/cases/v2/teacher-publication';
 import {teacherNativeProposal} from '@/lib/cases/v2/teacher-native-proposals';
+import {readGuideSource} from '@/lib/cases/v2/teacher-guide-sources';
 import {resolveStudentPublicCaseVersionV2} from '@/lib/cases/v2/resolve-student-public-case-version';
 import {syntheticSources,syntheticResult} from '../unit/support/teacher-native-audit-fixture';
 let db:Pool;
@@ -19,6 +20,17 @@ const runner=()=>vi.fn(async(p:any,s:any)=>syntheticResult(p,s));
 describe.skipIf(process.env.RUN_TEACHER_DRAFT_POSTGRES!=='1')('native audit lifecycle on verified disposable DB only',()=>{
  beforeAll(async()=>{db=new Pool({host:'127.0.0.1',port:55451,user:'postgres',database:'chatusal_editor_disposable',ssl:false});expect((await db.query("SELECT current_database() db,shobj_description(oid,'pg_database') marker FROM pg_database WHERE datname=current_database()")).rows).toEqual([{db:'chatusal_editor_disposable',marker:'teacher-editor-20261012-disposable'}]);if(!(await db.query("SELECT to_regclass('teacher_native_audit_bindings') t")).rows[0].t)await db.query(readFileSync('db/migrations/0010_v2_teacher_native_audits.sql','utf8'));});
  afterAll(async()=>{await db?.end();});
+ it('binds three versioned sources and preserves historical source limits',async()=>{
+  const constraint=(await db.query("SELECT pg_get_constraintdef(oid) definition FROM pg_constraint WHERE conrelid='teacher_native_audit_bindings'::regclass AND conname='teacher_native_audit_bindings_sources_check'")).rows[0].definition;
+  if(!constraint.includes('inputVersion'))await db.query(readFileSync('db/migrations/0015_v2_native_audit_guide_sources.sql','utf8'));
+  const f=await fixture(),store=createTeacherNativeAuditStore(db,runner(),async key=>key==='sefac2024'||key==='spfa2026'?readGuideSource(key):structuredClone(syntheticSources[0]));
+  const prepared=await store.act(f.actor,f.draft.caseId,{...f.request,action:'prepare',sourceKeys:['metformin850','sefac2024','spfa2026']});
+  expect(prepared).toMatchObject({configuration:{inputVersion:3},current:true});
+  expect(await store.act(f.actor,f.draft.caseId,{...f.request,action:'run'})).toMatchObject({execution:'COMPLETED',status:'PASS'});
+  const b=(await db.query('SELECT * FROM teacher_native_audit_bindings WHERE candidate_version_id=$1',[f.request.candidateVersionId])).rows[0];
+  // Evaluate the version-dependent boundary without modifying immutable historical bindings.
+  expect((await db.query("SELECT jsonb_array_length($1::jsonb) BETWEEN 1 AND CASE WHEN $2::jsonb->>'inputVersion'='3' THEN 4 ELSE 2 END allowed",[JSON.stringify(b.sources),{inputVersion:2}])).rows[0].allowed).toBe(false);
+ });
  it('prepares without inference, audits, reviews and publishes a synthetic candidate',async()=>{
   const f=await fixture(),run=runner(),store=createTeacherNativeAuditStore(db,run,reader),pub=createTeacherPublicationStore(db);
   await store.act(f.actor,f.draft.caseId,{...f.request,action:'prepare',sourceKeys:['metformin850']});expect(run).not.toHaveBeenCalled();expect((await pub.read(f.actor,f.draft.caseId)).checks.clinicalAudit).toBe('PENDING');

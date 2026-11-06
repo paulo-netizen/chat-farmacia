@@ -1,5 +1,17 @@
 # ChatUSAL-FarmaBot v2 — Project Status
 
+## Revisiones finales y recorrido integral — 06-11-2026
+
+[Fuentes, auditorías, prueba integral y decisiones pendientes](42_FINAL_CASE_REVIEW_AND_INTEGRAL_FLOW.md).
+**68,58% acreditado, sin incremento.** Entrada de auditoría /3 incorpora selecciones SEFAC/SPFA
+con páginas y procedencia; corrección L6 y aclaración de María en nuevas revisiones. Migración 0015
+solo desechable. Una auditoría por caso: Lucía PENDING (5 PASS, 6 WARNING, 1 INSUFFICIENT),
+María WARNING (10 PASS, 2 WARNING); ambos borradores sin aprobación/publicación académica.
+Recorrido integral sintético comprobado desde selector a recuperación de resultados, comunicación
+pendiente y global null. M7 solo análisis offline de los 16 desacuerdos, sin alterar etiquetas ni
+consumir reservado. Pendientes: alcance/hallazgos clínicos, perfiles M6 y anclajes semánticos M7.
+Históricos siguientes se conservan como estados anteriores, no descripción actual.
+
 ## Comprobación M7 y auditorías — 06-11-2026
 
 [Informe y propuesta M6 concreta](41_M7_AUDIT_CHECK_AND_M6_DECISION.md). **68,58% acreditado**, sin incremento.

@@ -1,0 +1,47 @@
+import {Pool} from 'pg';
+import {randomUUID} from 'node:crypto';
+import {beforeAll,afterAll,describe,it,expect,vi} from 'vitest';
+vi.mock('server-only',()=>({}));
+let db:Pool,student:number;
+vi.mock('@/lib/db',()=>({pool:{connect:()=>db.connect()}}));
+// Authentication token verification is covered separately; the selector and all stores use real SQL.
+vi.mock('@/lib/auth',()=>({getUserFromRequest:async()=>({id:student,role:'student'})}));
+import {POST} from '@/app/api/sessions/route';
+import {createM8Fixture} from '../unit/support/m8-postgres-fixture';
+import {createSessionQuestionnaireStore} from '@/lib/cases/v2/session-questionnaire-store';
+import {createSessionResultsStore} from '@/lib/cases/v2/session-results-store';
+describe.skipIf(process.env.RUN_TEACHER_DRAFT_POSTGRES!=='1')('isolated integral journey without inference or development-case publication',()=>{
+ beforeAll(async()=>{db=new Pool({host:'127.0.0.1',port:55451,user:'postgres',database:'chatusal_editor_disposable'});expect((await db.query("SELECT current_database() db,shobj_description(oid,'pg_database') marker FROM pg_database WHERE datname=current_database()")).rows).toEqual([{db:'chatusal_editor_disposable',marker:'teacher-editor-20261012-disposable'}]);});
+ afterAll(async()=>db?.end());
+ it('selects exact synthetic version, closes, saves, submits, reviews, releases and recovers without global score',async()=>{
+  const historical=await db.query('SELECT id,status,content FROM case_versions WHERE case_id IN (7,8) ORDER BY id');
+  const f=await createM8Fixture(db);
+  student=Number((await db.query("INSERT INTO users(email,password_hash,name,role) VALUES($1,'synthetic','Integral synthetic student','student') RETURNING id",[`${randomUUID()}@example.test`])).rows[0].id);
+  await db.query("INSERT INTO case_assignments(student_id,case_id,completed_at) SELECT $1,case_id,now() FROM case_versions WHERE status='PUBLISHED' AND case_id<>$2 GROUP BY case_id",[student,f.draft.caseId]);
+  const response=await POST(new Request('http://localhost/api/sessions',{method:'POST'})),dto=await response.json();
+  expect(response.status).toBe(200);expect(Object.keys(dto).sort()).toEqual(['edad','nombre','sessionId','sexo']);
+  const id=dto.sessionId,actor=String(student);
+  expect((await db.query('SELECT case_version_id FROM sessions WHERE id=$1',[id])).rows[0].case_version_id).toBe(f.request.candidateVersionId);
+  expect((await (await POST(new Request('http://localhost/api/sessions',{method:'POST'}))).json()).sessionId).toBe(id);
+  await db.query("INSERT INTO messages(session_id,role,content) VALUES($1,'patient','Quería consultar una molestia leve.'),($1,'student','¿Desde cuándo y puede beber y respirar con normalidad?'),($1,'patient','Desde ayer. Puedo beber y respirar con normalidad.')",[id]);
+  await db.query('INSERT INTO case_result_policies(case_version_id,policy,created_by) VALUES($1,$2,$3)',[f.request.candidateVersionId,{version:'result-policy/1',id:'integral-synthetic-review',scope:'SYNTHETIC_TEST',approvalReference:'technical-fixture-only',release:'TEACHER_REVIEW',performance:{protocol:35,pharmaceutical:35,communication:30}},f.teacher]);
+  const q=createSessionQuestionnaireStore(db);await q.finish(actor,id);expect(await q.finish(actor,id)).toEqual(await q.read(actor,id));
+  await expect(db.query("INSERT INTO messages(session_id,role,content) VALUES($1,'student','late')",[id])).rejects.toMatchObject({code:'55000'});
+  const answers=[{questionId:'Q1',optionIds:['A']},{questionId:'Q2',optionIds:['A','B']}];
+  const saved=await q.write(actor,id,{action:'save',expectedRevision:0,answers});expect(await createSessionQuestionnaireStore(db).read(actor,id)).toEqual(saved);
+  const receipt=await q.write(actor,id,{action:'submit',expectedRevision:1,answers});
+  for(const key of ['correctOptionIds','justification','CLAVE_PRIVADA','score'])expect(JSON.stringify(receipt)).not.toContain(key);
+  const results=createSessionResultsStore(db);expect((await results.read(actor,id)).status).toBe('HELD');
+  const initial=await results.review(f.teacher,id);
+  if(!('dimensions'in initial))throw Error('fixture results missing');
+  expect(initial.dimensions.communication).toMatchObject({status:'PENDING',score:null});expect(initial.performance.score).toBeNull();
+  await results.recordReview(f.teacher,id,{expectedFingerprint:initial.fingerprint,expectedRevision:initial.humanRevision,action:'ACCEPT',dimension:'understanding',criterion:null,score:null,correction:'',reason:'Synthetic exact-answer receipt only; no clinical acceptance.'});
+  const reviewed=await results.review(f.teacher,id);if(!('fingerprint'in reviewed))throw Error('fixture review missing');await results.release(f.teacher,id,reviewed.fingerprint);
+  const final=await results.read(actor,id);expect(final.status).toBe('RELEASED');
+  if(!('dimensions'in final))throw Error('fixture');expect(final.dimensions.understanding.score).toBe(100);expect(final.performance.score).toBeNull();
+  expect(await createSessionResultsStore(db).read(actor,id)).toEqual(final);expect(await q.read(actor,id)).toEqual(receipt);
+  await expect(results.read(f.student,id)).rejects.toMatchObject({code:'NOT_FOUND'});await expect(results.review(actor,id)).rejects.toMatchObject({code:'FORBIDDEN'});
+  expect((await db.query('SELECT count(*)::int n FROM session_questionnaires WHERE session_id=$1',[id])).rows[0].n).toBe(1);
+  expect((await db.query('SELECT id,status,content FROM case_versions WHERE case_id IN (7,8) ORDER BY id')).rows).toEqual(historical.rows);
+ });
+});
